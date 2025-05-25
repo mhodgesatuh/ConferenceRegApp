@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    image: conference-reg:dev
+    image: conference-reg-app:dev
     ports:
       - "3000:3000"
     labels:
@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: conference-reg2:dev
+    image: conference-reg-ws:dev
     ports:
       - "5000:5000"
     env_file:

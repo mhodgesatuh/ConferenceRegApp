@@ -1,7 +1,5 @@
 #!/bin/sh
-#
-# start.sh – Starts both backend and frontend concurrently
-#
+# start.sh – Runs backend and frontend concurrently
 
 set -e
 
@@ -12,7 +10,7 @@ BACKEND_PID=$!
 
 echo "Starting frontend..."
 cd /app/frontend
-npm run dev -- --host &
+npm run dev &
 FRONTEND_PID=$!
 
 trap "echo 'Stopping...'; kill ${BACKEND_PID} ${FRONTEND_PID}; exit 0" SIGINT

@@ -1,3 +1,5 @@
+// App.tsx
+
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import RegForm from './RegForm';
 
