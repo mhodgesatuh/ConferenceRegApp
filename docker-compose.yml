@@ -4,7 +4,7 @@ services:
 
   conference-frontend:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile.frontend
     image: conference-reg-app:dev
     ports:
@@ -17,7 +17,7 @@ services:
 
   conference-backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile.backend
     image: conference-reg-ws:dev
     ports:
