@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile.frontend
     image: conference-reg-app:dev
     ports:
-      - "3000:3000"
+      - "8080:3000"
     labels:
       - "com.project.name=conference-frontend"
       - "com.project.description=React app for conference registration"
@@ -21,19 +21,23 @@ services:
       dockerfile: Dockerfile.backend
     image: conference-reg-ws:dev
     ports:
-      - "5000:5000"
+      - "5001:5000"
     env_file:
       - .env
     labels:
       - "com.project.name=conference-backend"
       - "com.project.description=Express API for conference registration"
     depends_on:
-      - db
+      - conference-db
 
-  db:
+  conference-db:
     image: mariadb:10.11
     volumes:
       - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -44,4 +48,5 @@ services:
       - "com.project.description=MariaDB instance for attendee data"
 
 volumes:
+  # Required for data persistence.
   mariadb_data:
