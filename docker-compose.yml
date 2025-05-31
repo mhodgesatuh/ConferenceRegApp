@@ -29,6 +29,9 @@ services:
       - "com.project.description=Express API for conference registration"
     depends_on:
       - conference-db
+    volumes:
+      - ./backend:/app/backend
+      - ./backend/node_modules:/app/backend/node_modules
 
   conference-db:
     image: mariadb:10.11

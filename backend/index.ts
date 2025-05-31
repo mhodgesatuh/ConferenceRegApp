@@ -1,10 +1,11 @@
-// backend/index.js
+// backend/index.ts
 
-require('dotenv').config();
+import * as dotenv from 'dotenv';
+import * as express from 'express';
+import * as mysql from 'mysql2/promise';
+import * as cors from 'cors';
 
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -13,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 const pool = mysql.createPool({
-    host: 'conference-db', // or 'db' if that's the container name
+    host: 'conference-db',
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'conference',
