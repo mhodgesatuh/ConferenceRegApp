@@ -1,9 +1,17 @@
-FROM node:20-alpine
+# Dockerfile.frontend
+
+FROM node:20
 
 WORKDIR /app
-COPY . /app
 
+# Copy only package files first (cache layer)
+COPY package*.json ./
+
+# Install dependencies inside the image
 RUN npm install
 
-EXPOSE 3000
+# Now copy the rest of your source code
+COPY . .
+
+# Default command (for dev)
 CMD ["npm", "run", "dev"]

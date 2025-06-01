@@ -14,6 +14,8 @@ services:
       - "com.project.description=React app for conference registration"
     depends_on:
       - conference-backend
+    volumes:
+      - ./frontend:/app
 
   conference-backend:
     build:
@@ -30,13 +32,10 @@ services:
     depends_on:
       - conference-db
     volumes:
-      - ./backend:/app/backend
-      - ./backend/node_modules:/app/backend/node_modules
+      - ./backend:/app
 
   conference-db:
     image: mariadb:10.11
-    volumes:
-      - mariadb_data:/var/lib/mysql
     ports:
       - "3306:3306"
     env_file:
@@ -46,10 +45,12 @@ services:
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: unless-stopped
     labels:
       - "com.project.name=conference-db"
       - "com.project.description=MariaDB instance for attendee data"
 
 volumes:
-  # Required for data persistence.
   mariadb_data:

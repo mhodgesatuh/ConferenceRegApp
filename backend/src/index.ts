@@ -1,9 +1,7 @@
-// backend/index.ts
-
 import * as dotenv from 'dotenv';
-import * as express from 'express';
+import express from 'express';
 import * as mysql from 'mysql2/promise';
-import * as cors from 'cors';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -20,9 +18,12 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'conference',
 });
 
+// Define the shape of the query result row
+type NowRow = { now: string };
+
 app.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT NOW() AS now');
+        const [rows] = (await pool.query('SELECT NOW() AS now')) as unknown as [NowRow[]];
         res.json({ message: 'Backend is working', now: rows[0].now });
     } catch (err) {
         console.error('Database error:', err);

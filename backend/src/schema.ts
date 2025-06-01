@@ -4,7 +4,7 @@ import mysql from 'mysql2/promise';
 
 (async () => {
     try {
-        const pool = await mysql.createPool({
+        const pool = mysql.createPool({
             host: process.env.DB_HOST || 'conference-db',
             user: process.env.DB_USER,
             password: process.env.DB_PASSWORD,
