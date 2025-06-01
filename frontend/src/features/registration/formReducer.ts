@@ -2,7 +2,7 @@
 
 export interface FormField {
     name: string;
-    label: string;
+    label: React.ReactNode;
     type?: string;
 }
 
