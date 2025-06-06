@@ -3,44 +3,85 @@
 # -----------------------------------------------------------------------------
 # CONFIGURATION
 # -----------------------------------------------------------------------------
-DOCKER_COMPOSE := docker-compose
 DRIZZLE := npx drizzle-kit
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 
 # -----------------------------------------------------------------------------
+# QUICK START
+# -----------------------------------------------------------------------------
+
+init: ## Initialize dev environment: install deps, reset DB, and apply schema
+	@echo "Docker Desktop must be running before proceeding."
+	@echo "WARNING: this will wipe out all existing data."
+	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
+
+	@echo "Installing all project dependencies..."
+	cd $(FRONTEND_DIR) && npm install
+	cd $(BACKEND_DIR) && npm install
+
+	$(MAKE) reset-db
+	$(MAKE) schema
+
+# -----------------------------------------------------------------------------
 # DRIZZLE ORM: DATABASE SCHEMA MANAGEMENT
 # -----------------------------------------------------------------------------
 
-generate: ## Generate SQL migration script (does NOT apply it)
-	cd $(BACKEND_DIR) && $(DRIZZLE) generate:mysql
+reset-db: ## Completely remove and recreate the database from .env
+	@echo "Removing database container and volume 'mariadb_data'..."
+	docker compose down -v --remove-orphans
+	@echo "Recreating fresh database from .env..."
+	docker compose up -d conference-db
+	@echo "Database reset complete. Next step: make schema"
 
 schema: ## Push current schema to the database (live migration)
-	cd $(BACKEND_DIR) && $(DRIZZLE) push:mysql
+	@echo "Applying current schema to the database..."
+	docker compose run --rm --profile schema drizzle-runner
+
+generate: ## Generate SQL migration script (does NOT apply it)
+	docker compose run --rm --profile schema drizzle-runner generate:mysql
 
 studio: ## Launch Drizzle Studio (visual schema browser, optional)
-	cd $(BACKEND_DIR) && $(DRIZZLE) studio
+	docker compose run --rm --profile schema -p 3001:3001 drizzle-runner studio
 
 # -----------------------------------------------------------------------------
 # DOCKER: CONTAINER LIFECYCLE
 # -----------------------------------------------------------------------------
 
 build: ## Build Docker images for frontend and backend
-	$(DOCKER_COMPOSE) build
+	docker compose build
 
 up: ## Start containers in detached mode
-	$(DOCKER_COMPOSE) up -d
+	docker compose up -d
 
 down: ## Stop and remove containers
-	$(DOCKER_COMPOSE) down
+	docker compose down
 
-restart: down up ## Restart all containers
+restart: ## Restart all containers
+	$(MAKE) down
+	$(MAKE) up
 
 logs: ## Tail logs from all containers
-	$(DOCKER_COMPOSE) logs -f
+	docker compose logs -f
 
 clean: ## Stop and remove all containers, volumes, and images
-	$(DOCKER_COMPOSE) down --volumes --rmi all
+	docker compose down --volumes --rmi all
+
+# -----------------------------------------------------------------------------
+# FRONTEND DEVELOPMENT
+# -----------------------------------------------------------------------------
+
+frontend: ## Run the frontend dev server (Vite)
+	cd $(FRONTEND_DIR) && npm install && npm run dev
+
+frontend-install: ## Install frontend dependencies
+	cd $(FRONTEND_DIR) && npm install
+
+frontend-build: ## Build the frontend (for production)
+	cd $(FRONTEND_DIR) && npm run build
+
+frontend-clean: ## Remove frontend dist build
+	cd $(FRONTEND_DIR) && rm -rf dist
 
 # -----------------------------------------------------------------------------
 # HIGH-LEVEL COMPOSITES

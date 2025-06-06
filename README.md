@@ -1,51 +1,175 @@
-# ConferenceRegApp
+# Local Development Setup for ConferenceRegApp (macOS)
 
-# Manual Build
+This guide walks you through setting up your local development environment on 
+macOS for the **ConferenceRegApp** project. It covers required tools, project 
+dependencies, containerization, and workflow setup.
 
-    cd /...path.../ConferenceRegApp
-    docker compose build
-    docker compose up -d
+---
 
-# Terminal Prep for macOS
+## 1. Install Docker Desktop
 
-Given that Docker Desktop will provide docker support, rather than docker being
-installed in the OS, the following are required.
+Docker is required for managing the MariaDB database in containers.
 
-First install Docker Desktop and login to Docker Hub.
+- Download and install Docker Desktop for Mac:  
+  https://www.docker.com/products/docker-desktop
 
-Add to .zshrc:
+- After installation, **launch Docker Desktop** and ensure it's running before proceeding.
 
-    export DOCKER_HOST=unix:///Users/mhodges/.docker/run/docker.sock
+---
 
-Then:
+## 2. Install Required Tools
 
-    source ~/.zshrc
-    sudo ln -s /Applications/Docker.app/Contents/Resources/bin/docker /usr/local/bin/docker
-    sudo ln -s /Applications/Docker.app/Contents/Resources/bin/docker-credential-desktop /usr/local/bin/docker-credential-desktop
+These tools are installed via [Homebrew](https://brew.sh/). If Homebrew is not 
+yet installed:
 
-# Best Practice for Mixed CLI + IntelliJ Use + Docker Desktop
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-Set ~/.docker/config.json to
+Install the project tools:
 
-    { "credsStore": "desktop" }
+```bash
+brew install git node npm docker
+```
 
-In IntelliJ
-- Add Docker Registry with your Docker Hub PAT (for registry browsing/push)
-- Use Docker Desktop as the Docker API
-- Do not use docker login manually unless necessary, and never with different credentials than the GUI
+---
 
-# Troubleshooting
+## 3. Clone the Repository
 
-Check that docker is available from terminal
+```bash
+git clone https://github.com/mhodgesatuh/ConferenceRegApp.git
+cd ConferenceRegApp
+```
 
-    docker info
+---
 
-If docker reports a credential error, logout of docker
+## 4. Install Project Dependencies
 
-    % docker logout
-    WARNING: error getting credentials - err: exit status 1, out: ``
-    Removing login credentials for https://index.docker.io/v1/
-    WARNING: could not erase credentials:
-    https://index.docker.io/v1/: error erasing credentials - err: exit status 1, out: ``
+### Backend (Express, Drizzle ORM)
 
-And check that ~/.docker/config.json is set correctly (see above).
+```bash
+cd backend
+npm install
+```
+
+### Frontend (React, Vite)
+
+```bash
+cd ../frontend
+npm install
+```
+
+Return to project root:
+
+```bash
+cd ..
+```
+
+---
+
+## 5. Install dotenv-cli
+
+We use `dotenv-cli` to load `.env` variables into `make` and CLI tools.
+
+Install it into the root project as a development dependency:
+
+```bash
+npm install -D dotenv-cli
+```
+
+Optionally, install it globally (not required):
+
+```bash
+npm install -g dotenv-cli
+```
+
+---
+
+## 6. Drizzle ORM CLI
+
+The Drizzle CLI is used for schema management and DB migrations.
+
+It's already listed in `backend/devDependencies`, but you can reinstall it 
+explicitly:
+
+```bash
+cd backend
+npm install -D drizzle-kit
+cd ..
+```
+
+---
+
+## 7. Initialize the Database
+
+To reset the MariaDB container and apply the schema:
+
+```bash
+make init
+```
+
+This command:
+- Confirms Docker is running
+- Removes the existing DB container and volume (`mariadb_data`)
+- Starts a new MariaDB container using `.env` settings
+- Pushes the current schema using Drizzle
+
+---
+
+## 8. Start the Frontend (Vite Dev Server)
+
+In a separate terminal tab or window:
+
+```bash
+make frontend
+```
+
+This will:
+- Install frontend dependencies if needed
+- Start the Vite dev server on `http://localhost:8080`
+
+---
+
+## 9. Useful Development Commands
+
+| Command                  | Description                                          |
+|--------------------------|------------------------------------------------------|
+| `make init`              | Reset DB container, apply schema                    |
+| `make schema`            | Push current schema to the database                 |
+| `make build`             | Build Docker images                                 |
+| `make up`                | Start containers in detached mode                   |
+| `make down`              | Stop and remove containers                          |
+| `make logs`              | View logs from running containers                   |
+| `make frontend`          | Start Vite dev server                               |
+| `make frontend-build`    | Build frontend for production                       |
+| `make clean`             | Remove all containers, volumes, and images          |
+| `make studio`            | Launch Drizzle Studio (web UI for DB schema)        |
+| `make migrate`           | Generate and push a schema migration                |
+| `make help`              | List all make targets                               |
+
+---
+
+## 10. Environment Configuration
+
+Ensure you update the `.env` file in the project root:
+
+These variables therein are used to:
+- Configure MariaDB during container creation
+- Set database credentials for Drizzle and the backend server
+- Specify the frontend development server port
+
+---
+
+## You're Ready!
+
+Your environment is now set up to develop and test the **ConferenceRegApp** project locally on macOS.
+
+Make sure Docker Desktop remains running while you develop.
+
+To confirm everything is working, try:
+
+```bash
+make init
+```
+
+Then visit: [http://localhost:3000](http://localhost:3000)

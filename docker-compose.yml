@@ -52,5 +52,19 @@ services:
       - "com.project.name=conference-db"
       - "com.project.description=MariaDB instance for attendee data"
 
+  drizzle-runner:
+    image: node:20-alpine
+    working_dir: /app/backend
+    entrypoint: sh
+    command: -c "npm install && npx drizzle-kit push --config=drizzle.config.ts"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - conference-db
+    profiles:
+      - schema  # prevents it from running on `up` unless specified
+
 volumes:
   mariadb_data:

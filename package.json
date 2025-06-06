@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0"
+  }
+}
