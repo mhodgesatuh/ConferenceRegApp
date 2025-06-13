@@ -36,13 +36,13 @@ reset-db: ## Completely remove and recreate the database from .env
 
 schema: ## Push current schema to the database (live migration)
 	@echo "Applying current schema to the database..."
-	docker compose run --rm --profile schema drizzle-runner
+	docker compose run --rm drizzle-runner
 
 generate: ## Generate SQL migration script (does NOT apply it)
-	docker compose run --rm --profile schema drizzle-runner generate:mysql
+	docker compose run --rm drizzle-runner node node_modules/drizzle-kit/dist/index.js generate:mysql
 
 studio: ## Launch Drizzle Studio (visual schema browser, optional)
-	docker compose run --rm --profile schema -p 3001:3001 drizzle-runner studio
+	docker compose run --rm -p 3001:3001 drizzle-runner studio
 
 # -----------------------------------------------------------------------------
 # DOCKER: CONTAINER LIFECYCLE

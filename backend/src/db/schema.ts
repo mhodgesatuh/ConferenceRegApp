@@ -1,13 +1,16 @@
 import {
+    bigint,
     mysqlTable,
-    varchar,
-    serial,
     timestamp,
+    varchar,
+    index,
 } from 'drizzle-orm/mysql-core';
-import { relations } from 'drizzle-orm';
 
-export const registrations = mysqlTable('registrations', {
-    id: serial('id').primaryKey(),
+// --------------------
+// registrations table
+// --------------------
+export const registrations = mysqlTable('registrations', (t) => ({
+    id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 
     email: varchar('email', { length: 128 }).notNull().unique(),
     status: varchar('status', { length: 32 }).notNull(),
@@ -19,14 +22,23 @@ export const registrations = mysqlTable('registrations', {
 
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
-});
+}));
 
-export const validationTables = mysqlTable('validation_tables', {
-    id: serial('id').primaryKey(),
+// -------------------------
+// validation_tables table
+// -------------------------
+export const validationTables = mysqlTable(
+    'validation_tables',
+    (t) => ({
+        id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 
-    validationTable: varchar('validation_table', { length: 32 }).notNull(),
-    value: varchar('value', { length: 128 }).notNull(),
+        validationTable: varchar('validation_table', { length: 32 }).notNull(),
+        value: varchar('value', { length: 128 }).notNull(),
 
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
-});
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+    }),
+    (t) => [
+        index('validation_table_idx').on(t.validationTable),
+    ]
+);
