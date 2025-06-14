@@ -1,6 +1,12 @@
-// schema.js
-
-import {index, mysqlTable, serial, timestamp, varchar,} from 'drizzle-orm/mysql-core';
+import {
+    index,
+    mysqlTable,
+    serial,
+    timestamp,
+    varchar,
+    boolean,
+    int,
+} from 'drizzle-orm/mysql-core';
 
 // People attending and organizing the conference.
 export const people = mysqlTable('people', {
@@ -14,20 +20,22 @@ export const people = mysqlTable('people', {
     phone: varchar('phone', {length: 128}),
 
     // Name information
-    namePrefix: varchar('name_prefix', {length: 128}),
     firstName: varchar('first_name', {length: 128}).notNull(),
     lastName: varchar('last_name', {length: 128}).notNull(),
+    namePrefix: varchar('name_prefix', {length: 128}),
     nameSuffix: varchar('name_suffix', {length: 128}),
 
     // Attibute Based Access Control (ABAC)
-    isOrganizer: varchar('is_organizer', {length: 128}),
-    isAttendee: varchar('is_attendee', {length: 128}),
-    cancelledAttendance: : varchar('cancelled_attendance', {length: 128}),
-    isProxy: varchar('is_proxy', {length: 128}),
+    cancelledAttendance: boolean('cancelled_attendance'),
+    isAttendee: boolean('is_attendee'),
+    isMonitor: boolean('is_monitor'),
+    isOrganizer: boolean('is_organizer'),
+    isPresenter: boolean('is_presenter'),
+    isProxy: boolean('is_proxy'),
 
     // Proxy: for when someone registers others
-    hasProxy: varchar('has_proxy', {length: 128}),
-    proxyId: varchar('proxy_id', {length: 128}),
+    hasProxy: boolean('has_proxy'),
+    proxyId: int('proxy_id'),
 });
 
 // Registration form.
@@ -58,6 +66,40 @@ export const validationTables = mysqlTable('validation_tables', {
 });
 
 // Indexes: for optimizing record access.
+
 export const validationTablesValueIdx = index(
     'idx_validation_tables_value'
 ).on(validationTables.value);
+
+export const peopleCancelledAttendanceIdx = index(
+    'idx_people_cancelled_attendance'
+).on(people.cancelledAttendance);
+
+export const peopleIsAttendeeIdx = index(
+    'idx_people_is_attendee'
+).on(people.isAttendee);
+
+export const peopleIsMonitorIdx = index(
+    'idx_people_is_monitor'
+).on(people.isMonitor);
+
+export const peopleIsOrganizerIdx = index(
+    'idx_people_is_organizer'
+).on(people.isOrganizer);
+
+export const peopleIsPresenterIdx = index(
+    'idx_people_is_presenter'
+).on(people.isPresenter);
+
+export const peopleIsProxyIdx = index(
+    'idx_people_is_proxy'
+).on(people.isProxy);
+
+export const peopleHasProxyIdx = index(
+    'idx_people_has_proxy'
+).on(people.hasProxy);
+
+export const peopleProxyIdIdx = index(
+    'idx_people_proxy_id'
+).on(people.proxyId);
+
