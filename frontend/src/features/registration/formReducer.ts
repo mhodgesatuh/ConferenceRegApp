@@ -19,7 +19,7 @@ export interface FormAction {
 export function formReducer(state: FormState, action: FormAction): FormState {
     switch (action.type) {
         case 'UPDATE_FIELD':
-            return { ...state, [action.name]: action.value };
+            return {...state, [action.name]: action.value};
         default:
             return state;
     }

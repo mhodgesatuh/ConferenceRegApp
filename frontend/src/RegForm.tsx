@@ -14,7 +14,7 @@ const RegForm = () => {
 
     return (
         <div>
-            <RegistrationForm fields={fields} />
+            <RegistrationForm fields={fields}/>
         </div>
     );
 };

@@ -1,7 +1,7 @@
 # Local Development Setup for ConferenceRegApp (macOS)
 
-This guide walks you through setting up your local development environment on 
-macOS for the **ConferenceRegApp** project. It covers required tools, project 
+This guide walks you through setting up your local development environment on
+macOS for the **ConferenceRegApp** project. It covers required tools, project
 dependencies, containerization, and workflow setup.
 
 ---
@@ -19,7 +19,7 @@ Docker is required for managing the MariaDB database in containers.
 
 ## 2. Install Required Tools
 
-These tools are installed via [Homebrew](https://brew.sh/). If Homebrew is not 
+These tools are installed via [Homebrew](https://brew.sh/). If Homebrew is not
 yet installed:
 
 ```bash
@@ -89,7 +89,7 @@ npm install -g dotenv-cli
 
 The Drizzle CLI is used for schema management and DB migrations.
 
-It's already listed in `backend/devDependencies`, but you can reinstall it 
+It's already listed in `backend/devDependencies`, but you can reinstall it
 explicitly:
 
 ```bash
@@ -109,6 +109,7 @@ make init
 ```
 
 This command:
+
 - Confirms Docker is running
 - Removes the existing DB container and volume (`mariadb_data`)
 - Starts a new MariaDB container using `.env` settings
@@ -125,6 +126,7 @@ make frontend
 ```
 
 This will:
+
 - Install frontend dependencies if needed
 - Start the Vite dev server on `http://localhost:8080`
 
@@ -132,20 +134,20 @@ This will:
 
 ## 9. Useful Development Commands
 
-| Command                  | Description                                          |
-|--------------------------|------------------------------------------------------|
-| `make init`              | Reset DB container, apply schema                    |
-| `make schema`            | Push current schema to the database                 |
-| `make build`             | Build Docker images                                 |
-| `make up`                | Start containers in detached mode                   |
-| `make down`              | Stop and remove containers                          |
-| `make logs`              | View logs from running containers                   |
-| `make frontend`          | Start Vite dev server                               |
-| `make frontend-build`    | Build frontend for production                       |
-| `make clean`             | Remove all containers, volumes, and images          |
-| `make studio`            | Launch Drizzle Studio (web UI for DB schema)        |
-| `make migrate`           | Generate and push a schema migration                |
-| `make help`              | List all make targets                               |
+| Command               | Description                                  |
+|-----------------------|----------------------------------------------|
+| `make init`           | Reset DB container, apply schema             |
+| `make schema`         | Push current schema to the database          |
+| `make build`          | Build Docker images                          |
+| `make up`             | Start containers in detached mode            |
+| `make down`           | Stop and remove containers                   |
+| `make logs`           | View logs from running containers            |
+| `make frontend`       | Start Vite dev server                        |
+| `make frontend-build` | Build frontend for production                |
+| `make clean`          | Remove all containers, volumes, and images   |
+| `make studio`         | Launch Drizzle Studio (web UI for DB schema) |
+| `make migrate`        | Generate and push a schema migration         |
+| `make help`           | List all make targets                        |
 
 ---
 
@@ -154,6 +156,7 @@ This will:
 Ensure you update the `.env` file in the project root:
 
 These variables therein are used to:
+
 - Configure MariaDB during container creation
 - Set database credentials for Drizzle and the backend server
 - Specify the frontend development server port

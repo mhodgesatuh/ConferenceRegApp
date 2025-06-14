@@ -1,7 +1,7 @@
 // drizzle.config.tx
 
 import 'dotenv/config';
-import type { Config } from 'drizzle-kit';
+import type {Config} from 'drizzle-kit';
 
 // Validate required env vars
 const required = ['DB_HOST', 'MARIADB_USER', 'MARIADB_PASSWORD', 'MARIADB_DATABASE', 'DB_PORT'];

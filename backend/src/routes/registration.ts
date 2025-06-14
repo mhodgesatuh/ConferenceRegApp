@@ -1,7 +1,7 @@
-import { Router, Request, Response } from 'express';
-import { db } from '../db/client';
-import { registrations, registrationData } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import {Request, Response, Router} from 'express';
+import {db} from '../db/client';
+import {registrationData, registrations} from '../db/schema';
+import {eq} from 'drizzle-orm';
 
 interface CreateRegistrationBody {
     email: string;
@@ -19,16 +19,16 @@ router.post(
         res: Response
     ) => {
         try {
-            const { email, status = 'pending', fields } = req.body;
+            const {email, status = 'pending', fields} = req.body;
 
             if (!email || !Array.isArray(fields)) {
-                return res.status(400).json({ error: 'Missing required data' });
+                return res.status(400).json({error: 'Missing required data'});
             }
 
             // Insert registration and get the inserted ID
             const insertedIds = await db
                 .insert(registrations)
-                .values({ email, status })
+                .values({email, status})
                 .$returningId();
 
             const registrationId = insertedIds[0];
@@ -42,10 +42,10 @@ router.post(
 
             await db.insert(registrationData).values(dataEntries);
 
-            return res.status(201).json({ id: registrationId });
+            return res.status(201).json({id: registrationId});
         } catch (err) {
             console.error('Error saving registration:', err);
-            return res.status(500).json({ error: 'Failed to save registration' });
+            return res.status(500).json({error: 'Failed to save registration'});
         }
     }
 );
@@ -57,7 +57,7 @@ router.get(
         const id = parseInt(req.params.id, 10);
 
         if (isNaN(id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({error: 'Invalid ID'});
         }
 
         try {
@@ -67,7 +67,7 @@ router.get(
                 .where(eq(registrations.id, id));
 
             if (!registration) {
-                return res.status(404).json({ error: 'Registration not found' });
+                return res.status(404).json({error: 'Registration not found'});
             }
 
             const data = await db
@@ -75,10 +75,10 @@ router.get(
                 .from(registrationData)
                 .where(eq(registrationData.registrationId, id));
 
-            return res.json({ registration, data });
+            return res.json({registration, data});
         } catch (err) {
             console.error('Error fetching registration:', err);
-            return res.status(500).json({ error: 'Failed to fetch registration' });
+            return res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
 );

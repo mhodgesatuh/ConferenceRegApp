@@ -61,7 +61,7 @@ restart: ## Restart all containers
 	$(MAKE) down
 	$(MAKE) up
 
-logs: ## Tail logs from all containers
+tail-logs: ## Tail logs from all containers
 	docker compose logs -f
 
 clean: ## Stop and remove all containers, volumes, and images
@@ -71,7 +71,7 @@ clean: ## Stop and remove all containers, volumes, and images
 # FRONTEND DEVELOPMENT
 # -----------------------------------------------------------------------------
 
-frontend: ## Run the frontend dev server (Vite)
+frontend-dev: ## Run the frontend dev server (Vite)
 	cd $(FRONTEND_DIR) && npm install && npm run dev
 
 frontend-install: ## Install frontend dependencies
@@ -87,9 +87,9 @@ frontend-clean: ## Remove frontend dist build
 # HIGH-LEVEL COMPOSITES
 # -----------------------------------------------------------------------------
 
-deploy: build schema up ## Build images, apply schema, and launch the stack
+deploy-container: build schema up ## Build images, apply schema, and launch the stack
 
-migrate: generate schema ## Run full schema lifecycle: generate -> push
+update-schema: generate schema ## Run full schema lifecycle: generate -> push
 
 # -----------------------------------------------------------------------------
 # DEFAULT TARGET

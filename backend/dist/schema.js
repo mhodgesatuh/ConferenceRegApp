@@ -1,47 +1,63 @@
-"use strict";
-// schema.ts
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const promise_1 = __importDefault(require("mysql2/promise"));
-(async () => {
-    try {
-        const pool = await promise_1.default.createPool({
-            host: process.env.DB_HOST || 'conference-db',
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME || 'conference',
-        });
-        // Create 'person' table
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS person (
-                person_id INT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(50) NOT NULL UNIQUE,
-                passwordHash VARCHAR(250) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        `);
-        // Create 'data' table with foreign key to 'person'
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS data (
-                                                data_id INT AUTO_INCREMENT PRIMARY KEY,
-                                                name VARCHAR(50) NOT NULL,
-                                                value VARCHAR(500) NOT NULL,
-                                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                                person_id INT,
-                                                FOREIGN KEY (person_id) REFERENCES person(person_id)
-                                                    ON DELETE CASCADE
-                                                    ON UPDATE CASCADE
-            )
-        `);
-        console.log('Schema initialized.');
-        await pool.end();
-    }
-    catch (err) {
-        console.error('Error: schema initialization failed:', err.message);
-        process.exit(1);
-    }
-})();
+// schema.js
+
+import {index, mysqlTable, serial, timestamp, varchar,} from 'drizzle-orm/mysql-core';
+
+// People attending and organizing the conference.
+export const people = mysqlTable('people', {
+
+    id: serial('id').primaryKey(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+
+    // Contact information
+    email: varchar('email', {length: 128}).notNull(),
+    phone: varchar('phone', {length: 128}),
+
+    // Name information
+    namePrefix: varchar('name_prefix', {length: 128}),
+    firstName: varchar('first_name', {length: 128}).notNull(),
+    lastName: varchar('last_name', {length: 128}).notNull(),
+    nameSuffix: varchar('name_suffix', {length: 128}),
+
+    // Attibute Based Access Control (ABAC)
+    isOrganizer: varchar('is_organizer', {length: 128}),
+    isAttendee: varchar('is_attendee', {length: 128}),
+    cancelledAttendance: : varchar('cancelled_attendance', {length: 128}),
+    isProxy: varchar('is_proxy', {length: 128}),
+
+    // Proxy: for when someone registers others
+    hasProxy: varchar('has_proxy', {length: 128}),
+    proxyId: varchar('proxy_id', {length: 128}),
+});
+
+// Registration form.
+export const registration = mysqlTable('registration', {
+
+    id: serial('id').primaryKey(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+
+    // Conference information
+    info1: varchar('info1', {length: 128}).notNull().unique(),
+    info2: varchar('info2', {length: 128}).notNull().unique(),
+
+    // Registration form questions
+    question1: varchar('question1', {length: 128}).notNull().unique(),
+    question2: varchar('question2', {length: 128}).notNull().unique(),
+});
+
+// Validation tables, for the options on the registration form.
+export const validationTables = mysqlTable('validation_tables', {
+
+    id: serial('id').primaryKey(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+
+    validationTable: varchar('validation_table', {length: 32}).notNull(),
+    value: varchar('value', {length: 128}).notNull(),
+});
+
+// Indexes: for optimizing record access.
+export const validationTablesValueIdx = index(
+    'idx_validation_tables_value'
+).on(validationTables.value);

@@ -1,6 +1,6 @@
 // frontend/src/features/registration/RegistrationForm.tsx
-import React, { useReducer } from 'react';
-import { formReducer, initialFormState } from './formReducer';
+import React, {useReducer} from 'react';
+import {formReducer, initialFormState} from './formReducer';
 
 type FieldDefinition = {
     name: string;
@@ -12,7 +12,7 @@ type RegistrationFormProps = {
     fields: FieldDefinition[];
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({fields}) => {
     const [state, dispatch] = useReducer(formReducer, initialFormState(fields));
 
     return (

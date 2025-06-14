@@ -2,9 +2,16 @@
     "extends": "../tsconfig.base.json",
     "compilerOptions": {
         "jsx": "react-jsx",
-        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+        "lib": [
+            "DOM",
+            "DOM.Iterable",
+            "ESNext"
+        ],
         "module": "ESNext",
         "moduleResolution": "bundler"
     },
-    "include": ["src", "vite-env.d.ts"]
+    "include": [
+        "src",
+        "vite-env.d.ts"
+    ]
 }
