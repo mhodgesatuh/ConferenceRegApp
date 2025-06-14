@@ -1,0 +1,371 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "627cb885-1a7b-4446-8a7c-e753855124b8",
+  "prevId": "149662a9-a2d5-4b36-b1c6-49d5a65eb88b",
+  "tables": {
+    "people": {
+      "name": "people",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name_prefix": {
+          "name": "name_prefix",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "name_suffix": {
+          "name": "name_suffix",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cancelled_attendance": {
+          "name": "cancelled_attendance",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_attendee": {
+          "name": "is_attendee",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_monitor": {
+          "name": "is_monitor",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_organizer": {
+          "name": "is_organizer",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_presenter": {
+          "name": "is_presenter",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_proxy": {
+          "name": "is_proxy",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "has_proxy": {
+          "name": "has_proxy",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "proxy_id": {
+          "name": "proxy_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_people_cancelled_attendance": {
+          "name": "idx_people_cancelled_attendance",
+          "columns": [
+            "cancelled_attendance"
+          ],
+          "isUnique": false
+        },
+        "idx_people_is_attendee": {
+          "name": "idx_people_is_attendee",
+          "columns": [
+            "is_attendee"
+          ],
+          "isUnique": false
+        },
+        "idx_people_is_monitor": {
+          "name": "idx_people_is_monitor",
+          "columns": [
+            "is_monitor"
+          ],
+          "isUnique": false
+        },
+        "idx_people_is_organizer": {
+          "name": "idx_people_is_organizer",
+          "columns": [
+            "is_organizer"
+          ],
+          "isUnique": false
+        },
+        "idx_people_is_presenter": {
+          "name": "idx_people_is_presenter",
+          "columns": [
+            "is_presenter"
+          ],
+          "isUnique": false
+        },
+        "idx_people_is_proxy": {
+          "name": "idx_people_is_proxy",
+          "columns": [
+            "is_proxy"
+          ],
+          "isUnique": false
+        },
+        "idx_people_has_proxy": {
+          "name": "idx_people_has_proxy",
+          "columns": [
+            "has_proxy"
+          ],
+          "isUnique": false
+        },
+        "idx_people_proxy_id": {
+          "name": "idx_people_proxy_id",
+          "columns": [
+            "proxy_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "people_id": {
+          "name": "people_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "registration": {
+      "name": "registration",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "info1": {
+          "name": "info1",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "info2": {
+          "name": "info2",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "question1": {
+          "name": "question1",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "question2": {
+          "name": "question2",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "registration_id": {
+          "name": "registration_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "registration_info1_unique": {
+          "name": "registration_info1_unique",
+          "columns": [
+            "info1"
+          ]
+        },
+        "registration_info2_unique": {
+          "name": "registration_info2_unique",
+          "columns": [
+            "info2"
+          ]
+        },
+        "registration_question1_unique": {
+          "name": "registration_question1_unique",
+          "columns": [
+            "question1"
+          ]
+        },
+        "registration_question2_unique": {
+          "name": "registration_question2_unique",
+          "columns": [
+            "question2"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "validation_tables": {
+      "name": "validation_tables",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "validation_table": {
+          "name": "validation_table",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_validation_tables_value": {
+          "name": "idx_validation_tables_value",
+          "columns": [
+            "value"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "validation_tables_id": {
+          "name": "validation_tables_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}

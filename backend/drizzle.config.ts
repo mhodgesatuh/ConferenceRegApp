@@ -4,7 +4,7 @@ import 'dotenv/config';
 import type {Config} from 'drizzle-kit';
 
 // Validate required env vars
-const required = ['DB_HOST', 'MARIADB_USER', 'MARIADB_PASSWORD', 'MARIADB_DATABASE', 'DB_PORT'];
+const required = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_PORT'];
 for (const key of required) {
     if (!process.env[key]) {
         throw new Error(`Missing required environment variable: ${key} in .env file`);
@@ -23,9 +23,9 @@ export default {
     dialect: 'mysql',
     dbCredentials: {
         host: process.env.DB_HOST!,
-        user: process.env.MARIADB_USER!,
-        password: process.env.MARIADB_PASSWORD!,
-        database: process.env.MARIADB_DATABASE!,
+        user: process.env.DB_USER!,
+        password: process.env.DB_PASSWORD!,
+        database: process.env.DB_NAME!,
         port,
     },
 } satisfies Config;
