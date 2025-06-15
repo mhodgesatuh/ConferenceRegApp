@@ -16,10 +16,6 @@ init: ## Initialize dev environment: install deps, reset DB, and apply schema
 	@echo "WARNING: this will wipe out all existing data."
 	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
 
-	@echo "Installing all project dependencies..."
-	cd $(FRONTEND_DIR) && npm install
-	cd $(BACKEND_DIR) && npm install
-
 	$(MAKE) reset-db
 	@echo "Waiting for database to become available..."
 	@until docker compose exec conference-db mysqladmin ping -h"127.0.0.1" --silent; do \
@@ -54,23 +50,23 @@ reset-db: ## Completely remove and recreate the database from .env
 
 schema: ## Push current schema to the database (live migration)
 	@echo "Applying current schema to the database..."
+	docker compose build --no-cache drizzle-runner
 	docker compose run --rm --entrypoint node drizzle-runner node_modules/.bin/drizzle-kit push
 
-
 generate: ## Generate SQL migration script (does NOT apply it)
+	docker compose build --no-cache drizzle-runner
 	docker compose run --rm --entrypoint node drizzle-runner node_modules/.bin/drizzle-kit generate
 	cat backend/drizzle/migrations/*.sql
 
-
 studio: ## Launch Drizzle Studio (visual schema browser, optional)
-	docker compose run --rm -p 3001:3001 drizzle-runner studio
+	docker compose run --rm drizzle-runner studio
 
 # -----------------------------------------------------------------------------
 # DOCKER: CONTAINER LIFECYCLE
 # -----------------------------------------------------------------------------
 
 build: ## Build Docker images for frontend and backend
-	docker compose build
+	docker compose build --no-cache
 
 up: ## Start containers in detached mode
 	docker compose up -d

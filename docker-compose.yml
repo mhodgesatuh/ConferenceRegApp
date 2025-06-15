@@ -31,8 +31,6 @@ services:
       - "com.project.description=Express API for conference registration"
     depends_on:
       - conference-db
-    volumes:
-      - ./backend:/app
 
   conference-db:
     image: mariadb:10.11
@@ -53,18 +51,13 @@ services:
       - "com.project.description=MariaDB instance for attendee data"
 
   drizzle-runner:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.backend
     working_dir: /app/backend
-    entrypoint: sh
-    command: -c "npm install && npx drizzle-kit push --config=drizzle.config.ts"
-    volumes:
-      - .:/app
-    env_file:
-      - .env
+    entrypoint: node
     depends_on:
       - conference-db
-    profiles:
-      - schema  # prevents it from running on `up` unless specified
 
 volumes:
   mariadb_data:
