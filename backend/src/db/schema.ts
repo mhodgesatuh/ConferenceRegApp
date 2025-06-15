@@ -3,26 +3,28 @@
 import {
     index,
     mysqlTable,
-    serial,
     timestamp,
     varchar,
     boolean,
     int,
+    foreignKey,
 } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm/sql';
 
 // People attending and organizing the conference.
 export const people = mysqlTable('people', {
+
     id: int('id').autoincrement().primaryKey(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
 
     // Contact information
     email: varchar('email', { length: 128 }).notNull(),
-    phone: varchar('phone', { length: 128 }),
+    phone1: varchar('phone1', { length: 32 }),
+    phone2: varchar('phone2', { length: 32 }),
 
     // Name information
-    firstName: varchar('first_name', { length: 128 }).notNull(),
+    firstName: varchar('first_name', { length: 128 }),
     lastName: varchar('last_name', { length: 128 }).notNull(),
     namePrefix: varchar('name_prefix', { length: 128 }),
     nameSuffix: varchar('name_suffix', { length: 128 }),
@@ -35,7 +37,10 @@ export const people = mysqlTable('people', {
     isPresenter: boolean('is_presenter'),
     isProxy: boolean('is_proxy'),
     hasProxy: boolean('has_proxy'),
-    proxyId: int('proxy_id'),
+
+    // If someone registered this person
+    proxyId: int('proxy_id').default(sql`NULL`),
+
 }, (table) => ({
     cancelledAttendanceIdx: index('idx_people_cancelled_attendance').on(table.cancelledAttendance),
     isAttendeeIdx: index('idx_people_is_attendee').on(table.isAttendee),
@@ -48,19 +53,34 @@ export const people = mysqlTable('people', {
 }));
 
 // Registration form.
-export const registration = mysqlTable('registration', {
+export const registrations = mysqlTable('registration', {
+
+    id: int('id').autoincrement().primaryKey(),
+    personId: int('person_id').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
+
+    // Registration form questions
+    question1: varchar('question1', { length: 128 }).notNull(),
+    question2: varchar('question2', { length: 128 }).notNull(),
+
+}, (table) => ({
+    personIdFk: foreignKey({
+        columns: [table.personId],
+        foreignColumns: [people.id],
+        name: 'fk_registration_person_id',
+    }),
+    personIdIdx: index('idx_registration_person_id').on(table.personId),
+}));
+
+export const conferenceInfo = mysqlTable('conference_info', {
+
     id: int('id').autoincrement().primaryKey(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
 
-
-    // Conference information
-    info1: varchar('info1', { length: 128 }).notNull().unique(),
-    info2: varchar('info2', { length: 128 }).notNull().unique(),
-
-    // Registration form questions
-    question1: varchar('question1', { length: 128 }).notNull().unique(),
-    question2: varchar('question2', { length: 128 }).notNull().unique(),
+    info1: varchar('info1', { length: 128 }).notNull(),
+    info2: varchar('info2', { length: 128 }).notNull(),
 });
 
 // Validation tables, for the options on the registration form.
@@ -71,6 +91,7 @@ export const validationTables = mysqlTable('validation_tables', {
 
     validationTable: varchar('validation_table', { length: 32 }).notNull(),
     value: varchar('value', { length: 128 }).notNull(),
+
 }, (table) => ({
     valueIdx: index('idx_validation_tables_value').on(table.value),
 }));
