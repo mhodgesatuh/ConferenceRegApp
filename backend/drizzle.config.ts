@@ -1,6 +1,5 @@
 // drizzle.config.tx
 
-import 'dotenv/config';
 import type {Config} from 'drizzle-kit';
 
 // Validate required env vars

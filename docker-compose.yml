@@ -19,8 +19,8 @@ services:
 
   conference-backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.backend
+      context: .
+      dockerfile: backend/Dockerfile.backend
     image: conference-reg-ws:dev
     ports:
       - "5001:5000"
@@ -54,6 +54,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile.backend
+    env_file:
+      - .env
     working_dir: /app/backend
     entrypoint: node
     depends_on:

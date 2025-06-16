@@ -11,5 +11,9 @@ export default defineConfig(({mode}) => {
             host: true,
             port: parseInt(env.UI_PORT) || 3000,
         },
+        build: {
+            outDir: 'dist',        // ← explicit output folder
+            emptyOutDir: true,     // ← removes old files before building
+        },
     };
 });

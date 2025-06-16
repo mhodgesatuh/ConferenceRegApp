@@ -17,14 +17,17 @@ init: ## Initialize dev environment: install deps, reset DB, and apply schema
 	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
 
 	$(MAKE) reset-db
-	@echo "Waiting for database to become available..."
+	@echo "Wait for database: "
 	@until docker compose exec conference-db mysqladmin ping -h"127.0.0.1" --silent; do \
-		echo " - waiting for db..."; \
-		sleep 2; \
+		sleep 1; \
 	done
 
 	$(MAKE) drop-tables
 	$(MAKE) schema
+
+init-backend: ## Rebuild and restart the backend container only
+	docker compose build --no-cache conference-backend
+	docker compose up -d conference-backend
 
 # -----------------------------------------------------------------------------
 # DRIZZLE ORM: DATABASE SCHEMA MANAGEMENT

@@ -1,6 +1,4 @@
-// src/routes/registration.ts
-
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { db } from '../db/client';
 import { registrations } from '../db/schema';
 import { eq } from 'drizzle-orm';
@@ -13,53 +11,58 @@ interface CreateRegistrationBody {
 
 const router = Router();
 
-router.post('/', async (
-    req: Request<{}, {}, CreateRegistrationBody>,
-    res: Response
-): Promise<Response> => {
-    try {
-        const { personId, question1, question2 } = req.body;
+/* POST / */
+router.post<{}, any, CreateRegistrationBody>(
+    '/',
+    async (req, res): Promise<void> => {
+        try {
+            const { personId, question1, question2 } = req.body;
 
-        if (!personId || !question1 || !question2) {
-            return res.status(400).json({ error: 'Missing required data' });
+            if (!personId || !question1 || !question2) {
+                res.status(400).json({ error: 'Missing required data' });
+                return;
+            }
+
+            const [id] = await db
+                .insert(registrations)
+                .values({ personId, question1, question2 })
+                .$returningId();
+
+            res.status(201).json({ id });
+        } catch (err) {
+            console.error('Error saving registration:', err);
+            res.status(500).json({ error: 'Failed to save registration' });
+        }
+    }
+);
+
+/* GET /:id */
+router.get<{ id: string }, any>(
+    '/:id',
+    async (req, res): Promise<void> => {
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) {
+            res.status(400).json({ error: 'Invalid ID' });
+            return;
         }
 
-        const insertedIds = await db
-            .insert(registrations)
-            .values({ personId, question1, question2 })
-            .$returningId();
+        try {
+            const [registration] = await db
+                .select()
+                .from(registrations)
+                .where(eq(registrations.id, id));
 
-        return res.status(201).json({ id: insertedIds[0] });
-    } catch (err) {
-        console.error('Error saving registration:', err);
-        return res.status(500).json({ error: 'Failed to save registration' });
-    }
-});
+            if (!registration) {
+                res.status(404).json({ error: 'Registration not found' });
+                return;
+            }
 
-router.get('/:id', async (
-    req: Request<{ id: string }>,
-    res: Response
-): Promise<Response> => {
-    const id = parseInt(req.params.id, 10);
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid ID' });
-    }
-
-    try {
-        const [registration] = await db
-            .select()
-            .from(registrations)
-            .where(eq(registrations.id, id));
-
-        if (!registration) {
-            return res.status(404).json({ error: 'Registration not found' });
+            res.json({ registration });
+        } catch (err) {
+            console.error('Error fetching registration:', err);
+            res.status(500).json({ error: 'Failed to fetch registration' });
         }
-
-        return res.json({ registration });
-    } catch (err) {
-        console.error('Error fetching registration:', err);
-        return res.status(500).json({ error: 'Failed to fetch registration' });
     }
-});
+);
 
 export default router;
