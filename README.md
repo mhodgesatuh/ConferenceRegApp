@@ -176,3 +176,67 @@ make init
 ```
 
 Then visit: [http://localhost:3000](http://localhost:3000)
+
+---
+
+## Future work
+
+If you’re using a single npm install and haven’t forced production mode, devDependencies (including rimraf) will already be pulled in.
+
+If you have NODE_ENV=production set in your Dockerfile or CI, switch to a two-stage build so that the builder stage sees devDependencies and the runtime stage only gets production deps:
+
+dockerfile
+Copy
+Edit
+# ─── Builder Stage ─────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app/backend
+COPY backend/package*.json tsconfig.base.json tsconfig.json ./
+# installs both dependencies & devDependencies
+RUN npm ci
+COPY backend/ ./
+RUN npm run build    # runs "npm run clean && tsc"
+
+# ─── Runtime Stage ─────────────────────────────────────────────
+FROM node:20-alpine
+WORKDIR /app/backend
+# only install production deps
+COPY backend/package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/backend/dist ./dist
+
+EXPOSE 5000
+CMD ["node", "dist/src/index.js"]
+Builder: npm ci brings in rimraf, TypeScript, etc., so your npm run build can rimraf dist before compiling.
+
+Runtime: npm ci --omit=dev installs only your "dependencies", keeping the final image lean.
+
+Rebuild your image
+
+bash
+Copy
+Edit
+docker build -t conference-backend .
+Verify
+
+bash
+Copy
+Edit
+docker run --rm conference-backend \
+sh -c "ls node_modules/rimraf && node dist/src/index.js"
+You should see the rimraf folder in node_modules in the builder stage (not in the final runtime), and your app should start without errors.
+
+Why this works
+
+Committing rimraf to devDependencies makes it available for any npm install that includes devDeps.
+
+A multi-stage build lets you isolate dev tools (like rimraf) in the build image but strip them out of the runtime image.
+
+That way, npm run clean (and npm run build) always succeed inside Docker, and your production container stays as small as possible.
+
+
+
+
+
+
+

@@ -14,8 +14,6 @@ services:
       - "com.project.description=React app for conference registration"
     depends_on:
       - conference-backend
-    volumes:
-      - ./frontend:/app
 
   conference-backend:
     build:
@@ -31,6 +29,8 @@ services:
       - "com.project.description=Express API for conference registration"
     depends_on:
       - conference-db
+    volumes:
+      - ./backend:/app
 
   conference-db:
     image: mariadb:10.11

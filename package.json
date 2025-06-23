@@ -1,8 +1,10 @@
 {
     "devDependencies": {
+        "@types/node": "^24.0.3",
         "dotenv-cli": "^8.0.0"
     },
     "dependencies": {
+        "@vitejs/plugin-react": "^4.5.2",
         "mysql2": "^3.14.1"
     }
 }

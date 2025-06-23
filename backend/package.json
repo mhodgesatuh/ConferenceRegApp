@@ -1,11 +1,12 @@
 {
     "name": "conference-backend",
     "version": "0.1.0",
-    "main": "index.ts",
+    "main": "dist/src/index.js",
     "scripts": {
-        "start": "node dist/index.js",
-        "build": "tsc",
+        "clean": "rimraf dist",
+        "build": "npm run clean && tsc",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "start": "node dist/src/index.js",
         "db:push": "drizzle-kit push",
         "db:generate": "drizzle-kit generate"
     },
@@ -15,13 +16,15 @@
         "dotenv": "^16.3.1",
         "drizzle-orm": "^0.44.1",
         "express": "^4.18.2",
-        "mysql2": "^3.0.0"
+        "mysql2": "^3.0.0",
+        "vitest": "^3.2.4"
     },
     "devDependencies": {
         "@tanstack/react-query-devtools": "^5.79.0",
         "@types/cors": "^2.8.18",
         "@types/express": "^5.0.2",
         "drizzle-kit": "^0.31.1",
+        "rimraf": "^6.0.1",
         "ts-node": "^10.9.2",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.0.0"
