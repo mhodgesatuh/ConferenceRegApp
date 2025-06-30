@@ -13,9 +13,9 @@ SET_ENV := set -a && . ./.env && set +a &&
 init: ## Initialize dev environment: install deps, reset DB, and apply schema
 	@echo "Docker Desktop must be running before proceeding."
 	@echo "WARNING: this will wipe out all existing data."
-	ifndef CI
+ifndef CI
 	  @read -p "Press 'return' when ready or [Ctrl+C] to quit: "
-	endif
+endif
 
 	$(MAKE) reset-db
 	@echo "Wait for database: "
@@ -64,8 +64,10 @@ commit-migration: ## Stage & commit new Drizzle migration files
 	@git add $(BACKEND_DIR)/drizzle/migrations
 	@git commit -m "chore: add new Drizzle migration files"
 
-studio: ## Launch Drizzle Studio (visual schema browser, optional)
-	docker compose run --rm drizzle-runner studio
+studio: ## Launch Drizzle Studio
+	@echo "In FireFox: https://local.drizzle.studio:3337"
+	docker compose run --rm --name drizzle-studio --service-ports \
+	  drizzle-runner npx drizzle-kit studio --host 0.0.0.0 --port 3337
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 

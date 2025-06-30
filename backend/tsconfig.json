@@ -1,13 +1,21 @@
 {
-    "extends": "../tsconfig.base.json",
     "compilerOptions": {
+        "strict": true,
+        "noEmit": false,
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "incremental": true,
+        "baseUrl": ".",
+        "paths": { "@/*": ["src/*"] },
+
         "lib": ["ESNext"],
-        "module": "ESNext",
+        "module": "CommonJS",
         "moduleResolution": "node",
         "target": "ES2020",
-        "rootDir": ".",
-        "outDir": "./dist"
+        "rootDir": "src",
+        "outDir": "dist"
     },
-    "include": ["src/**/*", "drizzle.config.ts"],
+    "include": ["src/**/*"],
     "exclude": ["node_modules", "dist", "src/tests"]
 }

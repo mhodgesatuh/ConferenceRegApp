@@ -1,12 +1,12 @@
 {
     "name": "conference-backend",
     "version": "0.1.0",
-    "main": "dist/src/index.js",
+    "main": "dist/index.js",
     "scripts": {
         "clean": "rimraf dist",
         "build": "npm run clean && tsc",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-        "start": "node dist/src/index.js",
+        "start": "node dist/index.js",
         "db:push": "drizzle-kit push",
         "db:generate": "drizzle-kit generate"
     },
@@ -28,6 +28,5 @@
         "ts-node": "^10.9.2",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.0.0"
-    },
-    "type": "module"
+    }
 }

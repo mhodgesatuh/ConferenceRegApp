@@ -7,6 +7,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.frontend
     image: conference-reg-app:dev
+    container_name: conference_ui
+    restart: unless-stopped
     ports:
       - "8080:3000"
     labels:
@@ -17,9 +19,11 @@ services:
 
   conference-backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile.backend
     image: conference-reg-ws:dev
+    container_name: conference_ws
+    restart: unless-stopped
     ports:
       - "5001:5000"
     env_file:
@@ -29,11 +33,11 @@ services:
       - "com.project.description=Express API for conference registration"
     depends_on:
       - conference-db
-    volumes:
-      - ./backend:/app
 
   conference-db:
     image: mariadb:10.11
+    container_name: conference_db
+    restart: unless-stopped
     ports:
       - "3306:3306"
     env_file:
@@ -45,21 +49,33 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
-    restart: unless-stopped
     labels:
       - "com.project.name=conference-db"
       - "com.project.description=MariaDB instance for attendee data"
 
   drizzle-runner:
+    profiles: ["studio"]
+    container_name: drizzle_studio
     build:
-      context: .
-      dockerfile: backend/Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    working_dir: /app/backend
+    volumes:
+      - ./:/app:delegated
+      - drizzle_runner_node_modules:/app/backend/node_modules
+      - drizzle_runner_migrations:/app/backend/drizzle/migrations
+      - ./certs/local.drizzle.studio.pem:/app/backend/local.drizzle.studio.pem:ro
+      - ./certs/local.drizzle.studio-key.pem:/app/backend/local.drizzle.studio-key.pem:ro
     env_file:
       - .env
-    working_dir: /app/backend
-    entrypoint: node
+    ports:
+      - "3337:3337"   # UI
+      - "4983:4983"   # RPC
+    entrypoint: ["sh","-c"]
     depends_on:
       - conference-db
 
 volumes:
   mariadb_data:
+  drizzle_runner_node_modules:
+  drizzle_runner_migrations:

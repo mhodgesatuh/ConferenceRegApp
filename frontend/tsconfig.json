@@ -17,7 +17,8 @@
         "isolatedModules": true,
         "allowJs": false,
         "allowSyntheticDefaultImports": true,
-        "outDir": "./dist",
+        "rootDir": "src",
+        "outDir": "dist",
         "baseUrl": "."
     }
 }

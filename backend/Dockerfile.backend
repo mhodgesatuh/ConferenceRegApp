@@ -2,20 +2,14 @@
 
 FROM node:20-alpine
 
-WORKDIR /app
-
-COPY backend/package*.json /app/backend/
-COPY tsconfig.base.json /app/tsconfig.base.json
-
-# Install dependencies in the backend directory
 WORKDIR /app/backend
+COPY package*.json ./
+
 RUN npm install
 
-COPY backend/ /app/backend/
+COPY . .
 
-# Compile TypeScript
 RUN npm run build
 
 EXPOSE 5000
-
 CMD ["npm", "start"]
