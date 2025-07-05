@@ -1,9 +1,9 @@
 // frontend/src/App.tsx
-import React from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {queryClient} from './lib/queryClient';
 import RegistrationForm from './features/registration/RegistrationForm';
-// import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Optional, for dev use
+// Enable for development only.
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 const App = () => {
     return (
@@ -12,7 +12,9 @@ const App = () => {
                 <h1>Conference Registration</h1>
                 <RegistrationForm fields={[]}/>
             </div>
-            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+
+            {/* Render the Devtools */}
+            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </QueryClientProvider>
     );
 };

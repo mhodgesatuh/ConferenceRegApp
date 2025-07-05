@@ -6,8 +6,7 @@
 DRIZZLE := npx drizzle-kit
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
-SET_ENV := set -a && . ./.env && set +a &&
-
+SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
 
 ##–––––– Quick Start –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
@@ -53,14 +52,12 @@ reset-db: ## Completely remove and recreate the database from .env
 
 schema: ## Incrementally apply only new migrations to the database
 	@echo "Applying **pending** migrations to the database..."
-	docker compose build --no-cache drizzle-runner
-	docker compose run --rm drizzle-runner node_modules/.bin/drizzle-kit migrate
+	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) migrate
 	@echo "When you want to browse/migrate via Drizzle Studio, run:"
 	@echo " make studio"
 
 generate: ## Diff schema locally → write SQL + journal (then run `make commit-migrations`)
-	$(SET_ENV) \
-	cd $(BACKEND_DIR) && $(DRIZZLE) generate && \
+	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) generate && \
   	echo "Migration files written to backend/drizzle/migrations/"
 
 commit-migration: ## Stage & commit new Drizzle migration files
@@ -80,7 +77,8 @@ studio-check: ## Verify certs & hosts entry for Drizzle Studio
 	  echo "   127.0.0.1 local.drizzle.studio"; \
 	  exit 1; \
 	fi
-	@echo "✅ All Drizzle Studio prerequisites are in place."
+	@echo " - All Drizzle Studio prerequisites are in place."
+
 studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert)
 	@echo "Generating mkcert certificates for local.drizzle.studio…"
 	@if ! command -v mkcert >/dev/null 2>&1; then \
@@ -93,12 +91,7 @@ studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert
 
 studio: ## Launch Drizzle Studio
 	@echo "Starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=local.drizzle.studio"
-	@set -a \
-	  && . ./.env \
-	  && set +a \
-	  && cd $(BACKEND_DIR) \
-	  && npm ci \
-	  && npm run studio
+	$(SET_BACKEND_ENV) npm ci && npm run studio
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
@@ -165,7 +158,8 @@ help: ## Show available targets grouped by section
 # Prevent conflicts with any files named the same as your targets.
 # -----------------------------------------------------------------------------
 
-.PHONY: init init-backend reset-db drop-tables schema generate studio \
-        commit-migrations build up down restart tail-logs clean \
-        frontend-dev frontend-install frontend-build frontend-clean \
-        deploy update-schema help
+.PHONY: build clean commit-migration deploy down drop-tables generate \
+        frontend-build frontend-clean frontend-dev frontend-install \
+        help init init-backend restart reset-db schema \
+        studio studio-cert studio-check tail-logs update-schema up
+
