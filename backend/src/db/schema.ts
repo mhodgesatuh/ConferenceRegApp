@@ -30,13 +30,14 @@ export const people = mysqlTable('people', {
     nameSuffix: varchar('name_suffix', { length: 128 }),
 
     // ABAC
-    cancelledAttendance: boolean('cancelled_attendance'),
-    isAttendee: boolean('is_attendee'),
-    isMonitor: boolean('is_monitor'),
-    isOrganizer: boolean('is_organizer'),
-    isPresenter: boolean('is_presenter'),
-    isProxy: boolean('is_proxy'),
-    hasProxy: boolean('has_proxy'),
+    cancelledAttendance: boolean('cancelled_attendance').default(false),
+    isAttendee: boolean('is_attendee').default(false),
+    isMonitor: boolean('is_monitor').default(false),
+    isOrganizer: boolean('is_organizer').default(false),
+    isPresenter: boolean('is_presenter').default(false),
+    isSponsor: boolean('is_sponsor').default(false),
+    isProxy: boolean('is_proxy').default(false),
+    hasProxy: boolean('has_proxy').default(false),
 
     // If someone registered this person
     proxyId: int('proxy_id').default(sql`NULL`),
@@ -47,6 +48,7 @@ export const people = mysqlTable('people', {
     isMonitorIdx: index('idx_people_is_monitor').on(table.isMonitor),
     isOrganizerIdx: index('idx_people_is_organizer').on(table.isOrganizer),
     isPresenterIdx: index('idx_people_is_presenter').on(table.isPresenter),
+    isSponsorIdx: index('idx_people_is_sponsor').on(table.isSponsor),
     isProxyIdx: index('idx_people_is_proxy').on(table.isProxy),
     hasProxyIdx: index('idx_people_has_proxy').on(table.hasProxy),
     proxyIdIdx: index('idx_people_proxy_id').on(table.proxyId),
@@ -57,6 +59,8 @@ export const registrations = mysqlTable('registration', {
 
     id: int('id').autoincrement().primaryKey(),
     personId: int('person_id').notNull(),
+    day1Attendee: boolean('day1_attendee').default(false),
+    day2Attendee: boolean('day2_attendee').default(false),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
 
