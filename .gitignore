@@ -5,4 +5,5 @@ backend/node_modules/
 /backend/dist/
 /backend/drizzle/migrations/
 /frontend/dist/
-/certs/
+*.pem
+
