@@ -5,6 +5,7 @@
     },
     "dependencies": {
         "@vitejs/plugin-react": "^4.5.2",
+        "drizzle-kit": "^0.31.4",
         "mysql2": "^3.14.1"
     }
 }

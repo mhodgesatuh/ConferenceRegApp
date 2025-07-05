@@ -6,9 +6,12 @@
         "clean": "rimraf dist",
         "build": "npm run clean && tsc",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "test": "vitest",
+        "typecheck": "tsc --noEmit",
         "start": "node dist/index.js",
         "db:push": "drizzle-kit push",
-        "db:generate": "drizzle-kit generate"
+        "db:generate": "drizzle-kit generate",
+        "studio": "DB_HOST=127.0.0.1 drizzle-kit studio --host=local.drizzle.studio --port=3337"
     },
     "dependencies": {
         "body-parser": "^1.20.2",

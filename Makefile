@@ -8,6 +8,7 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 SET_ENV := set -a && . ./.env && set +a &&
 
+
 ##–––––– Quick Start –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 init: ## Initialize dev environment: install deps, reset DB, and apply schema
@@ -54,6 +55,8 @@ schema: ## Incrementally apply only new migrations to the database
 	@echo "Applying **pending** migrations to the database..."
 	docker compose build --no-cache drizzle-runner
 	docker compose run --rm drizzle-runner node_modules/.bin/drizzle-kit migrate
+	@echo "When you want to browse/migrate via Drizzle Studio, run:"
+	@echo " make studio"
 
 generate: ## Diff schema locally → write SQL + journal (then run `make commit-migrations`)
 	$(SET_ENV) \
@@ -64,10 +67,38 @@ commit-migration: ## Stage & commit new Drizzle migration files
 	@git add $(BACKEND_DIR)/drizzle/migrations
 	@git commit -m "chore: add new Drizzle migration files"
 
+studio-check: ## Verify certs & hosts entry for Drizzle Studio
+	@echo "🔍 Checking Drizzle Studio prerequisites…"
+	@if [ ! -f $(BACKEND_DIR)/local.drizzle.studio.pem ] || [ ! -f $(BACKEND_DIR)/local.drizzle.studio-key.pem ]; then \
+	  echo "Missing cert files in '$(BACKEND_DIR)/'."; \
+	  echo " - Run 'make studio-cert' to generate and install them."; \
+	  exit 1; \
+	fi
+	@if ! grep -q '^127\.0\.0\.1[[:space:]]*local\.drizzle\.studio' /etc/hosts; then \
+	  echo "Missing hosts entry in /etc/hosts."; \
+	  echo " - Add the following line to /etc/hosts (with sudo):"; \
+	  echo "   127.0.0.1 local.drizzle.studio"; \
+	  exit 1; \
+	fi
+	@echo "✅ All Drizzle Studio prerequisites are in place."
+studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert)
+	@echo "Generating mkcert certificates for local.drizzle.studio…"
+	@if ! command -v mkcert >/dev/null 2>&1; then \
+	  echo "Error: mkcert is not installed. Install via 'brew install mkcert nss' and run 'mkcert -install'."; \
+	  exit 1; \
+	fi
+	@mkcert local.drizzle.studio
+	@mv local.drizzle.studio*.pem $(BACKEND_DIR)/
+	@echo "Certificates created and moved to $(BACKEND_DIR)/"
+
 studio: ## Launch Drizzle Studio
-	@echo "In FireFox: https://local.drizzle.studio:3337"
-	docker compose run --rm --name drizzle-studio --service-ports \
-	  drizzle-runner npx drizzle-kit studio --host 0.0.0.0 --port 3337
+	@echo "Starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=local.drizzle.studio"
+	@set -a \
+	  && . ./.env \
+	  && set +a \
+	  && cd $(BACKEND_DIR) \
+	  && npm ci \
+	  && npm run studio
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 

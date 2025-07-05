@@ -53,29 +53,5 @@ services:
       - "com.project.name=conference-db"
       - "com.project.description=MariaDB instance for attendee data"
 
-  drizzle-runner:
-    profiles: ["studio"]
-    container_name: drizzle_studio
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.backend
-    working_dir: /app/backend
-    volumes:
-      - ./:/app:delegated
-      - drizzle_runner_node_modules:/app/backend/node_modules
-      - drizzle_runner_migrations:/app/backend/drizzle/migrations
-      - ./certs/local.drizzle.studio.pem:/app/backend/local.drizzle.studio.pem:ro
-      - ./certs/local.drizzle.studio-key.pem:/app/backend/local.drizzle.studio-key.pem:ro
-    env_file:
-      - .env
-    ports:
-      - "3337:3337"   # UI
-      - "4983:4983"   # RPC
-    entrypoint: ["sh","-c"]
-    depends_on:
-      - conference-db
-
 volumes:
   mariadb_data:
-  drizzle_runner_node_modules:
-  drizzle_runner_migrations:
