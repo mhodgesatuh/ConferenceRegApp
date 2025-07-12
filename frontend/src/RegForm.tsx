@@ -1,6 +1,6 @@
 // frontend/src/RegForm.tsx
 import React, {useEffect, useState} from 'react';
-import {RegistrationForm} from './features/registration/RegistrationForm';
+import RegistrationForm from './features/registration/RegistrationForm';
 
 const RegForm = () => {
     const [fields, setFields] = useState([]);
