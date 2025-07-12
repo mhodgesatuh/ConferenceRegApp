@@ -1,4 +1,5 @@
 # Makefile - Build, deploy, and manage Drizzle ORM for ConferenceRegApp
+#
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION
@@ -116,6 +117,10 @@ clean: ## Stop and remove all containers, volumes, and images
 
 ##–––––– Frontend Development –––––––––––––––––––––––––––––––––––––––––––––
 
+init-frontend: ## Rebuild and restart the frontend container only
+	docker compose build --no-cache conference-frontend
+	docker compose up -d conference-frontend
+
 frontend-dev: ## Run the frontend dev server (Vite)
 	cd $(FRONTEND_DIR) && npm install && npm run dev
 
@@ -160,6 +165,6 @@ help: ## Show available targets grouped by section
 
 .PHONY: build clean commit-migration deploy down drop-tables generate \
         frontend-build frontend-clean frontend-dev frontend-install \
-        help init init-backend restart reset-db schema \
+        help init init-backend init-frontend restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up
 

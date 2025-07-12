@@ -1,34 +1,31 @@
 // frontend/src/features/registration/formReducer.ts
+import { FormField } from '@/data/formData';
 
-export interface FormField {
-    name: string;
-    label: React.ReactNode;
-    type?: string;
-}
+export type FormValue = string | boolean | number;
+export type FormState = Record<string, FormValue>;
 
-export interface FormState {
-    [key: string]: string;
-}
+export const initialFormState = (fields: FormField[]): FormState =>
+    fields.reduce((acc, { name, type }) => {
+        acc[name] =
+            type === 'checkbox'
+                ? false
+                : type === 'number'
+                    ? 0
+                    : '';
+        return acc;
+    }, {} as FormState);
 
-export interface FormAction {
-    type: 'UPDATE_FIELD';
-    name: string;
-    value: string;
-}
+export type Action =
+    | { type: 'CHANGE_FIELD'; name: string; value: FormValue }
+    | { type: 'RESET'; initialState: FormState };
 
-export function formReducer(state: FormState, action: FormAction): FormState {
+export function formReducer(state: FormState, action: Action): FormState {
     switch (action.type) {
-        case 'UPDATE_FIELD':
-            return {...state, [action.name]: action.value};
+        case 'CHANGE_FIELD':
+            return { ...state, [action.name]: action.value };
+        case 'RESET':
+            return action.initialState;
         default:
             return state;
     }
-}
-
-export function initialFormState(fields: FormField[]): FormState {
-    const state: FormState = {};
-    for (const field of fields) {
-        state[field.name] = '';
-    }
-    return state;
 }
