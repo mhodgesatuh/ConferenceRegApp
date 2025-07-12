@@ -6,4 +6,6 @@ backend/node_modules/
 /backend/drizzle/migrations/
 /frontend/dist/
 *.pem
+/frontend/src/**/*.js
+/backend/src/**/*.js
 
