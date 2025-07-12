@@ -5,12 +5,18 @@
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'tel' | 'checkbox' | 'number' | 'hidden';
+    type: 'text' | 'email' | 'tel' | 'checkbox' | 'number' | 'hidden' | 'readonly' | 'section';
     required: boolean;
 }
 
 // Export a typed constant for each input field.
 export const formData: FormField[] = [
+    {
+        name: '',
+        label: 'Contact Information',
+        type: 'section',
+        required: false,
+    },
     {
         name: 'email',
         label: 'Email Address',
@@ -61,43 +67,43 @@ export const formData: FormField[] = [
     },
     {
         name: 'isAttendee',
-        label: 'Attendee?',
+        label: 'Is attendee',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'isMonitor',
-        label: 'Monitor?',
+        label: 'Is monitor',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'isOrganizer',
-        label: 'Organizer?',
+        label: 'Is organizer',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'isPresenter',
-        label: 'Presenter?',
+        label: 'Is presenter',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'isSponsor',
-        label: 'Sponsor?',
+        label: 'Is sponsor',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'isProxy',
-        label: 'Proxy?',
+        label: 'Is a proxy registering others',
         type: 'checkbox',
         required: false,
     },
     {
         name: 'hasProxy',
-        label: 'Has Proxy?',
+        label: 'Was registered by a proxy',
         type: 'checkbox',
         required: false,
     },
@@ -110,7 +116,7 @@ export const formData: FormField[] = [
     {
         name: 'personId',
         label: 'Person ID',
-        type: 'hidden',
+        type: 'readonly',
         required: true,
     },
     {
