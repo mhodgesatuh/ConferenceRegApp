@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Section } from '@/components/ui/section';
 
 type RegistrationFormProps = {
     fields: FormField[];
@@ -37,33 +38,40 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {fields.map((field) => (
-                <div key={field.name} className="flex flex-col gap-1">
-                    <Label htmlFor={field.name}>{field.label}</Label>
-                    {field.type === 'checkbox' ? (
-                        <Checkbox
-                            id={field.name}
-                            name={field.name}
-                            checked={state[field.name] as boolean}
-                            onChange={handleChange}
-                            required={field.required}
-                        />
-                    ) : (
-                        <Input
-                            id={field.name}
-                            name={field.name}
-                            type={field.type}
-                            value={state[field.name] as string | number}
-                            onChange={handleChange}
-                            required={field.required}
-                        />
-                    )}
-                </div>
-            ))}
+            {fields.map((field, index) => {
+                if (field.type === 'section') {
+                    return (
+                        <Section key={index}>{field.label}</Section>
+                    );
+                }
+                return (
+                    <div key={field.name} className="flex flex-col gap-1">
+                        <Label htmlFor={field.name}>{field.label}</Label>
+                        {field.type === 'checkbox' ? (
+                            <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={state[field.name] as boolean}
+                                onChange={handleChange}
+                                required={field.required}
+                            />
+                        ) : (
+                            <Input
+                                id={field.name}
+                                name={field.name}
+                                type={field.type}
+                                value={state[field.name] as string | number}
+                                onChange={handleChange}
+                                required={field.required}
+                            />
+                        )}
+                    </div>
+                );
+            })}
 
             <Button type="submit">Register</Button>
         </form>
     );
-};
+}; 
 
 export default RegistrationForm;
