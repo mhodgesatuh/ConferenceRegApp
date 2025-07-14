@@ -4,9 +4,29 @@ import { registrations } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
 interface CreateRegistrationBody {
-    personId: number;
+    id?: number;
+    email: string;
+    loginPin: string;
+    phone1?: string;
+    phone2?: string;
+    firstName?: string;
+    lastName: string;
+    namePrefix?: string;
+    nameSuffix?: string;
+    hasProxy?: boolean;
+    proxyName?: string;
+    proxyPhone?: string;
+    proxyEmail: string;
+    cancelledAttendance?: boolean;
+    day1Attendee?: boolean;
+    day2Attendee?: boolean;
     question1: string;
     question2: string;
+    isAttendee?: boolean;
+    isMonitor?: boolean;
+    isOrganizer?: boolean;
+    isPresenter?: boolean;
+    isSponsor?: boolean;
 }
 
 const router = Router();
@@ -16,16 +36,62 @@ router.post<{}, any, CreateRegistrationBody>(
     '/',
     async (req, res): Promise<void> => {
         try {
-            const { personId, question1, question2 } = req.body;
+            const {
+                email,
+                loginPin,
+                phone1,
+                phone2,
+                firstName,
+                lastName,
+                namePrefix,
+                nameSuffix,
+                hasProxy,
+                proxyName,
+                proxyPhone,
+                proxyEmail,
+                cancelledAttendance,
+                day1Attendee,
+                day2Attendee,
+                question1,
+                question2,
+                isAttendee,
+                isMonitor,
+                isOrganizer,
+                isPresenter,
+                isSponsor,
+            } = req.body;
 
-            if (!personId || !question1 || !question2) {
+            if (!email || !loginPin || !lastName || !proxyEmail || !question1 || !question2) {
                 res.status(400).json({ error: 'Missing required data' });
                 return;
             }
 
             const [id] = await db
                 .insert(registrations)
-                .values({ personId, question1, question2 })
+                .values({
+                    email,
+                    loginPin,
+                    phone1,
+                    phone2,
+                    firstName,
+                    lastName,
+                    namePrefix,
+                    nameSuffix,
+                    hasProxy,
+                    proxyName,
+                    proxyPhone,
+                    proxyEmail,
+                    cancelledAttendance,
+                    day1Attendee,
+                    day2Attendee,
+                    question1,
+                    question2,
+                    isAttendee,
+                    isMonitor,
+                    isOrganizer,
+                    isPresenter,
+                    isSponsor,
+                })
                 .$returningId();
 
             res.status(201).json({ id });
