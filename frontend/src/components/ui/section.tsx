@@ -7,7 +7,7 @@ export const Section = React.forwardRef<HTMLDivElement, SectionProps>(
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('text-lg font-semibold mt-4', className)}
+      className={cn('mt-6 mb-2 text-lg font-semibold', className)}
       {...props}
     >
       {children}
