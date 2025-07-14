@@ -33,6 +33,12 @@ init-backend: ## Rebuild and restart the backend container only
 
 ##–––––– Drizzle ORM: Schema Management –––––––––––––––––––––––––––––––––––––
 
+baseline: ## Snapshot current schema into a new “init” migration
+	@echo "Creating a baseline 'init' migration from your current schema…"
+	$(SET_BACKEND_ENV) npm ci && \
+	$(DRIZZLE) generate --name init && \
+	echo " → baseline migration written to backend/drizzle/migrations/"
+
 drop-tables: ## Drop all existing tables in the database
 	@echo "Dropping all tables from the database..."
 	docker compose exec conference-db \
