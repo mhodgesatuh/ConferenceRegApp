@@ -18,7 +18,6 @@ export const initialFormState = (fields: FormField[]): FormState =>
 
             // boolean flags
             case 'checkbox':
-            case 'secure-checkbox':
                 acc[name] = false;
                 break;
 
@@ -29,14 +28,12 @@ export const initialFormState = (fields: FormField[]): FormState =>
 
             // UI-only sections—no state entry
             case 'section':
-            case 'secure-section':
                 break;
 
             // everything else (text, email, phone, hidden, pin)
             case 'text':
             case 'email':
             case 'phone':
-            case 'hidden':
             case 'pin':
             default:
                 acc[name] = '';

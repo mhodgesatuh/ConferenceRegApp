@@ -66,17 +66,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields}) => {
                     </div>
                 );
 
-            case 'hidden':
-                return (
-                    <input
-                        key={field.name}
-                        type="hidden"
-                        id={field.name}
-                        name={field.name}
-                        value={state[field.name] as string}
-                    />
-                );
-
             // add more specialized cases here (email, tel, etc.)
 
             default:
