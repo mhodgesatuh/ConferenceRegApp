@@ -59,6 +59,18 @@ cd ../frontend
 npm install
 ```
 
+### 🛠 One-Time Setup for shadcn/ui
+
+If this is your first time working on the UI:
+
+```bash
+npx shadcn@latest
+npx shadcn@latest init
+npx shadcn@latest add checkbox
+npx shadcn@latest add input
+npx shadcn@latest add button
+```
+
 Return to project root:
 
 ```bash
