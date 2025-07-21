@@ -10,10 +10,16 @@ import { Checkbox } from '@/components/ui/checkbox-wrapper';
 import { Section } from '@/components/ui/section';
 import { generatePin } from '@/features/registration/utils';
 
-type RegistrationFormProps = { fields: FormField[] };
+type RegistrationFormProps = {
+    fields: FormField[];
+    initialData?: Record<string, any>;
+};
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields }) => {
-    const [state, dispatch] = useReducer(formReducer, initialFormState(fields));
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData }) => {
+    const [state, dispatch] = useReducer(
+        formReducer,
+        { ...initialFormState(fields), ...(initialData || {}) }
+    );
 
     // On first render, if the pin is missing or empty, generate one.
     useEffect(() => {

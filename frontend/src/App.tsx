@@ -1,25 +1,32 @@
 // frontend/src/App.tsx
 //
 
-import {QueryClientProvider} from '@tanstack/react-query';
-import {queryClient} from './lib/queryClient';
 import RegistrationForm from './features/registration/RegistrationForm';
-import {registrationFormData} from '@/data/registrationFormData';
-
-// Enable for development only.
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import HomePage from './features/home/HomePage';
+import { registrationFormData } from '@/data/registrationFormData';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 
 const App = () => {
+    const [registration, setRegistration] = useState<Record<string, any> | undefined>(undefined);
+
+    const RegistrationRoute = () => {
+        const location = useLocation();
+        const data = (location.state as any)?.registration || registration;
+        return <RegistrationForm fields={registrationFormData} initialData={data} />;
+    };
+
     return (
-        <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
             <div className="app">
                 <h1>Conference Registration</h1>
-                <RegistrationForm fields={registrationFormData}/>
+                <Routes>
+                    <Route path="/" element={<Navigate to="/home" replace />} />
+                    <Route path="/home" element={<HomePage onSuccess={setRegistration} />} />
+                    <Route path="/register" element={<RegistrationRoute />} />
+                </Routes>
             </div>
-
-            {/* Render the Devtools */}
-            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-        </QueryClientProvider>
+        </BrowserRouter>
     );
 };
 
