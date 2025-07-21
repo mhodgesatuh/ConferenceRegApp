@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/client';
 import { registrations } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 interface CreateRegistrationBody {
     id?: number;
@@ -98,6 +98,41 @@ router.post<{}, any, CreateRegistrationBody>(
         } catch (err) {
             console.error('Error saving registration:', err);
             res.status(500).json({ error: 'Failed to save registration' });
+        }
+    }
+);
+
+/* GET /login?email=addr&pin=code */
+router.get(
+    '/login',
+    async (req, res): Promise<void> => {
+        const { email, pin } = req.query as { email?: string; pin?: string };
+
+        if (!email || !pin) {
+            res.status(400).json({ error: 'Missing credentials' });
+            return;
+        }
+
+        try {
+            const [registration] = await db
+                .select()
+                .from(registrations)
+                .where(
+                    and(
+                        eq(registrations.email, email),
+                        eq(registrations.loginPin, pin)
+                    )
+                );
+
+            if (!registration) {
+                res.status(404).json({ error: 'Registration not found' });
+                return;
+            }
+
+            res.json({ registration });
+        } catch (err) {
+            console.error('Error fetching registration:', err);
+            res.status(500).json({ error: 'Failed to fetch registration' });
         }
     }
 );
