@@ -88,7 +88,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Submit form data
+        try {
+            const res = await fetch('/api/registrations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(state),
+            });
+
+            if (res.ok) {
+                alert('Registration saved');
+                dispatch({ type: 'RESET', initialState: initialFormState(fields) });
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Failed to save registration');
+            }
+        } catch (err) {
+            console.error('Registration submission failed', err);
+            alert('Failed to submit registration');
+        }
     };
 
     return (
