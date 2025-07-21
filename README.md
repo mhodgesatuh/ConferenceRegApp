@@ -246,6 +246,43 @@ A multi-stage build lets you isolate dev tools (like rimraf) in the build image 
 
 That way, npm run clean (and npm run build) always succeed inside Docker, and your production container stays as small as possible.
 
+---
+
+## Appendix: Bootstrapping Commands
+
+These are the commands that were run when the project was first created. They
+are kept here for reference in case you need to recreate the setup from
+scratch. You do **not** need to run them when simply cloning the repository.
+
+### Root project
+
+```bash
+npm init -y
+```
+
+### Backend scaffold
+
+```bash
+mkdir backend
+cd backend
+npm init -y
+npm install express mysql2 cors body-parser dotenv drizzle-orm
+npm install -D typescript ts-node ts-node-dev rimraf drizzle-kit vitest \
+  @types/node @types/express
+npx tsc --init
+```
+
+### Frontend scaffold
+
+```bash
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm install
+npm install -D tailwindcss postcss autoprefixer vite-tsconfig-paths
+npx tailwindcss init -p
+```
+
+
 
 
 
