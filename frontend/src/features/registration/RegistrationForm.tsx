@@ -1,8 +1,9 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useReducer } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { FormField } from '@/data/registrationFormData';
 import { formReducer, initialFormState } from './formReducer';
+import { generatePin } from '@/features/registration/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';

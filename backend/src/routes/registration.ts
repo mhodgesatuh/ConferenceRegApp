@@ -29,6 +29,7 @@ interface CreateRegistrationBody {
     isSponsor?: boolean;
 }
 
+// Generate a pin for users to use to return to their registration info.
 function generatePin(length: number): string {
     let pin = '';
     for (let i = 0; i < length; i++) {
