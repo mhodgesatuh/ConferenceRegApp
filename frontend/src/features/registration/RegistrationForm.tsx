@@ -1,6 +1,6 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useReducer } from 'react';
 import { FormField } from '@/data/registrationFormData';
 import { formReducer, initialFormState } from './formReducer';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox-wrapper';
 import { Section } from '@/components/ui/section';
-import { generatePin } from '@/features/registration/utils';
 
 type RegistrationFormProps = {
     fields: FormField[];
@@ -94,14 +93,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const { loginPin: _pin, ...payload } = state;
             const res = await fetch('/api/registrations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(state),
+                body: JSON.stringify(payload),
             });
 
             if (res.ok) {
                 await res.json().catch(() => ({}));
+
                 alert('Registration saved');
             } else {
                 const data = await res.json().catch(() => ({}));

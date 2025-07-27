@@ -1,12 +1,12 @@
-import { Router } from 'express';
-import { db } from '../db/client';
-import { registrations, credentials } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import {Router} from 'express';
+import {db} from '@/db/client';
+import {credentials, registrations} from '@/db/schema';
+
+import {and, eq} from 'drizzle-orm';
 
 interface CreateRegistrationBody {
     id?: number;
     email: string;
-    loginPin: string;
     phone1?: string;
     phone2?: string;
     firstName?: string;
@@ -29,6 +29,14 @@ interface CreateRegistrationBody {
     isSponsor?: boolean;
 }
 
+function generatePin(length: number): string {
+    let pin = '';
+    for (let i = 0; i < length; i++) {
+        pin += Math.floor(Math.random() * 10).toString();
+    }
+    return pin;
+}
+
 const router = Router();
 
 /* POST / */
@@ -38,7 +46,6 @@ router.post<{}, any, CreateRegistrationBody>(
         try {
             const {
                 email,
-                loginPin,
                 phone1,
                 phone2,
                 firstName,
@@ -61,12 +68,14 @@ router.post<{}, any, CreateRegistrationBody>(
                 isSponsor,
             } = req.body;
 
-            if (!email || !loginPin || !lastName || !proxyEmail || !question1 || !question2) {
-                res.status(400).json({ error: 'Missing required data' });
+            if (!email || !lastName || !proxyEmail || !question1 || !question2) {
+                res.status(400).json({error: 'Missing required information'});
                 return;
             }
 
-            const [id] = await db
+            const loginPin = generatePin(8);
+
+            const [{id}] = await db
                 .insert(registrations)
                 .values({
                     email,
@@ -98,10 +107,10 @@ router.post<{}, any, CreateRegistrationBody>(
                 loginPin,
             });
 
-            res.status(201).json({ id });
+            res.status(201).json({id, loginPin});
         } catch (err) {
             console.error('Error saving registration:', err);
-            res.status(500).json({ error: 'Failed to save registration' });
+            res.status(500).json({error: 'Failed to save registration'});
         }
     }
 );
@@ -110,10 +119,10 @@ router.post<{}, any, CreateRegistrationBody>(
 router.get(
     '/login',
     async (req, res): Promise<void> => {
-        const { email, pin } = req.query as { email?: string; pin?: string };
+        const {email, pin} = req.query as { email?: string; pin?: string };
 
         if (!email || !pin) {
-            res.status(400).json({ error: 'Missing credentials' });
+            res.status(400).json({error: 'Missing credentials'});
             return;
         }
 
@@ -141,14 +150,14 @@ router.get(
                     : undefined;
 
             if (!registration) {
-                res.status(404).json({ error: 'Registration not found' });
+                res.status(404).json({error: 'Registration not found'});
                 return;
             }
 
-            res.json({ registration });
+            res.json({registration});
         } catch (err) {
             console.error('Error fetching registration:', err);
-            res.status(500).json({ error: 'Failed to fetch registration' });
+            res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
 );
@@ -159,7 +168,7 @@ router.get<{ id: string }, any>(
     async (req, res): Promise<void> => {
         const id = Number(req.params.id);
         if (Number.isNaN(id)) {
-            res.status(400).json({ error: 'Invalid ID' });
+            res.status(400).json({error: 'Invalid ID'});
             return;
         }
 
@@ -179,17 +188,18 @@ router.get<{ id: string }, any>(
                           ...record.registrations,
                           loginPin: record.credentials.loginPin,
                       }
+
                     : undefined;
 
             if (!registration) {
-                res.status(404).json({ error: 'Registration not found' });
+                res.status(404).json({error: 'Registration not found'});
                 return;
             }
 
-            res.json({ registration });
+            res.json({registration});
         } catch (err) {
             console.error('Error fetching registration:', err);
-            res.status(500).json({ error: 'Failed to fetch registration' });
+            res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
 );
