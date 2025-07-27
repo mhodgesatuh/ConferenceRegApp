@@ -1,7 +1,8 @@
-import { Router } from 'express';
-import { db } from '../db/client';
-import { registrations, credentials } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import {Router} from 'express';
+import {db} from '@/db/client';
+import {credentials, registrations} from '@/db/schema';
+
+import {and, eq} from 'drizzle-orm';
 
 interface CreateRegistrationBody {
     id?: number;
@@ -68,13 +69,13 @@ router.post<{}, any, CreateRegistrationBody>(
             } = req.body;
 
             if (!email || !lastName || !proxyEmail || !question1 || !question2) {
-                res.status(400).json({ error: 'Missing required data' });
+                res.status(400).json({error: 'Missing required information'});
                 return;
             }
 
             const loginPin = generatePin(8);
 
-            const [id] = await db
+            const [{id}] = await db
                 .insert(registrations)
                 .values({
                     email,
@@ -106,10 +107,10 @@ router.post<{}, any, CreateRegistrationBody>(
                 loginPin,
             });
 
-            res.status(201).json({ id, loginPin });
+            res.status(201).json({id, loginPin});
         } catch (err) {
             console.error('Error saving registration:', err);
-            res.status(500).json({ error: 'Failed to save registration' });
+            res.status(500).json({error: 'Failed to save registration'});
         }
     }
 );
@@ -118,10 +119,10 @@ router.post<{}, any, CreateRegistrationBody>(
 router.get(
     '/login',
     async (req, res): Promise<void> => {
-        const { email, pin } = req.query as { email?: string; pin?: string };
+        const {email, pin} = req.query as { email?: string; pin?: string };
 
         if (!email || !pin) {
-            res.status(400).json({ error: 'Missing credentials' });
+            res.status(400).json({error: 'Missing credentials'});
             return;
         }
 
@@ -143,20 +144,20 @@ router.get(
             const registration =
                 record && record.registrations
                     ? {
-                          ...record.registrations,
-                          loginPin: record.credentials.loginPin,
-                      }
+                        ...record.registrations,
+                        loginPin: record.credentials.loginPin,
+                    }
                     : undefined;
 
             if (!registration) {
-                res.status(404).json({ error: 'Registration not found' });
+                res.status(404).json({error: 'Registration not found'});
                 return;
             }
 
-            res.json({ registration });
+            res.json({registration});
         } catch (err) {
             console.error('Error fetching registration:', err);
-            res.status(500).json({ error: 'Failed to fetch registration' });
+            res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
 );
@@ -167,7 +168,7 @@ router.get<{ id: string }, any>(
     async (req, res): Promise<void> => {
         const id = Number(req.params.id);
         if (Number.isNaN(id)) {
-            res.status(400).json({ error: 'Invalid ID' });
+            res.status(400).json({error: 'Invalid ID'});
             return;
         }
 
@@ -184,20 +185,20 @@ router.get<{ id: string }, any>(
             const registration =
                 record && record.registrations
                     ? {
-                          ...record.registrations,
-                          loginPin: record.credentials.loginPin,
-                      }
+                        ...record.registrations,
+                        loginPin: record.credentials.loginPin,
+                    }
                     : undefined;
 
             if (!registration) {
-                res.status(404).json({ error: 'Registration not found' });
+                res.status(404).json({error: 'Registration not found'});
                 return;
             }
 
-            res.json({ registration });
+            res.json({registration});
         } catch (err) {
             console.error('Error fetching registration:', err);
-            res.status(500).json({ error: 'Failed to fetch registration' });
+            res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
 );
