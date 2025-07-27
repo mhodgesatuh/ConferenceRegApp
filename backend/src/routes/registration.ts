@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/client';
-import { registrations } from '../db/schema';
+import { registrations, credentials } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 interface CreateRegistrationBody {
@@ -70,7 +70,6 @@ router.post<{}, any, CreateRegistrationBody>(
                 .insert(registrations)
                 .values({
                     email,
-                    loginPin,
                     phone1,
                     phone2,
                     firstName,
@@ -94,6 +93,11 @@ router.post<{}, any, CreateRegistrationBody>(
                 })
                 .$returningId();
 
+            await db.insert(credentials).values({
+                registrationId: id,
+                loginPin,
+            });
+
             res.status(201).json({ id });
         } catch (err) {
             console.error('Error saving registration:', err);
@@ -114,15 +118,27 @@ router.get(
         }
 
         try {
-            const [registration] = await db
+            const [record] = await db
                 .select()
                 .from(registrations)
+                .innerJoin(
+                    credentials,
+                    eq(credentials.registrationId, registrations.id)
+                )
                 .where(
                     and(
                         eq(registrations.email, email),
-                        eq(registrations.loginPin, pin)
+                        eq(credentials.loginPin, pin)
                     )
                 );
+
+            const registration =
+                record && record.registrations
+                    ? {
+                          ...record.registrations,
+                          loginPin: record.credentials.loginPin,
+                      }
+                    : undefined;
 
             if (!registration) {
                 res.status(404).json({ error: 'Registration not found' });
@@ -148,10 +164,22 @@ router.get<{ id: string }, any>(
         }
 
         try {
-            const [registration] = await db
+            const [record] = await db
                 .select()
                 .from(registrations)
+                .innerJoin(
+                    credentials,
+                    eq(credentials.registrationId, registrations.id)
+                )
                 .where(eq(registrations.id, id));
+
+            const registration =
+                record && record.registrations
+                    ? {
+                          ...record.registrations,
+                          loginPin: record.credentials.loginPin,
+                      }
+                    : undefined;
 
             if (!registration) {
                 res.status(404).json({ error: 'Registration not found' });

@@ -76,9 +76,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                         <Input
                             id={field.name}
                             name={field.name}
-                            type={field.type}
+                            type={field.type === 'pin' ? 'text' : field.type}
                             value={state[field.name] as string | number}
                             onChange={handleChange}
+                            readOnly={field.type === 'pin'}
                             required={field.required ?? false}
                         />
                     </div>
