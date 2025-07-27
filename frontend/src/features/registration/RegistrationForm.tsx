@@ -21,13 +21,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         { ...initialFormState(fields), ...(initialData || {}) }
     );
 
-    // On first render, if the pin is missing or empty, generate one.
+    // Generate a login pin on first render if missing
     useEffect(() => {
         if (typeof state.loginPin === 'string' && state.loginPin === '') {
-            const pin = generatePin(8);
-            dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: pin });
+            dispatch({
+                type: 'CHANGE_FIELD',
+                name: 'loginPin',
+                value: generatePin(8),
+            });
         }
     }, [state.loginPin]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
@@ -76,9 +80,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                         <Input
                             id={field.name}
                             name={field.name}
-                            type={field.type}
+                            type={field.type === 'pin' ? 'text' : field.type}
                             value={state[field.name] as string | number}
                             onChange={handleChange}
+                            readOnly={field.type === 'pin'}
                             required={field.required ?? false}
                         />
                     </div>
@@ -96,8 +101,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
             });
 
             if (res.ok) {
+                await res.json().catch(() => ({}));
                 alert('Registration saved');
-                dispatch({ type: 'RESET', initialState: initialFormState(fields) });
             } else {
                 const data = await res.json().catch(() => ({}));
                 alert(data.error || 'Failed to save registration');
