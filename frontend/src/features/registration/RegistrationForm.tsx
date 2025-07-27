@@ -20,6 +20,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         { ...initialFormState(fields), ...(initialData || {}) }
     );
 
+    // Generate a login pin on first render if missing
+    useEffect(() => {
+        if (typeof state.loginPin === 'string' && state.loginPin === '') {
+            dispatch({
+                type: 'CHANGE_FIELD',
+                name: 'loginPin',
+                value: generatePin(8),
+            });
+        }
+    }, [state.loginPin]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
@@ -90,12 +101,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
             });
 
             if (res.ok) {
-                const data = await res.json();
-                dispatch({
-                    type: 'CHANGE_FIELD',
-                    name: 'loginPin',
-                    value: data.loginPin,
-                });
+                await res.json().catch(() => ({}));
+
                 alert('Registration saved');
             } else {
                 const data = await res.json().catch(() => ({}));
