@@ -6,7 +6,6 @@ import { eq, and } from 'drizzle-orm';
 interface CreateRegistrationBody {
     id?: number;
     email: string;
-    loginPin: string;
     phone1?: string;
     phone2?: string;
     firstName?: string;
@@ -29,6 +28,14 @@ interface CreateRegistrationBody {
     isSponsor?: boolean;
 }
 
+function generatePin(length: number): string {
+    let pin = '';
+    for (let i = 0; i < length; i++) {
+        pin += Math.floor(Math.random() * 10).toString();
+    }
+    return pin;
+}
+
 const router = Router();
 
 /* POST / */
@@ -38,7 +45,6 @@ router.post<{}, any, CreateRegistrationBody>(
         try {
             const {
                 email,
-                loginPin,
                 phone1,
                 phone2,
                 firstName,
@@ -61,10 +67,12 @@ router.post<{}, any, CreateRegistrationBody>(
                 isSponsor,
             } = req.body;
 
-            if (!email || !loginPin || !lastName || !proxyEmail || !question1 || !question2) {
+            if (!email || !lastName || !proxyEmail || !question1 || !question2) {
                 res.status(400).json({ error: 'Missing required data' });
                 return;
             }
+
+            const loginPin = generatePin(8);
 
             const [id] = await db
                 .insert(registrations)
@@ -98,7 +106,7 @@ router.post<{}, any, CreateRegistrationBody>(
                 loginPin,
             });
 
-            res.status(201).json({ id });
+            res.status(201).json({ id, loginPin });
         } catch (err) {
             console.error('Error saving registration:', err);
             res.status(500).json({ error: 'Failed to save registration' });

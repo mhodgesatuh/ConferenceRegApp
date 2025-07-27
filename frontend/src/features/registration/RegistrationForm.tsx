@@ -1,6 +1,6 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useReducer } from 'react';
 import { FormField } from '@/data/registrationFormData';
 import { formReducer, initialFormState } from './formReducer';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox-wrapper';
 import { Section } from '@/components/ui/section';
-import { generatePin } from '@/features/registration/utils';
 
 type RegistrationFormProps = {
     fields: FormField[];
@@ -21,13 +20,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         { ...initialFormState(fields), ...(initialData || {}) }
     );
 
-    // On first render, if the pin is missing or empty, generate one.
-    useEffect(() => {
-        if (typeof state.loginPin === 'string' && state.loginPin === '') {
-            const pin = generatePin(8);
-            dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: pin });
-        }
-    }, [state.loginPin]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
@@ -90,15 +82,21 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const { loginPin: _pin, ...payload } = state;
             const res = await fetch('/api/registrations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(state),
+                body: JSON.stringify(payload),
             });
 
             if (res.ok) {
+                const data = await res.json();
+                dispatch({
+                    type: 'CHANGE_FIELD',
+                    name: 'loginPin',
+                    value: data.loginPin,
+                });
                 alert('Registration saved');
-                dispatch({ type: 'RESET', initialState: initialFormState(fields) });
             } else {
                 const data = await res.json().catch(() => ({}));
                 alert(data.error || 'Failed to save registration');
