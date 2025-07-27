@@ -1,6 +1,15 @@
 // schema.ts
 
-import {boolean, index, int, mysqlTable, timestamp, varchar,} from 'drizzle-orm/mysql-core';
+import {
+    boolean,
+    index,
+    int,
+    mysqlTable,
+    timestamp,
+    uniqueIndex,
+    varchar,
+    foreignKey,
+} from 'drizzle-orm/mysql-core';
 import {sql} from 'drizzle-orm/sql';
 
 // People attending and organizing the conference.
@@ -12,7 +21,6 @@ export const registrations = mysqlTable('registrations', {
 
     // Login information
     email: varchar('email', {length: 128}).notNull(),
-    loginPin: varchar('login_pin', {length: 8}).notNull(),
 
     // Contact information
     phone1: varchar('phone1', {length: 32}),
@@ -52,6 +60,25 @@ export const registrations = mysqlTable('registrations', {
     isPresenterIdx: index('idx_is_presenter').on(table.isPresenter),
     isSponsorIdx: index('idx_is_sponsor').on(table.isSponsor),
     hasProxyIdx: index('idx_has_proxy').on(table.hasProxy),
+}));
+
+export const credentials = mysqlTable('credentials', {
+    id: int('id').autoincrement().primaryKey(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
+
+    // Foreign key to registrations
+    registrationId: int('registration_id')
+        .notNull()
+        .references(() => registrations.id, {onDelete: 'cascade'}),
+
+    // Login information
+    loginPin: varchar('login_pin', {length: 8}).notNull(),
+
+}, (table) => ({
+    registrationIdx: index('idx_credentials_registration_id').on(table.registrationId),
+    uniqueRegistration: uniqueIndex('uq_credentials_registration_id').on(table.registrationId),
+
 }));
 
 export const conferenceInfo = mysqlTable('conference_info', {

@@ -50,6 +50,8 @@ cd ConferenceRegApp
 ```bash
 cd backend
 npm install
+npm install gel
+npm install --save-dev typescript @types/node ts-node
 ```
 
 ### Frontend (React, Vite)
@@ -61,9 +63,8 @@ npm install
 
 ### 🛠 One-Time Setup for shadcn/ui
 
-If this is your first time working on the UI:
-
 ```bash
+cd ../frontend
 npx shadcn@latest
 npx shadcn@latest init
 npx shadcn@latest add checkbox
@@ -71,17 +72,11 @@ npx shadcn@latest add input
 npx shadcn@latest add button
 ```
 
-Return to project root:
-
-```bash
-cd ..
-```
-
 ---
 
 ## 5. Install dotenv-cli
 
-We use `dotenv-cli` to load `.env` variables into `make` and CLI tools.
+Use `dotenv-cli` to load `.env` variables into `make` and CLI tools.
 
 Install it into the root project as a development dependency:
 
@@ -101,8 +96,7 @@ npm install -g dotenv-cli
 
 The Drizzle CLI is used for schema management and DB migrations.
 
-It's already listed in `backend/devDependencies`, but you can reinstall it
-explicitly:
+It's already listed in `backend/devDependencies` and can be reinstalled:
 
 ```bash
 cd backend
