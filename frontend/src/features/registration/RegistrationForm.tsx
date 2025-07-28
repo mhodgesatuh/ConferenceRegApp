@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox-wrapper';
 import { Section } from '@/components/ui/section';
+import AppLayout from '@/components/layout/AppLayout';
 
 type RegistrationFormProps = {
     fields: FormField[];
@@ -23,7 +24,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         { ...initialFormState(fields), ...(initialData || {}) }
     );
 
-    // Generate a login pin on first render if missing
     useEffect(() => {
         if (typeof state.loginPin === 'string' && state.loginPin === '') {
             dispatch({
@@ -33,7 +33,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
             });
         }
     }, [state.loginPin]);
-
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
@@ -105,7 +104,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
             if (res.ok) {
                 await res.json().catch(() => ({}));
-
                 alert('Registration saved');
             } else {
                 const data = await res.json().catch(() => ({}));
@@ -118,16 +116,28 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <Link
-                to="/home"
-                className="flex items-center gap-1 text-primary hover:underline"
-            >
-                <ArrowLeft className="h-4 w-4" /> Home
-            </Link>
-            {fields.map(renderField)}
-            <Button type="submit">Register</Button>
-        </form>
+        <AppLayout>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <header className="border-b pb-4 mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <Link
+                            to="/home"
+                            className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            Home
+                        </Link>
+                        <h1 className="text-xl sm:text-2xl font-semibold text-center sm:text-left flex-1">
+                            Conference Registration
+                        </h1>
+                    </div>
+                </header>
+
+                {fields.map(renderField)}
+
+                <Button type="submit">Register</Button>
+            </form>
+        </AppLayout>
     );
 };
 
