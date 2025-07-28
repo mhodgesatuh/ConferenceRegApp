@@ -1,6 +1,8 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
 import React, { useReducer, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { FormField } from '@/data/registrationFormData';
 import { formReducer, initialFormState } from './formReducer';
 import { generatePin } from '@/features/registration/utils';
@@ -117,6 +119,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <Link
+                to="/home"
+                className="flex items-center gap-1 text-primary hover:underline"
+            >
+                <ArrowLeft className="h-4 w-4" /> Home
+            </Link>
             {fields.map(renderField)}
             <Button type="submit">Register</Button>
         </form>
