@@ -145,9 +145,9 @@ router.get(
             const registration =
                 record && record.registrations
                     ? {
-                          ...record.registrations,
-                          loginPin: record.credentials.loginPin,
-                      }
+                        ...record.registrations,
+                        loginPin: record.credentials.loginPin,
+                    }
                     : undefined;
 
             if (!registration) {
@@ -186,9 +186,9 @@ router.get<{ id: string }, any>(
             const registration =
                 record && record.registrations
                     ? {
-                          ...record.registrations,
-                          loginPin: record.credentials.loginPin,
-                      }
+                        ...record.registrations,
+                        loginPin: record.credentials.loginPin,
+                    }
 
                     : undefined;
 

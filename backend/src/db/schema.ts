@@ -8,7 +8,6 @@ import {
     timestamp,
     uniqueIndex,
     varchar,
-    foreignKey,
 } from 'drizzle-orm/mysql-core';
 import {sql} from 'drizzle-orm/sql';
 

@@ -1,27 +1,29 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useReducer, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { FormField } from '@/data/registrationFormData';
-import { formReducer, initialFormState } from './formReducer';
-import { generatePin } from '@/features/registration/utils';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox-wrapper';
-import { Section } from '@/components/ui/section';
+import React, {useEffect, useReducer} from 'react';
+import {Link} from 'react-router-dom';
+import {ArrowLeft} from 'lucide-react';
+import {FormField} from '@/data/registrationFormData';
+import {formReducer, initialFormState} from './formReducer';
+import {generatePin} from '@/features/registration/utils';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
+import {Label} from '@/components/ui/label';
+import {Checkbox} from '@/components/ui/checkbox-wrapper';
+import {Section} from '@/components/ui/section';
 import AppLayout from '@/components/layout/AppLayout';
+
+const PAGE_TITLE = 'Conference Registration';
 
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
     const [state, dispatch] = useReducer(
         formReducer,
-        { ...initialFormState(fields), ...(initialData || {}) }
+        {...initialFormState(fields), ...(initialData || {})}
     );
 
     useEffect(() => {
@@ -35,7 +37,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     }, [state.loginPin]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, type, value, valueAsNumber } = e.target;
+        const {name, type, value, valueAsNumber} = e.target;
         let parsed: string | number;
 
         switch (type) {
@@ -46,14 +48,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                 parsed = value;
         }
 
-        dispatch({ type: 'CHANGE_FIELD', name, value: parsed });
+        dispatch({type: 'CHANGE_FIELD', name, value: parsed});
     };
 
     const handleCheckboxChange = (
         name: string,
         value: boolean | 'indeterminate' | undefined
     ) => {
-        dispatch({ type: 'CHANGE_FIELD', name, value: Boolean(value) });
+        dispatch({type: 'CHANGE_FIELD', name, value: Boolean(value)});
     };
 
     const renderField = (field: FormField) => {
@@ -95,10 +97,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { loginPin: _pin, ...payload } = state;
+            const {loginPin: _pin, ...payload} = state;
             const res = await fetch('/api/registrations', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload),
             });
 
@@ -119,19 +121,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         <AppLayout>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <header className="border-b pb-4 mb-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
                         <Link
                             to="/home"
-                            className="flex items-center gap-1 text-primary hover:underline"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
+                            className="flex items-center gap-1 text-primary hover:underline">
+                            <ArrowLeft className="h-4 w-4"/>
                             Home
                         </Link>
-                        <h1 className="text-xl sm:text-2xl font-semibold text-center sm:text-left flex-1">
-                            Conference Registration
+
+                        <h1 className="text-xl sm:text-2xl font-semibold text-center w-full">
+                            {PAGE_TITLE}
                         </h1>
                     </div>
                 </header>
+
 
                 {fields.map(renderField)}
 
