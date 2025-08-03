@@ -124,6 +124,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         checked={state[field.name] as boolean}
                         onCheckedChange={(val) => handleCheckboxChange(field.name, val)}
                         required={field.required ?? false}
+                        className={isMissing(field.name) ? 'bg-red-100' : undefined}
                     />
                 );
 
@@ -168,7 +169,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
         if (requiredMissing.length > 0) {
             markMissing(requiredMissing);
-            setMessage({text: 'Missing required information, see above.', type: 'error'});
+            const firstMissing = requiredMissing[0];
+            document.getElementById(firstMissing)?.focus();
+            setMessage({ text: 'Please review the form for missing information.', type: 'error' });
             return;
         }
 
@@ -206,7 +209,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
     return (
         <AppLayout>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 <header className="border-b pb-4 mb-2">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
                         <Link
