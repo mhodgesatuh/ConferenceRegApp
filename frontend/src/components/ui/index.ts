@@ -3,3 +3,4 @@ export * from './button';
 export * from './label';
 export * from './checkbox';
 export * from './section';
+export * from './message';
