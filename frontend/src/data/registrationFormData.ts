@@ -1,9 +1,24 @@
 // frontend/src/data/registrationFormData.ts
 //
+//
+// Define the form's sections and input prompts.
+//
 
-// Define form input shape
+// Defining a form section:
+//    label         Describe the purpose of the section
+//    type          'section'
+//    scope         The scope determines when it will get displayed
+//
+// Defining a form section:
+//    field         The field name, see backend/src/db/schema.ts
+//    label         Input prompt text
+//    type          Input type
+//    required      Optional, set to true if needed
+//    scope         The scope determines when it will get displayed
+//    priv          Flag a field as being a privileged role
+//
 export interface FormField {
-    name: string;
+    name?: string;
     label: string;
     type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
     required?: boolean;
@@ -11,7 +26,7 @@ export interface FormField {
     priv?: 'update';
 }
 
-// Export a typed constant for each input field.
+// Export a typed constant for each form element type.
 export const registrationFormData: FormField[] = [
     {
         name: 'id',
@@ -20,8 +35,7 @@ export const registrationFormData: FormField[] = [
         scope: 'admin',
     },
     {
-        name: 'Login Information',
-        label: 'You will be able to use your email address and the assigned Pin if you need to return to the form.',
+        label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
         type: 'section',
         scope: 'registration',
     },
@@ -40,8 +54,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'Contact Information',
-        label: 'Provide your contact information or for the person being registered.',
+        label: 'Provide your (attendee) contact information.',
         type: 'section',
         scope: 'registration',
     },
@@ -88,7 +101,46 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'Proxy Registration',
+        name: 'day1Attendee',
+        label: 'Attending Day 1',
+        type: 'checkbox',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'day2Attendee',
+        label: 'Attending Day 2',
+        type: 'checkbox',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'question1',
+        label: 'Question 1',
+        type: 'text',
+        required: true,
+        scope: 'registration',
+    },
+    {
+        name: 'question2',
+        label: 'Question 2',
+        type: 'text',
+        required: true,
+        scope: 'registration',
+    },
+    {
+        label: 'If you need to cancel, please let us know.',
+        type: 'section',
+        scope: 'registration',
+    },
+    {
+        name: 'cancelledAttendance',
+        label: 'Cancel attendance',
+        type: 'checkbox',
+        required: false,
+        scope: 'registration',
+    },
+    {
         label: 'If you are registering another person, please provide your contact information.',
         type: 'section',
         required: false,
@@ -123,48 +175,6 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'day1Attendee',
-        label: 'Attending Day 1',
-        type: 'checkbox',
-        required: false,
-        scope: 'registration',
-    },
-    {
-        name: 'day2Attendee',
-        label: 'Attending Day 2',
-        type: 'checkbox',
-        required: false,
-        scope: 'registration',
-    },
-    {
-        name: 'question1',
-        label: 'Question 1',
-        type: 'text',
-        required: true,
-        scope: 'registration',
-    },
-    {
-        name: 'question2',
-        label: 'Question 2',
-        type: 'text',
-        required: true,
-        scope: 'registration',
-    },
-    {
-        name: 'Cancellation Request',
-        label: 'If you need to cancel, please let us know.',
-        type: 'section',
-        scope: 'registration',
-    },
-    {
-        name: 'cancelledAttendance',
-        label: 'Cancel attendance',
-        type: 'checkbox',
-        required: false,
-        scope: 'registration',
-    },
-    {
-        name: 'Roles Administration:',
         label: 'This is a secured section of the form for administrators only',
         type: 'section',
         scope: 'admin',
