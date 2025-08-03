@@ -11,6 +11,7 @@ import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
+import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
 
 const PAGE_TITLE = 'Conference Registration';
@@ -216,15 +217,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         {isSaved ? 'Update Registration' : 'Register'}
                     </Button>
                     {message.text && (
-                        <div
-                            className={`border border-input rounded-md px-4 py-2 ${
-                                message.type === 'error'
-                                    ? 'bg-yellow-100'
-                                    : 'bg-green-100'
-                            }`}
-                        >
-                            {message.text}
-                        </div>
+                        <Message
+                            text={message.text}
+                            isError={message.type === 'error'}
+                        />
                     )}
                 </div>
             </form>
