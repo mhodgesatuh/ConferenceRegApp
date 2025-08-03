@@ -8,6 +8,7 @@ export interface FormField {
     type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
     required: boolean;
     scope: 'admin' | 'registration';
+    role?: 'update';
 }
 
 // Export a typed constant for each input field.
@@ -179,6 +180,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
     {
         name: 'isOrganizer',
@@ -186,6 +188,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
     {
         name: 'isPresenter',
@@ -193,6 +196,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
     {
         name: 'isSponsor',
@@ -200,5 +204,6 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
 ];

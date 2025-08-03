@@ -5,7 +5,7 @@ import {Link} from 'react-router-dom';
 import {ArrowLeft} from 'lucide-react';
 import {FormField} from '@/data/registrationFormData';
 import {formReducer, initialFormState} from './formReducer';
-import {generatePin} from '@/features/registration/utils';
+import {generatePin, hasRole} from '@/features/registration/utils';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
@@ -26,13 +26,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const [missing, setMissing] = useState<string[]>([]);
     const [message, setMessage] = useState<{text: string; type: 'success' | 'error' | ''}>({text: '', type: ''});
 
+    const hasUpdateRole = hasRole(fields, initialData, 'update');
+    const allowedFields = fields.filter(
+        (f) => f.scope !== 'admin' || hasUpdateRole
+    );
     const visibleFields = showId
-        ? fields
-        : fields.filter((f) => f.name !== 'id');
+        ? allowedFields
+        : allowedFields.filter((f) => f.name !== 'id');
+
+    const visibleFieldNames = new Set(visibleFields.map((f) => f.name));
+    const filteredInitialData = Object.fromEntries(
+        Object.entries(initialData || {}).filter(([name]) =>
+            visibleFieldNames.has(name)
+        )
+    );
 
     const [state, dispatch] = useReducer(
         formReducer,
-        {...initialFormState(visibleFields), ...(initialData || {})}
+        {...initialFormState(visibleFields), ...filteredInitialData}
     );
 
     useEffect(() => {
