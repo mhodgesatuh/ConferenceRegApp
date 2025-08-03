@@ -21,9 +21,13 @@ type RegistrationFormProps = {
 };
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
+    const visibleFields = initialData?.id
+        ? fields
+        : fields.filter((f) => f.name !== 'id');
+
     const [state, dispatch] = useReducer(
         formReducer,
-        {...initialFormState(fields), ...(initialData || {})}
+        {...initialFormState(visibleFields), ...(initialData || {})}
     );
 
     useEffect(() => {
@@ -86,7 +90,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                             type={field.type === 'pin' ? 'text' : field.type}
                             value={state[field.name] as string | number}
                             onChange={handleChange}
-                            readOnly={field.type === 'pin'}
+                            readOnly={field.type === 'pin' || field.name === 'id'}
                             required={field.required ?? false}
                         />
                     </div>
@@ -97,7 +101,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const {loginPin: _pin, ...payload} = state;
+            const {loginPin: _pin, id: _id, ...payload} = state;
             const res = await fetch('/api/registrations', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -136,7 +140,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 </header>
 
 
-                {fields.map(renderField)}
+                {visibleFields.map(renderField)}
 
                 <Button type="submit">Register</Button>
             </form>
