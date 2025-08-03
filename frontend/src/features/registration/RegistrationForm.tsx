@@ -13,8 +13,11 @@ import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
 import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
+import {useMissingFields} from '@/hooks/useMissingFields';
 
 const PAGE_TITLE = 'Conference Registration';
+
+type MessageType = '' | 'success' | 'error';
 
 // Type guard to ensure field.name is a string, required for field-safe rendering.
 // See: data/registrationFormData.ts
@@ -42,9 +45,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         [fields, initialData]
     );
 
+    // Track whether the form data has been successfully saved (based on
+    // presence of an ID).
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
-    const [missing, setMissing] = useState<string[]>([]);
-    const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | '' }>({text: '', type: ''});
+
+    // Hook for tracking names of required fields that are currently missing input.
+    const { markMissing, clearMissing, isMissing } = useMissingFields();
+
+    // Store the message text and type to display feedback to the user after
+    // form submission.
+    const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
 
     // Determine if the form element is in scope for display purposes. See
     // data/registrationFormData.ts for more information.
@@ -87,7 +97,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 parsed = value;
         }
 
-        setMissing((prev) => prev.filter((n) => n !== name));
+        clearMissing(name);
         dispatch({type: 'CHANGE_FIELD', name, value: parsed});
     };
 
@@ -95,7 +105,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         name: string,
         value: boolean | 'indeterminate' | undefined
     ) => {
-        setMissing((prev) => prev.filter((n) => n !== name));
+        clearMissing(name);
         dispatch({type: 'CHANGE_FIELD', name, value: Boolean(value)});
     };
 
@@ -129,7 +139,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                             onChange={handleChange}
                             readOnly={field.type === 'pin' || field.name === 'id'}
                             required={field.required ?? false}
-                            className={missing.includes(field.name) ? 'bg-red-100' : undefined}
+                            className={isMissing(field.name) ? 'bg-red-100' : undefined}
                         />
                     </div>
                 );
@@ -157,7 +167,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             .map((f) => f.name);
 
         if (requiredMissing.length > 0) {
-            setMissing(requiredMissing);
+            markMissing(requiredMissing);
             setMessage({text: 'Missing required information, see above.', type: 'error'});
             return;
         }
@@ -183,13 +193,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 setMessage({text: 'Registration saved successfully.', type: 'success'});
             } else {
                 const data = await res.json().catch(() => ({}));
-                setMessage({text: data.error || 'Failed to save registration', type: 'error'});
+                const messageText = data.error ?? 'Failed to save registration';
+                setMessage({ text: messageText, type: 'error' });
             }
         } catch (err) {
             console.error('Registration submission failed', err);
             setMessage({text: 'Failed to submit registration', type: 'error'});
         }
     };
+
+    const isError = message.type === 'error';
 
     return (
         <AppLayout>
@@ -217,10 +230,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         {isSaved ? 'Update Registration' : 'Register'}
                     </Button>
                     {message.text && (
-                        <Message
-                            text={message.text}
-                            isError={message.type === 'error'}
-                        />
+                        <Message text={message.text} isError={isError} />
                     )}
                 </div>
             </form>
