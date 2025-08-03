@@ -41,10 +41,11 @@ export const registrations = mysqlTable('registrations', {
     day2Attendee: boolean('day2_attendee').default(false),
     question1: varchar('question1', {length: 128}).notNull(),
     question2: varchar('question2', {length: 128}).notNull(),
+    isCancelled: boolean('is_cancelled').default(false),
 
     // Administration
     cancelledAttendance: boolean('cancelled_attendance').default(false),
-    isAttendee: boolean('is_attendee').default(false),
+    isAttendee: boolean('is_attendee').default(true),
     isMonitor: boolean('is_monitor').default(false),
     isOrganizer: boolean('is_organizer').default(false),
     isPresenter: boolean('is_presenter').default(false),

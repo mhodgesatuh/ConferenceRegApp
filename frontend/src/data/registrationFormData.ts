@@ -8,6 +8,7 @@ export interface FormField {
     type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
     required: boolean;
     scope: 'admin' | 'registration';
+    role: '' | 'view' | 'update';
 }
 
 // Export a typed constant for each input field.
@@ -18,6 +19,7 @@ export const registrationFormData: FormField[] = [
         type: 'number',
         required: true,
         scope: 'admin',
+        role: '',
     },
     {
         name: 'Login Information',
@@ -25,6 +27,7 @@ export const registrationFormData: FormField[] = [
         type: 'section',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'email',
@@ -32,6 +35,7 @@ export const registrationFormData: FormField[] = [
         type: 'email',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'loginPin',
@@ -39,6 +43,7 @@ export const registrationFormData: FormField[] = [
         type: 'pin',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'Contact Information',
@@ -46,6 +51,7 @@ export const registrationFormData: FormField[] = [
         type: 'section',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'phone1',
@@ -53,6 +59,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'phone2',
@@ -60,6 +67,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'firstName',
@@ -67,6 +75,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'lastName',
@@ -74,6 +83,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'namePrefix',
@@ -81,6 +91,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'nameSuffix',
@@ -88,6 +99,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'Proxy Registration',
@@ -95,6 +107,7 @@ export const registrationFormData: FormField[] = [
         type: 'section',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'hasProxy',
@@ -102,6 +115,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'proxyName',
@@ -109,6 +123,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'proxyPhone',
@@ -116,6 +131,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'proxyEmail',
@@ -123,6 +139,7 @@ export const registrationFormData: FormField[] = [
         type: 'email',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'day1Attendee',
@@ -130,6 +147,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'day2Attendee',
@@ -137,6 +155,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'question1',
@@ -144,6 +163,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
         name: 'question2',
@@ -151,41 +171,55 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        role: '',
     },
     {
-        name: 'Roles Administration',
+        name: 'Cancellation Request',
+        label: 'If you need to cancel, please let us know.',
+        type: 'section',
+        required: false,
+        scope: 'registration',
+        role: '',
+    },
+    {
+        name: 'cancelledAttendance',
+        label: 'Cancel attendance',
+        type: 'checkbox',
+        required: false,
+        scope: 'registration',
+        role: '',
+    },
+    {
+        name: 'Roles Administration:',
         label: 'This is a secured section of the form for administrators only',
         type: 'section',
         required: false,
         scope: 'admin',
+        role: '',
     },
     {
         name: 'isAttendee',
-        label: 'Is/was attendee',
+        label: 'Is attendee (uncheck to indicate a cancellation)',
         type: 'checkbox',
         required: false,
         scope: 'admin',
-    },
-    {
-        name: 'cancelledAttendance',
-        label: 'Cancel Attendance',
-        type: 'checkbox',
-        required: false,
-        scope: 'admin',
+        role: '',
     },
     {
         name: 'isMonitor',
-        label: 'Is monitor',
+        label: 'Is monitor (has "update" privileges)',
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
     {
         name: 'isOrganizer',
-        label: 'Is organizer',
+        label: 'Is organizer (has "update" privileges)',
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: 'update',
     },
     {
         name: 'isPresenter',
@@ -193,6 +227,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: '',
     },
     {
         name: 'isSponsor',
@@ -200,5 +235,6 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        role: '',
     },
 ];

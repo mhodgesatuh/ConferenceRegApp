@@ -23,6 +23,7 @@ interface CreateRegistrationBody {
     question1: string;
     question2: string;
     isAttendee?: boolean;
+    isCancelled?: boolean;
     isMonitor?: boolean;
     isOrganizer?: boolean;
     isPresenter?: boolean;
@@ -62,6 +63,7 @@ router.post<{}, any, CreateRegistrationBody>(
                 day2Attendee,
                 question1,
                 question2,
+                isCancelled,
                 isAttendee,
                 isMonitor,
                 isOrganizer,
@@ -96,6 +98,7 @@ router.post<{}, any, CreateRegistrationBody>(
                     question1,
                     question2,
                     isAttendee,
+                    isCancelled,
                     isMonitor,
                     isOrganizer,
                     isPresenter,
