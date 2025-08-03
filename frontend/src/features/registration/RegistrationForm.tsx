@@ -1,6 +1,6 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, {useEffect, useReducer, useState} from 'react';
+import React, {useEffect, useMemo, useReducer, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowLeft} from 'lucide-react';
 import {FormField} from '@/data/registrationFormData';
@@ -22,13 +22,28 @@ type RegistrationFormProps = {
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
     const [showId, setShowId] = useState(Boolean(initialData?.id));
+
+    const hasUpdatePrivilege = useMemo(
+        () =>
+            fields
+                .filter((f) => f.priv === 'update')
+                .some((f) => Boolean(initialData?.[f.name])),
+        [fields, initialData]
+    );
+
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
     const [missing, setMissing] = useState<string[]>([]);
     const [message, setMessage] = useState<{text: string; type: 'success' | 'error' | ''}>({text: '', type: ''});
 
-    const visibleFields = showId
-        ? fields
-        : fields.filter((f) => f.name !== 'id');
+    const visibleFields = useMemo(
+        () =>
+            fields.filter((f) => {
+                if (!showId && f.name === 'id') return false;
+                if (f.scope === 'admin' && !hasUpdatePrivilege) return false;
+                return true;
+            }),
+        [fields, showId, hasUpdatePrivilege]
+    );
 
     const [state, dispatch] = useReducer(
         formReducer,
