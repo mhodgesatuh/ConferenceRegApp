@@ -1,6 +1,6 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, {useEffect, useReducer} from 'react';
+import React, {useEffect, useReducer, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowLeft} from 'lucide-react';
 import {FormField} from '@/data/registrationFormData';
@@ -21,7 +21,12 @@ type RegistrationFormProps = {
 };
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
-    const visibleFields = initialData?.id
+    const [showId, setShowId] = useState(Boolean(initialData?.id));
+    const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
+    const [missing, setMissing] = useState<string[]>([]);
+    const [message, setMessage] = useState<{text: string; type: 'success' | 'error' | ''}>({text: '', type: ''});
+
+    const visibleFields = showId
         ? fields
         : fields.filter((f) => f.name !== 'id');
 
@@ -52,6 +57,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 parsed = value;
         }
 
+        setMissing((prev) => prev.filter((n) => n !== name));
         dispatch({type: 'CHANGE_FIELD', name, value: parsed});
     };
 
@@ -59,6 +65,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         name: string,
         value: boolean | 'indeterminate' | undefined
     ) => {
+        setMissing((prev) => prev.filter((n) => n !== name));
         dispatch({type: 'CHANGE_FIELD', name, value: Boolean(value)});
     };
 
@@ -92,6 +99,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                             onChange={handleChange}
                             readOnly={field.type === 'pin' || field.name === 'id'}
                             required={field.required ?? false}
+                            className={missing.includes(field.name) ? 'bg-red-100' : undefined}
                         />
                     </div>
                 );
@@ -100,6 +108,30 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const requiredMissing = visibleFields
+            .filter((f) => f.required)
+            .filter((f) => {
+                const value = state[f.name];
+                switch (typeof value) {
+                    case 'string':
+                        return value.trim() === '';
+                    case 'number':
+                        return value === 0;
+                    case 'boolean':
+                        return !value;
+                    default:
+                        return !value;
+                }
+            })
+            .map((f) => f.name);
+
+        if (requiredMissing.length > 0) {
+            setMissing(requiredMissing);
+            setMessage({text: 'Missing required information, see above.', type: 'error'});
+            return;
+        }
+
         try {
             const {loginPin: _pin, id: _id, ...payload} = state;
             const res = await fetch('/api/registrations', {
@@ -109,15 +141,23 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             });
 
             if (res.ok) {
-                await res.json().catch(() => ({}));
-                alert('Registration saved');
+                const data = await res.json().catch(() => ({}));
+                if (data.id) {
+                    dispatch({type: 'CHANGE_FIELD', name: 'id', value: data.id});
+                    setShowId(true);
+                    setIsSaved(true);
+                }
+                if (data.loginPin) {
+                    dispatch({type: 'CHANGE_FIELD', name: 'loginPin', value: data.loginPin});
+                }
+                setMessage({text: 'Registration saved successfully.', type: 'success'});
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || 'Failed to save registration');
+                setMessage({text: data.error || 'Failed to save registration', type: 'error'});
             }
         } catch (err) {
             console.error('Registration submission failed', err);
-            alert('Failed to submit registration');
+            setMessage({text: 'Failed to submit registration', type: 'error'});
         }
     };
 
@@ -142,7 +182,22 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
                 {visibleFields.map(renderField)}
 
-                <Button type="submit">Register</Button>
+                <div className="flex items-center gap-2">
+                    <Button type="submit">
+                        {isSaved ? 'Update Registration' : 'Register'}
+                    </Button>
+                    {message.text && (
+                        <div
+                            className={`border border-input rounded-md px-4 py-2 ${
+                                message.type === 'error'
+                                    ? 'bg-yellow-100'
+                                    : 'bg-green-100'
+                            }`}
+                        >
+                            {message.text}
+                        </div>
+                    )}
+                </div>
             </form>
         </AppLayout>
     );
