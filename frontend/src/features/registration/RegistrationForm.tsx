@@ -15,6 +15,12 @@ import AppLayout from '@/components/layout/AppLayout';
 
 const PAGE_TITLE = 'Conference Registration';
 
+// Type guard to ensure field.name is a string, required for field-safe rendering.
+// See: data/registrationFormData.ts
+function safeFieldName(field: FormField): field is FormField & { name: string } {
+    return typeof field.name === 'string';
+}
+
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
@@ -23,25 +29,32 @@ type RegistrationFormProps = {
 const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
     const [showId, setShowId] = useState(Boolean(initialData?.id));
 
+    // Determine if the current user's registration data flags the user as
+    // having admin 'update' privileges. See data/registrationFormData.ts for
+    // more information.
     const hasUpdatePrivilege = useMemo(
         () =>
             fields
                 .filter((f) => f.priv === 'update')
+                .filter(safeFieldName)
                 .some((f) => Boolean(initialData?.[f.name])),
         [fields, initialData]
     );
 
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
     const [missing, setMissing] = useState<string[]>([]);
-    const [message, setMessage] = useState<{text: string; type: 'success' | 'error' | ''}>({text: '', type: ''});
+    const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | '' }>({text: '', type: ''});
 
+    // Determine if the form element is in scope for display purposes. See
+    // data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
         () =>
-            fields.filter((f) => {
-                if (!showId && f.name === 'id') return false;
-                if (f.scope === 'admin' && !hasUpdatePrivilege) return false;
-                return true;
-            }),
+            fields
+                .filter((f) => {
+                    if (!showId && f.name === 'id') return false;
+                    return !(f.scope === 'admin' && !hasUpdatePrivilege);
+                })
+                .filter(safeFieldName),
         [fields, showId, hasUpdatePrivilege]
     );
 
@@ -50,6 +63,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         {...initialFormState(visibleFields), ...(initialData || {})}
     );
 
+    // Generate a pin for a new registration request.
     useEffect(() => {
         if (typeof state.loginPin === 'string' && state.loginPin === '') {
             dispatch({
@@ -84,7 +98,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         dispatch({type: 'CHANGE_FIELD', name, value: Boolean(value)});
     };
 
-    const renderField = (field: FormField) => {
+    const renderField = (field: FormField & { name: string }) => {
         switch (field.type) {
             case 'section':
                 return <Section key={field.name}>{field.label}</Section>;
