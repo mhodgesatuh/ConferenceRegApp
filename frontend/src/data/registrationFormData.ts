@@ -120,8 +120,8 @@ export const registrationFormData: FormField[] = [
     {
         name: 'proxyEmail',
         label: 'Email Address',
-        type: 'phone',
-        required: false,
+        type: 'email',
+        required: true,
         scope: 'registration',
     },
     {
