@@ -1,30 +1,25 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, {useEffect, useMemo, useReducer, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowLeft} from 'lucide-react';
 import {FormField} from '@/data/registrationFormData';
-import {formReducer, initialFormState} from './formReducer';
-import {generatePin} from '@/features/registration/utils';
-import {Input} from '@/components/ui/input';
+import {generatePin, safeFieldName} from '@/features/registration/utils';
 import {Button} from '@/components/ui/button';
-import {Label} from '@/components/ui/label';
-import {Checkbox} from '@/components/ui/checkbox-wrapper';
-import {Section} from '@/components/ui/section';
 import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
 import {useMissingFields} from '@/hooks/useMissingFields';
-
-const PAGE_TITLE = 'Conference Registration';
-const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
+import {useFormState} from './hooks/useFormState';
+import {
+    PAGE_TITLE,
+    PROXY_FIELDS_SET
+} from './constants';
+import RegistrationInfoSection from './components/RegistrationInfoSection';
+import ContactInfoSection from './components/ContactInfoSection';
+import ProxyInfoSection from './components/ProxyInfoSection';
+import AdminSection from './components/AdminSection';
 
 type MessageType = '' | 'success' | 'error';
-
-// Type guard to ensure field.name is a string, required for field-safe rendering.
-// See: data/registrationFormData.ts
-function safeFieldName(field: FormField): field is FormField & { name: string } {
-    return typeof field.name === 'string';
-}
 
 type RegistrationFormProps = {
     fields: FormField[];
@@ -57,24 +52,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     // form submission.
     const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
 
-    const [state, dispatch] = useReducer(
-        formReducer,
-        {...initialFormState(fields), ...(initialData || {})}
-    );
+    const [state, dispatch] = useFormState(fields, initialData);
 
     // Determine if the form element is in scope for display purposes. See
     // data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
         () =>
-            fields
-                .filter((f) => {
-                    if (!safeFieldName(f)) return true;
-                    if (!showId && f.name === 'id') return false;
-                    if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
-                    if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
-                    return !(f.scope === 'admin' && !hasUpdatePrivilege);
-                })
-                .filter(safeFieldName),
+            fields.filter((f) => {
+                if (!safeFieldName(f)) return true;
+                if (!showId && f.name === 'id') return false;
+                if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
+                if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
+                return !(f.scope === 'admin' && !hasUpdatePrivilege);
+            }),
         [fields, showId, hasUpdatePrivilege, state.hasProxy, isSaved]
     );
 
@@ -87,94 +77,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 value: generatePin(8),
             });
         }
-    }, [state.loginPin]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, type, value, valueAsNumber} = e.target;
-        let parsed: string | number;
-
-        switch (type) {
-            case 'number':
-                parsed = isNaN(valueAsNumber) ? 0 : valueAsNumber;
-                break;
-            default:
-                parsed = value;
-        }
-
-        clearMissing(name);
-        dispatch({type: 'CHANGE_FIELD', name, value: parsed});
-    };
-
-    const handleCheckboxChange = (
-        name: string,
-        value: boolean | 'indeterminate' | undefined
-    ) => {
-        const checked = Boolean(value);
-        if (name === 'day1Attendee' || name === 'day2Attendee') {
-            clearMissing('day1Attendee');
-            clearMissing('day2Attendee');
-        } else {
-            clearMissing(name);
-        }
-
-        if (name === 'hasProxy' && !checked) {
-            PROXY_FIELDS_SET.forEach((field) => {
-                clearMissing(field);
-                dispatch({type: 'CHANGE_FIELD', name: field as string, value: ''});
-            });
-        }
-
-        dispatch({type: 'CHANGE_FIELD', name, value: checked});
-    };
-
-    const renderField = (field: FormField & { name: string }) => {
-        switch (field.type) {
-            case 'section':
-                return <Section key={field.name}>{field.label}</Section>;
-
-            case 'checkbox': {
-                const isProxyField = PROXY_FIELDS_SET.has(field.name);
-                const isRequired = field.required || (isProxyField && state.hasProxy);
-                return (
-                    <Checkbox
-                        key={field.name}
-                        id={field.name}
-                        name={field.name}
-                        label={field.label}
-                        checked={state[field.name] as boolean}
-                        onCheckedChange={(val) => handleCheckboxChange(field.name, val)}
-                        required={isRequired}
-                        className={isMissing(field.name) ? 'bg-red-100' : undefined}
-                    />
-                );
-            }
-
-            default: {
-                const isProxyField = PROXY_FIELDS_SET.has(field.name);
-                const isRequired = field.required || (isProxyField && state.hasProxy);
-                return (
-                    <div key={field.name} className="flex flex-col gap-1">
-                        <Label htmlFor={field.name}>{field.label}</Label>
-                        <Input
-                            id={field.name}
-                            name={field.name}
-                            type={field.type === 'pin' ? 'text' : field.type}
-                            value={state[field.name] as string | number}
-                            onChange={handleChange}
-                            readOnly={field.type === 'pin' || field.name === 'id'}
-                            required={isRequired}
-                            className={isMissing(field.name) ? 'bg-red-100' : undefined}
-                        />
-                    </div>
-                );
-            }
-        }
-    };
+    }, [state.loginPin, dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const requiredMissing = visibleFields
+            .filter(safeFieldName)
             .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS_SET.has(f.name)))
             .filter((f) => {
                 const value = state[f.name];
@@ -256,7 +165,34 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 </header>
 
 
-                {visibleFields.map(renderField)}
+                <RegistrationInfoSection
+                    fields={visibleFields}
+                    state={state}
+                    dispatch={dispatch}
+                    isMissing={isMissing}
+                    clearMissing={clearMissing}
+                />
+                <ContactInfoSection
+                    fields={visibleFields}
+                    state={state}
+                    dispatch={dispatch}
+                    isMissing={isMissing}
+                    clearMissing={clearMissing}
+                />
+                <ProxyInfoSection
+                    fields={visibleFields}
+                    state={state}
+                    dispatch={dispatch}
+                    isMissing={isMissing}
+                    clearMissing={clearMissing}
+                />
+                <AdminSection
+                    fields={visibleFields}
+                    state={state}
+                    dispatch={dispatch}
+                    isMissing={isMissing}
+                    clearMissing={clearMissing}
+                />
 
                 <div className="flex items-center gap-2">
                     <Button type="submit">
