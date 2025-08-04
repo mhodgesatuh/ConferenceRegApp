@@ -17,14 +17,14 @@ const ContactInfoSection: React.FC<SectionProps> = ({fields, state, dispatch, is
         if (f.type === 'section') {
             return f.label === CONTACT_INFO_LABEL;
         }
-        return CONTACT_FIELD_SET.has(f.name ?? '');
+        return CONTACT_FIELD_SET.has(f.name);
     });
 
     return (
         <>
             {sectionFields.map((field) => (
                 <FieldRenderer
-                    key={field.name || field.label}
+                    key={field.type === 'section' ? field.label : field.name}
                     field={field}
                     state={state}
                     dispatch={dispatch}

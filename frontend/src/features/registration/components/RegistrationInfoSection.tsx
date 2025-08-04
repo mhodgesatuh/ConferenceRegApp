@@ -17,14 +17,14 @@ const RegistrationInfoSection: React.FC<SectionProps> = ({fields, state, dispatc
         if (f.type === 'section') {
             return f.label === PIN_INFO_LABEL || f.label === CANCELLATION_LABEL;
         }
-        return REGISTRATION_FIELD_SET.has(f.name ?? '');
+        return REGISTRATION_FIELD_SET.has(f.name);
     });
 
     return (
         <>
             {sectionFields.map((field) => (
                 <FieldRenderer
-                    key={field.name || field.label}
+                    key={field.type === 'section' ? field.label : field.name}
                     field={field}
                     state={state}
                     dispatch={dispatch}

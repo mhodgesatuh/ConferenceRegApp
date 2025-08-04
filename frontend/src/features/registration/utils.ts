@@ -1,11 +1,11 @@
 // frontend/src/features/registration/utils.ts
 //
 
-import {FormField} from '@/data/registrationFormData';
+import {FormField, FormInputField} from '@/data/registrationFormData';
 
-// Type guard to ensure field.name is a string, required for field-safe rendering.
-export function safeFieldName(field: FormField): field is FormField & { name: string } {
-    return typeof field.name === 'string';
+// Type guard to narrow a form element to an input field.
+export function isInputField(field: FormField): field is FormInputField {
+    return field.type !== 'section';
 }
 
 // Generate a random Pin for a new registration user.

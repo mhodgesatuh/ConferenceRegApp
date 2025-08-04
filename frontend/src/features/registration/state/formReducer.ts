@@ -12,31 +12,27 @@ export type FormValue = string | boolean | number;
 export type FormState = Record<string, FormValue>;
 
 export const initialFormState = (fields: FormField[]): FormState =>
-    fields.reduce((acc, {name, type}) => {
+    fields.reduce((acc, field) => {
+        if (field.type === 'section') return acc;
 
-        switch (type) {
-
+        switch (field.type) {
             // boolean flags
             case 'checkbox':
-                acc[name] = false;
+                acc[field.name] = false;
                 break;
 
             // numeric inputs
             case 'number':
-                acc[name] = 0;
+                acc[field.name] = 0;
                 break;
 
-            // UI-only sections—no state entry
-            case 'section':
-                break;
-
-            // everything else (text, email, phone, hidden, pin)
+            // everything else (text, email, phone, pin)
             case 'text':
             case 'email':
             case 'phone':
             case 'pin':
             default:
-                acc[name] = '';
+                acc[field.name] = '';
         }
         return acc;
     }, {} as FormState);

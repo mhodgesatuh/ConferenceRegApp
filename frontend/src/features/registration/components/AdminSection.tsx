@@ -17,14 +17,14 @@ const AdminSection: React.FC<SectionProps> = ({fields, state, dispatch, isMissin
         if (f.type === 'section') {
             return f.label === ADMIN_SECTION_LABEL;
         }
-        return ADMIN_FIELD_SET.has(f.name ?? '');
+        return ADMIN_FIELD_SET.has(f.name);
     });
 
     return (
         <>
             {sectionFields.map((field) => (
                 <FieldRenderer
-                    key={field.name || field.label}
+                    key={field.type === 'section' ? field.label : field.name}
                     field={field}
                     state={state}
                     dispatch={dispatch}
