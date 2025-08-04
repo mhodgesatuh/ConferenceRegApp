@@ -1,7 +1,6 @@
 import React from 'react';
 import {FormField} from '@/data/registrationFormData';
 import {FormState, Action} from '../state/formReducer';
-import {PROXY_FIELDS_SET} from '../constants';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
@@ -43,18 +42,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({field, state, dispatch, is
             clearMissing?.(name);
         }
 
-        if (name === 'hasProxy' && !checked) {
-            PROXY_FIELDS_SET.forEach((field) => {
-                clearMissing?.(field);
-                dispatch({type: 'CHANGE_FIELD', name: field as string, value: ''});
-            });
-        }
-
         dispatch({type: 'CHANGE_FIELD', name, value: checked});
     };
 
     if (field.type === 'checkbox') {
-        const isProxyField = PROXY_FIELDS_SET.has(field.name);
+        const isProxyField = field.presentationScopes.includes('proxy');
         const isRequired = field.required || (isProxyField && state.hasProxy);
         return (
             <Checkbox
@@ -69,7 +61,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({field, state, dispatch, is
         );
     }
 
-    const isProxyField = PROXY_FIELDS_SET.has(field.name);
+    const isProxyField = field.presentationScopes.includes('proxy');
     const isRequired = field.required || (isProxyField && state.hasProxy);
     return (
         <div className="flex flex-col gap-1">

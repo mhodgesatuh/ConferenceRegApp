@@ -10,14 +10,9 @@ import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
 import {useMissingFields} from '@/hooks/useMissingFields';
 import {useFormState} from './hooks/useFormState';
-import {
-    PAGE_TITLE,
-    PROXY_FIELDS_SET
-} from './constants';
-import RegistrationInfoSection from './components/RegistrationInfoSection';
-import ContactInfoSection from './components/ContactInfoSection';
-import ProxyInfoSection from './components/ProxyInfoSection';
-import AdminSection from './components/AdminSection';
+import {PAGE_TITLE} from './constants';
+import PresentationSection from './components/PresentationSection';
+import {PresentationScope} from '@/data/registrationFormData';
 
 type MessageType = '' | 'success' | 'error';
 
@@ -53,18 +48,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
 
     const [state, dispatch] = useFormState(fields, initialData);
+    const sectionOrder: PresentationScope[] = ['registration', 'contact', 'proxy', 'admin'];
+    const proxyFieldNames = useMemo(
+        () =>
+            fields
+                .filter(isInputField)
+                .filter((f) => f.presentationScopes.includes('proxy'))
+                .map((f) => f.name),
+        [fields]
+    );
 
-    // Determine if the form element is in scope for display purposes. See
-    // data/registrationFormData.ts for more information.
+    // Determine if the form element should be displayed based on current state
+    // and presentation scopes. See data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
         () =>
             fields.filter((f) => {
                 if (isInputField(f)) {
                     if (!showId && f.name === 'id') return false;
                     if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
-                    if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
+                    if (!state.hasProxy && f.presentationScopes.includes('proxy')) return false;
                 }
-                return !(f.scope === 'admin' && !hasUpdatePrivilege);
+                return !(f.presentationScopes.includes('admin') && !hasUpdatePrivilege);
             }),
         [fields, showId, hasUpdatePrivilege, state.hasProxy, isSaved]
     );
@@ -80,12 +84,21 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         }
     }, [state.loginPin, dispatch]);
 
+    useEffect(() => {
+        if (!state.hasProxy) {
+            proxyFieldNames.forEach((name) => {
+                clearMissing(name);
+                dispatch({type: 'CHANGE_FIELD', name, value: ''});
+            });
+        }
+    }, [state.hasProxy, proxyFieldNames, dispatch, clearMissing]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const requiredMissing = visibleFields
             .filter(isInputField)
-            .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS_SET.has(f.name)))
+            .filter((f) => f.required || (state.hasProxy && f.presentationScopes.includes('proxy')))
             .filter((f) => {
                 const value = state[f.name];
                 switch (typeof value) {
@@ -166,34 +179,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 </header>
 
 
-                <RegistrationInfoSection
-                    fields={visibleFields}
-                    state={state}
-                    dispatch={dispatch}
-                    isMissing={isMissing}
-                    clearMissing={clearMissing}
-                />
-                <ContactInfoSection
-                    fields={visibleFields}
-                    state={state}
-                    dispatch={dispatch}
-                    isMissing={isMissing}
-                    clearMissing={clearMissing}
-                />
-                <ProxyInfoSection
-                    fields={visibleFields}
-                    state={state}
-                    dispatch={dispatch}
-                    isMissing={isMissing}
-                    clearMissing={clearMissing}
-                />
-                <AdminSection
-                    fields={visibleFields}
-                    state={state}
-                    dispatch={dispatch}
-                    isMissing={isMissing}
-                    clearMissing={clearMissing}
-                />
+                {sectionOrder.map((scope) => (
+                    <PresentationSection
+                        key={scope}
+                        scope={scope}
+                        fields={visibleFields}
+                        state={state}
+                        dispatch={dispatch}
+                        isMissing={isMissing}
+                        clearMissing={clearMissing}
+                    />
+                ))}
 
                 <div className="flex items-center gap-2">
                     <Button type="submit">
