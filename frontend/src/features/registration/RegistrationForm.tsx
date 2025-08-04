@@ -16,7 +16,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import {useMissingFields} from '@/hooks/useMissingFields';
 
 const PAGE_TITLE = 'Conference Registration';
-const PROXY_FIELDS = ['proxyName', 'proxyPhone', 'proxyEmail'] as const;
+const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
 
 type MessageType = '' | 'success' | 'error';
 
@@ -71,7 +71,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                     if (!safeFieldName(f)) return true;
                     if (!showId && f.name === 'id') return false;
                     if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
-                    if (!state.hasProxy && PROXY_FIELDS.includes(f.name)) return false;
+                    if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
                     return !(f.scope === 'admin' && !hasUpdatePrivilege);
                 })
                 .filter(safeFieldName),
@@ -118,9 +118,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         }
 
         if (name === 'hasProxy' && !checked) {
-            PROXY_FIELDS.forEach((field) => {
+            PROXY_FIELDS_SET.forEach((field) => {
                 clearMissing(field);
-                dispatch({type: 'CHANGE_FIELD', name: field, value: ''});
+                dispatch({type: 'CHANGE_FIELD', name: field as string, value: ''});
             });
         }
 
@@ -133,7 +133,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 return <Section key={field.name}>{field.label}</Section>;
 
             case 'checkbox': {
-                const isProxyField = PROXY_FIELDS.includes(field.name);
+                const isProxyField = PROXY_FIELDS_SET.has(field.name);
                 const isRequired = field.required || (isProxyField && state.hasProxy);
                 return (
                     <Checkbox
@@ -150,7 +150,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             }
 
             default: {
-                const isProxyField = PROXY_FIELDS.includes(field.name);
+                const isProxyField = PROXY_FIELDS_SET.has(field.name);
                 const isRequired = field.required || (isProxyField && state.hasProxy);
                 return (
                     <div key={field.name} className="flex flex-col gap-1">
@@ -175,7 +175,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         e.preventDefault();
 
         const requiredMissing = visibleFields
-            .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS.includes(f.name)))
+            .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS_SET.has(f.name)))
             .filter((f) => {
                 const value = state[f.name];
                 switch (typeof value) {
