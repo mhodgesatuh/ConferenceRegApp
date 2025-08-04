@@ -6,7 +6,6 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
-import {safeFieldName} from '../utils';
 
 interface FieldRendererProps {
     field: FormField;
@@ -20,8 +19,6 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({field, state, dispatch, is
     if (field.type === 'section') {
         return <Section>{field.label}</Section>;
     }
-
-    if (!safeFieldName(field)) return null;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, type, value, valueAsNumber} = e.target;

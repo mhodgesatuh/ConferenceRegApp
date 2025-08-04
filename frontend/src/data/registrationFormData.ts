@@ -10,21 +10,29 @@
 //    scope         The scope determines when it will get displayed
 //
 // Defining a form input field:
-//    field         The field name, see backend/src/db/schema.ts
+//    name          The field name, see backend/src/db/schema.ts
 //    label         Input prompt text
 //    type          Input type
-//    required      Optional, set to true if needed
+//    required      Set to true if needed
 //    scope         The scope determines when it will get displayed
 //    priv          Flag a field as being a privileged role
-//
-export interface FormField {
-    name?: string;
+
+export interface FormSectionHeading {
     label: string;
-    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
-    required?: boolean;
+    type: 'section';
     scope: 'admin' | 'registration';
-    priv?: 'update';
 }
+
+export interface FormInputField {
+    name: string;
+    label: string;
+    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'pin';
+    required: boolean;
+    scope: 'admin' | 'registration';
+    priv: 'update' | null;
+}
+
+export type FormField = FormSectionHeading | FormInputField;
 
 // Export a typed constant for each form element type.
 export const registrationFormData: FormField[] = [
@@ -32,7 +40,9 @@ export const registrationFormData: FormField[] = [
         name: 'id',
         label: 'Registration Form ID',
         type: 'number',
+        required: false,
         scope: 'admin',
+        priv: null,
     },
     {
         label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
@@ -45,6 +55,7 @@ export const registrationFormData: FormField[] = [
         type: 'email',
         required: true,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'loginPin',
@@ -52,6 +63,7 @@ export const registrationFormData: FormField[] = [
         type: 'pin',
         required: true,
         scope: 'registration',
+        priv: null,
     },
     {
         label: 'Provide your (attendee) contact information.',
@@ -64,6 +76,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'phone2',
@@ -71,6 +84,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'firstName',
@@ -78,6 +92,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'lastName',
@@ -85,6 +100,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'namePrefix',
@@ -92,6 +108,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'nameSuffix',
@@ -99,6 +116,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'day1Attendee',
@@ -106,6 +124,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'day2Attendee',
@@ -113,6 +132,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'question1',
@@ -120,6 +140,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'question2',
@@ -127,6 +148,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
+        priv: null,
     },
     {
         label: 'If you need to cancel, please let us know.',
@@ -139,11 +161,11 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         label: 'If you are registering another person, please provide your contact information.',
         type: 'section',
-        required: false,
         scope: 'registration',
     },
     {
@@ -152,6 +174,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'proxyName',
@@ -159,6 +182,7 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'proxyPhone',
@@ -166,6 +190,7 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         name: 'proxyEmail',
@@ -173,6 +198,7 @@ export const registrationFormData: FormField[] = [
         type: 'email',
         required: false,
         scope: 'registration',
+        priv: null,
     },
     {
         label: 'This is a secured section of the form for administrators only',
@@ -185,6 +211,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        priv: null,
     },
     {
         name: 'isMonitor',
@@ -208,6 +235,7 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        priv: null,
     },
     {
         name: 'isSponsor',
@@ -215,5 +243,6 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
+        priv: null,
     },
 ];

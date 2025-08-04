@@ -17,14 +17,14 @@ const ProxyInfoSection: React.FC<SectionProps> = ({fields, state, dispatch, isMi
         if (f.type === 'section') {
             return f.label === PROXY_INFO_LABEL;
         }
-        return PROXY_WITH_FLAG_SET.has(f.name ?? '');
+        return PROXY_WITH_FLAG_SET.has(f.name);
     });
 
     return (
         <>
             {sectionFields.map((field) => (
                 <FieldRenderer
-                    key={field.name || field.label}
+                    key={field.type === 'section' ? field.label : field.name}
                     field={field}
                     state={state}
                     dispatch={dispatch}

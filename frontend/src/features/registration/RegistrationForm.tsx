@@ -4,7 +4,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowLeft} from 'lucide-react';
 import {FormField} from '@/data/registrationFormData';
-import {generatePin, safeFieldName} from '@/features/registration/utils';
+import {generatePin, isInputField} from '@/features/registration/utils';
 import {Button} from '@/components/ui/button';
 import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
@@ -35,8 +35,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const hasUpdatePrivilege = useMemo(
         () =>
             fields
+                .filter(isInputField)
                 .filter((f) => f.priv === 'update')
-                .filter(safeFieldName)
                 .some((f) => Boolean(initialData?.[f.name])),
         [fields, initialData]
     );
@@ -59,10 +59,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const visibleFields = useMemo(
         () =>
             fields.filter((f) => {
-                if (!safeFieldName(f)) return true;
-                if (!showId && f.name === 'id') return false;
-                if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
-                if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
+                if (isInputField(f)) {
+                    if (!showId && f.name === 'id') return false;
+                    if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
+                    if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
+                }
                 return !(f.scope === 'admin' && !hasUpdatePrivilege);
             }),
         [fields, showId, hasUpdatePrivilege, state.hasProxy, isSaved]
@@ -83,7 +84,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         e.preventDefault();
 
         const requiredMissing = visibleFields
-            .filter(safeFieldName)
+            .filter(isInputField)
             .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS_SET.has(f.name)))
             .filter((f) => {
                 const value = state[f.name];
