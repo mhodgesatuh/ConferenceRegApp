@@ -1,4 +1,4 @@
-import {useReducer} from 'react';
+import React, {useReducer} from 'react';
 import {FormField} from '@/data/registrationFormData';
 import {formReducer, initialFormState, FormState, Action} from '../state/formReducer';
 

@@ -9,7 +9,7 @@
 //    type          'section'
 //    scope         The scope determines when it will get displayed
 //
-// Defining a form section:
+// Defining a form input field:
 //    field         The field name, see backend/src/db/schema.ts
 //    label         Input prompt text
 //    type          Input type
