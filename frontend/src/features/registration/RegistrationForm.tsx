@@ -16,6 +16,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import {useMissingFields} from '@/hooks/useMissingFields';
 
 const PAGE_TITLE = 'Conference Registration';
+const PROXY_FIELDS = ['proxyName', 'proxyPhone', 'proxyEmail'] as const;
 
 type MessageType = '' | 'success' | 'error';
 
@@ -56,22 +57,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     // form submission.
     const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
 
+    const [state, dispatch] = useReducer(
+        formReducer,
+        {...initialFormState(fields), ...(initialData || {})}
+    );
+
     // Determine if the form element is in scope for display purposes. See
     // data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
         () =>
             fields
                 .filter((f) => {
+                    if (!safeFieldName(f)) return true;
                     if (!showId && f.name === 'id') return false;
+                    if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
+                    if (!state.hasProxy && PROXY_FIELDS.includes(f.name)) return false;
                     return !(f.scope === 'admin' && !hasUpdatePrivilege);
                 })
                 .filter(safeFieldName),
-        [fields, showId, hasUpdatePrivilege]
-    );
-
-    const [state, dispatch] = useReducer(
-        formReducer,
-        {...initialFormState(visibleFields), ...(initialData || {})}
+        [fields, showId, hasUpdatePrivilege, state.hasProxy, isSaved]
     );
 
     // Generate a pin for a new registration request.
@@ -105,8 +109,22 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         name: string,
         value: boolean | 'indeterminate' | undefined
     ) => {
-        clearMissing(name);
-        dispatch({type: 'CHANGE_FIELD', name, value: Boolean(value)});
+        const checked = Boolean(value);
+        if (name === 'day1Attendee' || name === 'day2Attendee') {
+            clearMissing('day1Attendee');
+            clearMissing('day2Attendee');
+        } else {
+            clearMissing(name);
+        }
+
+        if (name === 'hasProxy' && !checked) {
+            PROXY_FIELDS.forEach((field) => {
+                clearMissing(field);
+                dispatch({type: 'CHANGE_FIELD', name: field, value: ''});
+            });
+        }
+
+        dispatch({type: 'CHANGE_FIELD', name, value: checked});
     };
 
     const renderField = (field: FormField & { name: string }) => {
@@ -114,7 +132,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             case 'section':
                 return <Section key={field.name}>{field.label}</Section>;
 
-            case 'checkbox':
+            case 'checkbox': {
+                const isProxyField = PROXY_FIELDS.includes(field.name);
+                const isRequired = field.required || (isProxyField && state.hasProxy);
                 return (
                     <Checkbox
                         key={field.name}
@@ -123,12 +143,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         label={field.label}
                         checked={state[field.name] as boolean}
                         onCheckedChange={(val) => handleCheckboxChange(field.name, val)}
-                        required={field.required ?? false}
+                        required={isRequired}
                         className={isMissing(field.name) ? 'bg-red-100' : undefined}
                     />
                 );
+            }
 
-            default:
+            default: {
+                const isProxyField = PROXY_FIELDS.includes(field.name);
+                const isRequired = field.required || (isProxyField && state.hasProxy);
                 return (
                     <div key={field.name} className="flex flex-col gap-1">
                         <Label htmlFor={field.name}>{field.label}</Label>
@@ -139,11 +162,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                             value={state[field.name] as string | number}
                             onChange={handleChange}
                             readOnly={field.type === 'pin' || field.name === 'id'}
-                            required={field.required ?? false}
+                            required={isRequired}
                             className={isMissing(field.name) ? 'bg-red-100' : undefined}
                         />
                     </div>
                 );
+            }
         }
     };
 
@@ -151,7 +175,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         e.preventDefault();
 
         const requiredMissing = visibleFields
-            .filter((f) => f.required)
+            .filter((f) => f.required || (state.hasProxy && PROXY_FIELDS.includes(f.name)))
             .filter((f) => {
                 const value = state[f.name];
                 switch (typeof value) {
@@ -167,9 +191,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             })
             .map((f) => f.name);
 
-        if (requiredMissing.length > 0) {
-            markMissing(requiredMissing);
-            const firstMissing = requiredMissing[0];
+        if (!state.day1Attendee && !state.day2Attendee) {
+            requiredMissing.push('day1Attendee', 'day2Attendee');
+        }
+
+        const uniqueMissing = Array.from(new Set(requiredMissing));
+
+        if (uniqueMissing.length > 0) {
+            markMissing(uniqueMissing);
+            const firstMissing = uniqueMissing[0];
             document.getElementById(firstMissing)?.focus();
             setMessage({ text: 'Please review the form for missing information.', type: 'error' });
             return;
