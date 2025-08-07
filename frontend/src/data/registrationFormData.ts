@@ -18,7 +18,7 @@
 //    priv          Flag a field as being a privileged role
 //
 export interface FormField {
-    name?: string;
+    name: string;
     label: string;
     type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
     required?: boolean;
@@ -35,6 +35,7 @@ export const registrationFormData: FormField[] = [
         scope: 'admin',
     },
     {
+        name: 'label',
         label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
         type: 'section',
         scope: 'registration',
@@ -54,6 +55,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
+        name: 'label',
         label: 'Provide your (attendee) contact information.',
         type: 'section',
         scope: 'registration',
@@ -129,6 +131,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
+        name: 'label',
         label: 'If you need to cancel, please let us know.',
         type: 'section',
         scope: 'registration',
@@ -141,6 +144,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
+        name: 'label',
         label: 'If you are registering another person, please provide your contact information.',
         type: 'section',
         required: false,
@@ -175,6 +179,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
+        name: 'label',
         label: 'This is a secured section of the form for administrators only',
         type: 'section',
         scope: 'admin',
