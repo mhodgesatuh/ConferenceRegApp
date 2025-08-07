@@ -42,6 +42,7 @@ export const registrations = mysqlTable('registrations', {
     question1: varchar('question1', {length: 128}).notNull(),
     question2: varchar('question2', {length: 128}).notNull(),
     isCancelled: boolean('is_cancelled').default(false),
+    cancellationReason: varchar('cancellation_reason', {length: 512}),
 
     // Administration
     cancelledAttendance: boolean('cancelled_attendance').default(false),

@@ -18,6 +18,7 @@ interface CreateRegistrationBody {
     proxyPhone?: string;
     proxyEmail: string;
     cancelledAttendance?: boolean;
+    cancellationReason?: boolean;
     day1Attendee?: boolean;
     day2Attendee?: boolean;
     question1: string;
@@ -59,6 +60,7 @@ router.post<{}, any, CreateRegistrationBody>(
                 proxyPhone,
                 proxyEmail,
                 cancelledAttendance,
+                cancellationReason,
                 day1Attendee,
                 day2Attendee,
                 question1,
@@ -93,6 +95,7 @@ router.post<{}, any, CreateRegistrationBody>(
                     proxyPhone,
                     proxyEmail,
                     cancelledAttendance,
+                    cancellationReason,
                     day1Attendee,
                     day2Attendee,
                     question1,

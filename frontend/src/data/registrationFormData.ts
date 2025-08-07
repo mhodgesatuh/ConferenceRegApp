@@ -132,7 +132,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'label',
-        label: 'If you need to cancel, please let us know.',
+        label: 'If you need to cancel, please return to this form to let us know.',
         type: 'section',
         scope: 'registration',
     },
@@ -140,6 +140,13 @@ export const registrationFormData: FormField[] = [
         name: 'cancelledAttendance',
         label: 'Cancel attendance',
         type: 'checkbox',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'cancellationReason',
+        label: 'Cancel attendance',
+        type: 'text',
         required: false,
         scope: 'registration',
     },
@@ -180,7 +187,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'label',
-        label: 'This is a secured section of the form for administrators only',
+        label: 'For internal use: indicate additional attendee roles.',
         type: 'section',
         scope: 'admin',
     },
