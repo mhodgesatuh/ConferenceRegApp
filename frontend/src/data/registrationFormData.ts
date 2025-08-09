@@ -29,12 +29,6 @@ export interface FormField {
 // Export a typed constant for each form element type.
 export const registrationFormData: FormField[] = [
     {
-        name: 'id',
-        label: 'Registration Form ID',
-        type: 'number',
-        scope: 'admin',
-    },
-    {
         name: 'label',
         label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
         type: 'section',
@@ -145,7 +139,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'cancellationReason',
-        label: 'Cancel attendance',
+        label: 'Reason for cancellation',
         type: 'text',
         required: false,
         scope: 'registration',
@@ -189,6 +183,12 @@ export const registrationFormData: FormField[] = [
         name: 'label',
         label: 'For internal use: indicate additional attendee roles.',
         type: 'section',
+        scope: 'admin',
+    },
+    {
+        name: 'id',
+        label: 'Registration Form ID',
+        type: 'number',
         scope: 'admin',
     },
     {

@@ -17,6 +17,7 @@ import {useMissingFields} from '@/hooks/useMissingFields';
 
 const PAGE_TITLE = 'Conference Registration';
 const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
+const CANCEL_FIELDS_SET = new Set(['isCancelled', 'cancelledAttendance', 'cancellationReason']);
 
 type MessageType = '' | 'success' | 'error';
 
@@ -61,7 +62,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         () =>
             fields.filter((f) => {
                 if (!showId && f.name === 'id') return false;
-                if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
+                if (!isSaved && CANCEL_FIELDS_SET.has(f.name)) return false;
                 if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
                 return !(f.scope === 'admin' && !hasUpdatePrivilege);
             }),
