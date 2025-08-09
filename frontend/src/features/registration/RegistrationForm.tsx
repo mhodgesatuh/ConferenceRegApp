@@ -56,6 +56,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         {...initialFormState(fields), ...(initialData || {})}
     );
 
+    const hasProxyData = useMemo(
+        () =>
+            [state.proxyName, state.proxyPhone, state.proxyEmail].some(
+                (v) => typeof v === 'string' && v.trim() !== ''
+            ),
+        [state.proxyName, state.proxyPhone, state.proxyEmail]
+    );
+
     // Determine if the form element is in scope for display purposes. See
     // data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
@@ -80,6 +88,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         }
     }, [state.loginPin]);
 
+    // Ensure cancellation cannot be undone when proxy contact information is provided.
+    useEffect(() => {
+        if (hasProxyData && !state.cancelledAttendance) {
+            dispatch({type: 'CHANGE_FIELD', name: 'cancelledAttendance', value: true});
+        }
+    }, [hasProxyData, state.cancelledAttendance]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, type, value, valueAsNumber} = e.target;
         let parsed: string | number;
@@ -101,6 +116,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         value: boolean | 'indeterminate' | undefined
     ) => {
         const checked = Boolean(value);
+        if (name === 'cancelledAttendance' && hasProxyData && !checked) {
+            return;
+        }
         if (name === 'day1Attendee' || name === 'day2Attendee') {
             clearMissing('day1Attendee');
             clearMissing('day2Attendee');
@@ -126,6 +144,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             case 'checkbox': {
                 const isProxyField = PROXY_FIELDS_SET.has(field.name);
                 const isRequired = field.required || (isProxyField && state.hasProxy);
+                const isDisabled = field.name === 'cancelledAttendance' && hasProxyData;
                 return (
                     <Checkbox
                         key={field.name}
@@ -135,6 +154,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         checked={state[field.name] as boolean}
                         onCheckedChange={(val) => handleCheckboxChange(field.name, val)}
                         required={isRequired}
+                        disabled={isDisabled}
                         className={isMissing(field.name) ? 'bg-red-100' : undefined}
                     />
                 );
