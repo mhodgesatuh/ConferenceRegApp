@@ -88,12 +88,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         }
     }, [state.loginPin]);
 
-    // Ensure cancellation cannot be undone when proxy contact information is provided.
+    // Ensure proxy status cannot be undone when proxy contact information is provided.
     useEffect(() => {
-        if (hasProxyData && !state.cancelledAttendance) {
-            dispatch({type: 'CHANGE_FIELD', name: 'cancelledAttendance', value: true});
+        if (hasProxyData && !state.hasProxy) {
+            dispatch({type: 'CHANGE_FIELD', name: 'hasProxy', value: true});
         }
-    }, [hasProxyData, state.cancelledAttendance]);
+    }, [hasProxyData, state.hasProxy]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, type, value, valueAsNumber} = e.target;
@@ -116,7 +117,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         value: boolean | 'indeterminate' | undefined
     ) => {
         const checked = Boolean(value);
-        if (name === 'cancelledAttendance' && hasProxyData && !checked) {
+        if (name === 'hasProxy' && hasProxyData && !checked) {
+
             return;
         }
         if (name === 'day1Attendee' || name === 'day2Attendee') {
@@ -144,7 +146,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             case 'checkbox': {
                 const isProxyField = PROXY_FIELDS_SET.has(field.name);
                 const isRequired = field.required || (isProxyField && state.hasProxy);
-                const isDisabled = field.name === 'cancelledAttendance' && hasProxyData;
+                const isDisabled = field.name === 'hasProxy' && hasProxyData;
+
                 return (
                     <Checkbox
                         key={field.name}
