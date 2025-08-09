@@ -20,12 +20,6 @@ const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
 
 type MessageType = '' | 'success' | 'error';
 
-// Type guard to ensure field.name is a string, required for field-safe rendering.
-// See: data/registrationFormData.ts
-function safeFieldName(field: FormField): field is FormField & { name: string } {
-    return typeof field.name === 'string';
-}
-
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
@@ -41,7 +35,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         () =>
             fields
                 .filter((f) => f.priv === 'update')
-                .filter(safeFieldName)
                 .some((f) => Boolean(initialData?.[f.name])),
         [fields, initialData]
     );
@@ -66,15 +59,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     // data/registrationFormData.ts for more information.
     const visibleFields = useMemo(
         () =>
-            fields
-                .filter((f) => {
-                    if (!safeFieldName(f)) return true;
-                    if (!showId && f.name === 'id') return false;
-                    if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
-                    if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
-                    return !(f.scope === 'admin' && !hasUpdatePrivilege);
-                })
-                .filter(safeFieldName),
+            fields.filter((f) => {
+                if (!showId && f.name === 'id') return false;
+                if (!isSaved && ['isCancelled', 'cancelledAttendance'].includes(f.name)) return false;
+                if (!state.hasProxy && PROXY_FIELDS_SET.has(f.name)) return false;
+                return !(f.scope === 'admin' && !hasUpdatePrivilege);
+            }),
         [fields, showId, hasUpdatePrivilege, state.hasProxy, isSaved]
     );
 
@@ -127,7 +117,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         dispatch({type: 'CHANGE_FIELD', name, value: checked});
     };
 
-    const renderField = (field: FormField & { name: string }) => {
+    const renderField = (field: FormField) => {
         switch (field.type) {
             case 'section':
                 return <Section key={field.name}>{field.label}</Section>;
