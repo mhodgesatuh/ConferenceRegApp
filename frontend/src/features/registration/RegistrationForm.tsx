@@ -45,7 +45,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
 
     // Hook for tracking names of required fields that are currently missing input.
-    const { markMissing, clearMissing, isMissing } = useMissingFields();
+    const {markMissing, clearMissing, isMissing} = useMissingFields();
 
     // Store the message text and type to display feedback to the user after
     // form submission.
@@ -95,6 +95,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         }
     }, [hasProxyData, state.hasProxy]);
 
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, type, value, valueAsNumber} = e.target;
         let parsed: string | number;
@@ -117,6 +118,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     ) => {
         const checked = Boolean(value);
         if (name === 'hasProxy' && hasProxyData && !checked) {
+
             return;
         }
         if (name === 'day1Attendee' || name === 'day2Attendee') {
@@ -145,6 +147,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 const isProxyField = PROXY_FIELDS_SET.has(field.name);
                 const isRequired = field.required || (isProxyField && state.hasProxy);
                 const isDisabled = field.name === 'hasProxy' && hasProxyData;
+
                 return (
                     <Checkbox
                         key={field.name}
@@ -212,7 +215,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             markMissing(uniqueMissing);
             const firstMissing = uniqueMissing[0];
             document.getElementById(firstMissing)?.focus();
-            setMessage({ text: 'Please review the form for missing information.', type: 'error' });
+            setMessage({text: 'Please review the form for missing information.', type: 'error'});
             return;
         }
 
@@ -238,7 +241,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             } else {
                 const data = await res.json().catch(() => ({}));
                 const messageText = data.error ?? 'Failed to save registration';
-                setMessage({ text: messageText, type: 'error' });
+                setMessage({text: messageText, type: 'error'});
             }
         } catch (err) {
             console.error('Registration submission failed', err);
@@ -274,7 +277,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         {isSaved ? 'Update Registration' : 'Register'}
                     </Button>
                     {message.text && (
-                        <Message text={message.text} isError={isError} />
+                        <Message text={message.text} isError={isError}/>
                     )}
                 </div>
             </form>
