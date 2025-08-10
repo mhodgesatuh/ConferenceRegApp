@@ -7,6 +7,22 @@ export const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail'
 export const CANCEL_FIELDS_SET = new Set(['isCancelled', 'cancelledAttendance', 'cancellationReason']);
 
 /**
+ * Basic email format validation
+ */
+export function isValidEmail(value: string): boolean {
+    // Simple RFC 5322 compliant regex for email validation
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/**
+ * Basic phone number validation
+ */
+export function isValidPhone(value: string): boolean {
+    // Allow digits, spaces, dashes, parentheses and leading plus
+    return /^\+?[0-9\s\-()]{7,}$/.test(value);
+}
+
+/**
  * Role/privilege rule
  */
 export function userHasUpdatePrivilege(fields: FormField[], initialData?: Record<string, any>): boolean {
