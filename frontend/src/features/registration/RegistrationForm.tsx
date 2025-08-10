@@ -191,16 +191,31 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                     </div>
                 </header>
 
-                {visibleFields.map((field) => (
-                    <FieldRenderer
-                        key={`${field.type}-${field.name}-${field.label}`}
-                        field={field}
-                        state={state}
-                        isMissing={isMissing}
-                        onCheckboxChange={handleCheckboxChange}
-                        onInputChange={handleInputChange}
-                    />
-                ))}
+                {(() => {
+                    let firstSection = true;
+                    return visibleFields.map((field) => {
+                        let hr = null;
+                        if (field.type === 'section') {
+                            if (firstSection) {
+                                firstSection = false;
+                            } else {
+                                hr = <hr className="my-4"/>;
+                            }
+                        }
+                        return (
+                            <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
+                                {hr}
+                                <FieldRenderer
+                                    field={field}
+                                    state={state}
+                                    isMissing={isMissing}
+                                    onCheckboxChange={handleCheckboxChange}
+                                    onInputChange={handleInputChange}
+                                />
+                            </React.Fragment>
+                        );
+                    });
+                })()}
 
                 <div className="flex items-center gap-2">
                     <Button type="submit">{isSaved ? 'Update Registration' : 'Register'}</Button>
