@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router-dom';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
-import {Checkbox} from '@/components/ui/checkbox-wrapper'; // ⬅️ wrapper import
+import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Message} from '@/components/ui/message';
 import {isValidEmail} from '../registration/formRules';
 
@@ -116,7 +116,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
         <form onSubmit={handleSubmit} className="space-y-4">
 
             <div className="flex justify-center">
-                <img src="/pcatt-conference.png" alt="PCATT Logo" className="w-full"/>
+                <img src="/conference_intro.png" alt="PCATT Logo" className="w-full"/>
             </div>
 
             {/* Primary action */}
