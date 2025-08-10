@@ -18,7 +18,7 @@ interface CreateRegistrationBody {
     proxyPhone?: string;
     proxyEmail: string;
     cancelledAttendance?: boolean;
-    cancellationReason?: boolean;
+    cancellationReason?: string;
     day1Attendee?: boolean;
     day2Attendee?: boolean;
     question1: string;
@@ -181,24 +181,28 @@ router.get(
         }
 
         try {
-            const [record] = await db
+            const [registration] = await db
                 .select()
                 .from(registrations)
-                .innerJoin(
-                    credentials,
-                    eq(credentials.registrationId, registrations.id)
-                )
                 .where(eq(registrations.email, email));
 
-            if (!record) {
-                res.status(404).json({error: 'Registration not found'});
+            if (!registration) {
+                res.status(404).json({error: 'Please contact PCATT'});
+                return;
+            }
+
+            const [credential] = await db
+                .select()
+                .from(credentials)
+                .where(eq(credentials.registrationId, registration.id));
+
+            if (!credential) {
+                res.status(404).json({error: 'Please contact PCATT'});
                 return;
             }
 
             // In a real implementation, send the pin via email here.
-            console.log(
-                `Sending pin ${record.credentials.loginPin} to ${email}`
-            );
+            console.log(`Sending pin ${credential.loginPin} to ${email}`);
 
             res.json({sent: true});
         } catch (err) {
