@@ -8,6 +8,7 @@ import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper'; // ⬅️ wrapper import
 import {Message} from '@/components/ui/message';
+import {isValidEmail} from '../registration/formRules';
 
 interface HomePageProps {
     onSuccess: (registration: any) => void;
@@ -19,6 +20,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
     const [wantsUpdate, setWantsUpdate] = useState(false);
     const [emailPinChecked, setEmailPinChecked] = useState(false);
     const [pinMessage, setPinMessage] = useState<{ text: string; isError: boolean } | null>(null);
+    const [emailError, setEmailError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -40,6 +42,12 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
     };
 
     const goRegister = () => navigate('/register');
+
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setEmail(value);
+        setEmailError(value && !isValidEmail(value) ? 'Invalid email address' : '');
+    };
 
     const handleEmailPin = async (val: boolean) => {
         const checked = Boolean(val);
@@ -95,6 +103,8 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
         }
     }, [email]);
 
+    const canSubmit = isValidEmail(email) && pin.trim() !== '';
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -125,10 +135,13 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                             id="email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={handleEmailChange}
                             required
                             autoComplete="email"
                         />
+                        {emailError && (
+                            <Message text={emailError} isError/>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="pin">Pin</Label>
@@ -143,14 +156,14 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit">Submit</Button>
+                        <Button type="submit" disabled={!canSubmit}>Submit</Button>
                     </div>
                     <Checkbox
                         id="email-pin"
                         label="Please email my pin."
                         checked={emailPinChecked}
                         onCheckedChange={handleEmailPin}
-                        disableUnless={email.trim().includes('@')}
+                        disableUnless={isValidEmail(email)}
                     />
                     {pinMessage && (
                         <Message text={pinMessage.text} isError={pinMessage.isError}/>
