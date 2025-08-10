@@ -27,6 +27,13 @@ h1 {
   margin: 0 auto;
 }
 
+hr {
+    border: none;
+    height: 3px;
+    background-color: #c0a060;
+    margin: 1.5rem 0;
+    border-radius: 2px;
+}
 
 
 @layer base {

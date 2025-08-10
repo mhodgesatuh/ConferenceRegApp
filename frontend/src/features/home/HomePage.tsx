@@ -35,6 +35,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex gap-2">
+                <Button type="button" onClick={goRegister}>Register to Attend</Button>
+            </div>
+            <hr className="my-4"/>
             <div className="flex flex-col gap-1">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -44,8 +48,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                 <Input id="pin" type="text" value={pin} onChange={(e) => setPin(e.target.value)} required />
             </div>
             <div className="flex gap-2">
-                <Button type="submit">Login</Button>
-                <Button type="button" onClick={goRegister}>Registration</Button>
+                <Button type="submit">Return to Registration</Button>
             </div>
         </form>
     );

@@ -179,7 +179,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     return (
         <AppLayout>
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                <header className="border-b pb-4 mb-2">
+                <header className="pb-2 mb-1">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
                         <Link to="/home" className="flex items-center gap-1 text-primary hover:underline">
                             <ArrowLeft className="h-4 w-4"/>
@@ -192,15 +192,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 </header>
 
                 {(() => {
-                    let firstSection = true;
                     return visibleFields.map((field) => {
                         let hr = null;
                         if (field.type === 'section') {
-                            if (firstSection) {
-                                firstSection = false;
-                            } else {
-                                hr = <hr className="my-4"/>;
-                            }
+                            hr = <hr className="my-4"/>;
                         }
                         return (
                             <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
@@ -216,7 +211,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                         );
                     });
                 })()}
-
+                <hr className="my-4"/>
                 <div className="flex items-center gap-2">
                     <Button type="submit">{isSaved ? 'Update Registration' : 'Register'}</Button>
                     {message.text && <Message text={message.text} isError={isError}/>}

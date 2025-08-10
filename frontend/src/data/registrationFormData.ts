@@ -5,12 +5,13 @@
 //
 
 // Defining a form section:
+//    name          'label'
 //    label         Describe the purpose of the section
 //    type          'section'
 //    scope         The scope determines when it will get displayed
 //
 // Defining a form section:
-//    field         The field name, see backend/src/db/schema.ts
+//    name          The field name, see backend/src/db/schema.ts
 //    label         Input prompt text
 //    type          Input type
 //    required      Optional, set to true if needed
