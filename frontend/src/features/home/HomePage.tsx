@@ -123,7 +123,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit">Return to Registration</Button>
+                        <Button type="submit">Submit</Button>
                     </div>
                     <Checkbox
                         id="email-pin"
