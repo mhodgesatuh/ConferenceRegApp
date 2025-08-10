@@ -43,15 +43,25 @@ cd ConferenceRegApp
 
 ---
 
-## 4. Install Project Dependencies
+## 4. Configure Environment Variables
+
+Copy the example environment file and adjust the values for your local setup:
+
+```bash
+cp .env.sample .env
+```
+
+These variables configure MariaDB, the backend server, and the frontend port.
+
+---
+
+## 5. Install Project Dependencies
 
 ### Backend (Express, Drizzle ORM)
 
 ```bash
 cd backend
 npm install
-npm install gel
-npm install --save-dev typescript @types/node ts-node
 ```
 
 ### Frontend (React, Vite)
@@ -61,10 +71,9 @@ cd ../frontend
 npm install
 ```
 
-### 🛠 One-Time Setup for shadcn/ui
+### 🛠 One-Time Setup for shadcn/ui (run from `frontend`)
 
 ```bash
-cd ../frontend
 npx shadcn@latest
 npx shadcn@latest init
 npx shadcn@latest add checkbox
@@ -74,7 +83,7 @@ npx shadcn@latest add button
 
 ---
 
-## 5. Install dotenv-cli
+## 6. Install dotenv-cli
 
 Use `dotenv-cli` to load `.env` variables into `make` and CLI tools.
 
@@ -92,7 +101,7 @@ npm install -g dotenv-cli
 
 ---
 
-## 6. Drizzle ORM CLI
+## 7. Drizzle ORM CLI
 
 The Drizzle CLI is used for schema management and DB migrations.
 
@@ -106,7 +115,7 @@ cd ..
 
 ---
 
-## 7. Initialize the Database
+## 8. Initialize the Database
 
 To reset the MariaDB container and apply the schema:
 
@@ -123,22 +132,22 @@ This command:
 
 ---
 
-## 8. Start the Frontend (Vite Dev Server)
+## 9. Start the Frontend (Vite Dev Server)
 
 In a separate terminal tab or window:
 
 ```bash
-make frontend
+make frontend-dev
 ```
 
 This will:
 
 - Install frontend dependencies if needed
-- Start the Vite dev server on `http://localhost:8080`
+- Start the Vite dev server on `http://localhost:3000`
 
 ---
 
-## 9. Useful Development Commands
+## 10. Useful Development Commands
 
 | Command               | Description                                  |
 |-----------------------|----------------------------------------------|
@@ -147,25 +156,13 @@ This will:
 | `make build`          | Build Docker images                          |
 | `make up`             | Start containers in detached mode            |
 | `make down`           | Stop and remove containers                   |
-| `make logs`           | View logs from running containers            |
-| `make frontend`       | Start Vite dev server                        |
+| `make tail-logs`      | View logs from running containers            |
+| `make frontend-dev`   | Start Vite dev server                        |
 | `make frontend-build` | Build frontend for production                |
 | `make clean`          | Remove all containers, volumes, and images   |
 | `make studio`         | Launch Drizzle Studio (web UI for DB schema) |
-| `make migrate`        | Generate and push a schema migration         |
+| `make update-schema`  | Generate and apply schema migrations         |
 | `make help`           | List all make targets                        |
-
----
-
-## 10. Environment Configuration
-
-Ensure you update the `.env` file in the project root:
-
-These variables therein are used to:
-
-- Configure MariaDB during container creation
-- Set database credentials for Drizzle and the backend server
-- Specify the frontend development server port
 
 ---
 
