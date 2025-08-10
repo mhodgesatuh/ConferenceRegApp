@@ -169,6 +169,45 @@ router.get(
     }
 );
 
+/* GET /lost-pin?email=addr */
+router.get(
+    '/lost-pin',
+    async (req, res): Promise<void> => {
+        const {email} = req.query as { email?: string };
+
+        if (!email) {
+            res.status(400).json({error: 'Email required'});
+            return;
+        }
+
+        try {
+            const [record] = await db
+                .select()
+                .from(registrations)
+                .innerJoin(
+                    credentials,
+                    eq(credentials.registrationId, registrations.id)
+                )
+                .where(eq(registrations.email, email));
+
+            if (!record) {
+                res.status(404).json({error: 'Registration not found'});
+                return;
+            }
+
+            // In a real implementation, send the pin via email here.
+            console.log(
+                `Sending pin ${record.credentials.loginPin} to ${email}`
+            );
+
+            res.json({sent: true});
+        } catch (err) {
+            console.error('Error sending pin:', err);
+            res.status(500).json({error: 'Failed to send pin'});
+        }
+    }
+);
+
 /* GET /:id */
 router.get<{ id: string }, any>(
     '/:id',
