@@ -103,6 +103,13 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
         }
     }, [email]);
 
+    useEffect(() => {
+        if (pin.trim() !== '') {
+            setEmailPinChecked(false);
+            setPinMessage(null);
+        }
+    }, [pin]);
+
     const canSubmit = isValidEmail(email) && pin.trim() !== '';
 
     return (
@@ -163,7 +170,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         label="Please email my pin."
                         checked={emailPinChecked}
                         onCheckedChange={handleEmailPin}
-                        disableUnless={isValidEmail(email)}
+                        disableUnless={isValidEmail(email) && pin.trim() === ''}
                     />
                     {pinMessage && (
                         <Message text={pinMessage.text} isError={pinMessage.isError}/>
