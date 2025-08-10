@@ -2,7 +2,8 @@
 //
 // Functions:
 // - Checkbox followed by clickable label
-// - disableUnless prop to conditionally disable the checkbox
+// - Prop to conditionally disable the checkbox
+//
 
 import * as React from 'react';
 import { Checkbox as PrimitiveCheckbox } from './checkbox';
