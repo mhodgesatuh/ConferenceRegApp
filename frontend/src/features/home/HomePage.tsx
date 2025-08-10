@@ -1,12 +1,13 @@
 // frontend/src/features/home/HomePage.tsx
 //
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox-wrapper'; // ⬅️ wrapper import
+import { Message } from '@/components/ui/message';
 
 interface HomePageProps {
     onSuccess: (registration: any) => void;
@@ -16,6 +17,8 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [pin, setPin] = useState('');
     const [wantsUpdate, setWantsUpdate] = useState(false);
+    const [emailPinChecked, setEmailPinChecked] = useState(false);
+    const [pinMessage, setPinMessage] = useState<{ text: string; isError: boolean } | null>(null);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +40,40 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
     };
 
     const goRegister = () => navigate('/register');
+
+    const handleEmailPin = async (val: boolean) => {
+        const checked = Boolean(val);
+        setEmailPinChecked(checked);
+        if (checked) {
+            try {
+                const params = new URLSearchParams({ email });
+                const res = await fetch(`/api/registrations/lost-pin?${params.toString()}`);
+                if (res.ok) {
+                    setPinMessage({ text: 'Sent as requested', isError: false });
+                } else {
+                    setPinMessage({
+                        text: 'Please contact PCATT for assistance.',
+                        isError: true,
+                    });
+                }
+            } catch (err) {
+                console.error('Lost pin request failed', err);
+                setPinMessage({
+                    text: 'Please contact PCATT for assistance.',
+                    isError: true,
+                });
+            }
+        } else {
+            setPinMessage(null);
+        }
+    };
+
+    useEffect(() => {
+        if (!email) {
+            setEmailPinChecked(false);
+            setPinMessage(null);
+        }
+    }, [email]);
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,6 +125,16 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                     <div className="flex gap-2">
                         <Button type="submit">Return to Registration</Button>
                     </div>
+                    <Checkbox
+                        id="email-pin"
+                        label="Please email my pin."
+                        checked={emailPinChecked}
+                        onCheckedChange={handleEmailPin}
+                        disabled={!email}
+                    />
+                    {pinMessage && (
+                        <Message text={pinMessage.text} isError={pinMessage.isError} />
+                    )}
                 </div>
             )}
         </form>
