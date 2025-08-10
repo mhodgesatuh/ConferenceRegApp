@@ -216,6 +216,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
     };
 
     const isError = message.type === 'error';
+    const errorFor = (f: FormField) => errors[f.name];
 
     // Render
 
@@ -249,7 +250,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                                     isMissing={isMissing}
                                     onCheckboxChange={handleCheckboxChange}
                                     onInputChange={handleInputChange}
-                                    error={errors[field.name]}
+                                    error={errorFor(field)}
                                 />
                             </React.Fragment>
                         );
