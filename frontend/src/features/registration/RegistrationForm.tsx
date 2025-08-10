@@ -23,6 +23,8 @@ import {
     hasAnyProxyData,
     PROXY_FIELDS_SET,
     userHasUpdatePrivilege,
+    isValidEmail,
+    isValidPhone,
 } from './formRules';
 
 const PAGE_TITLE = 'Conference Registration';
@@ -48,6 +50,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         text: '',
         type: '',
     });
+
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Missing-field helper
     const {markMissing, clearMissing, isMissing} = useMissingFields();
@@ -93,11 +97,29 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
     // Handlers
 
+    const validateField = (name: string, value: unknown): string => {
+        const field = fields.find((f) => f.name === name);
+        if (!field) return '';
+        const str = String(value);
+        if (field.type === 'email') {
+            return str.trim() && !isValidEmail(str) ? 'Invalid email address' : '';
+        }
+        if (field.type === 'phone') {
+            return str.trim() && !isValidPhone(str) ? 'Invalid phone number' : '';
+        }
+        return '';
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, type, value, valueAsNumber} = e.target;
         const parsed = type === 'number' ? (isNaN(valueAsNumber) ? 0 : valueAsNumber) : value;
         clearMissing(name);
         dispatch({type: 'CHANGE_FIELD', name, value: parsed});
+        const error = validateField(name, parsed);
+        setErrors((prev) => {
+            const {[name]: _removed, ...rest} = prev;
+            return error ? {...rest, [name]: error} : rest;
+        });
     };
 
     const handleCheckboxChange = (name: string, value: boolean | 'indeterminate' | undefined) => {
@@ -119,6 +141,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             PROXY_FIELDS_SET.forEach((field) => {
                 clearMissing(field);
                 dispatch({type: 'CHANGE_FIELD', name: field, value: ''});
+                setErrors((prev) => {
+                    const {[field]: _removed, ...rest} = prev;
+                    return rest;
+                });
             });
         }
 
@@ -127,8 +153,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
     // Submit
 
+    const validateAll = (): string[] => {
+        const newErrors: Record<string, string> = {};
+        for (const field of visibleFields) {
+            const err = validateField(field.name, state[field.name]);
+            if (err) newErrors[field.name] = err;
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const invalid = validateAll();
+        if (invalid.length > 0) {
+            document.getElementById(invalid[0])?.focus();
+            setMessage({text: 'Please review the form for errors.', type: 'error'});
+            return;
+        }
 
         // Compute required + missing using rules
         const requiredNames = getRequiredFieldNames(visibleFields, state);
@@ -206,6 +249,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                                     isMissing={isMissing}
                                     onCheckboxChange={handleCheckboxChange}
                                     onInputChange={handleInputChange}
+                                    error={errors[field.name]}
                                 />
                             </React.Fragment>
                         );

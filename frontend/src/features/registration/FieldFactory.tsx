@@ -7,6 +7,7 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
+import {Message} from '@/components/ui/message';
 
 type Props = {
     field: FormField;
@@ -14,9 +15,10 @@ type Props = {
     isMissing: (name: string) => boolean;
     onCheckboxChange: (name: string, value: boolean | 'indeterminate' | undefined) => void;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    error?: string;
 };
 
-export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInputChange}: Props) {
+export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInputChange, error}: Props) {
     if (field.type === 'section') {
         return <Section key={`section-${field.label}`}>{field.label}</Section>;
     }
@@ -58,8 +60,9 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                 value={state[field.name] as string | number}
                 onChange={onInputChange}
                 readOnly={isReadOnly}
-                className={isMissing(field.name) ? 'bg-red-100' : undefined}
+                className={isMissing(field.name) || error ? 'bg-red-100' : undefined}
             />
+            {error && <Message text={error} isError />}
         </div>
     );
 }
