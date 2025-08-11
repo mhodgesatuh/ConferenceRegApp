@@ -53,6 +53,12 @@ cp .env.sample .env
 
 These variables configure MariaDB, the backend server, and the frontend port.
 
+The backend uses a logger that writes files to the directory specified by the
+`LOG_DIR` environment variable. For development you can set `LOG_DIR=./logs` to
+store logs in a local `logs` folder. In production, point `LOG_DIR` to a
+persistent location such as `/var/log/conference-reg` and mount that path as a
+volume so the logs survive container restarts.
+
 ---
 
 ## 5. Install Project Dependencies

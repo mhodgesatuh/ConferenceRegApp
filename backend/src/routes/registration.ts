@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import {db} from '@/db/client';
 import {credentials, registrations} from '@/db/schema';
+import {log} from '@/utils/logger';
 
 import {and, eq} from 'drizzle-orm';
 
@@ -116,7 +117,7 @@ router.post<{}, any, CreateRegistrationBody>(
 
             res.status(201).json({id, loginPin});
         } catch (err) {
-            console.error('Error saving registration:', err);
+            log.error('Error saving registration', {error: err});
             res.status(500).json({error: 'Failed to save registration'});
         }
     }
@@ -163,7 +164,7 @@ router.get(
 
             res.json({registration});
         } catch (err) {
-            console.error('Error fetching registration:', err);
+            log.error('Error fetching registration', {error: err});
             res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
@@ -202,11 +203,11 @@ router.get(
             }
 
             // In a real implementation, send the pin via email here.
-            console.log(`Sending pin ${credential.loginPin} to ${email}`);
+            log.info(`Sending pin ${credential.loginPin} to ${email}`);
 
             res.json({sent: true});
         } catch (err) {
-            console.error('Error sending pin:', err);
+            log.error('Error sending pin', {error: err});
             res.status(500).json({error: 'Failed to send pin'});
         }
     }
@@ -248,7 +249,7 @@ router.get<{ id: string }, any>(
 
             res.json({registration});
         } catch (err) {
-            console.error('Error fetching registration:', err);
+            log.error('Error fetching registration', {error: err});
             res.status(500).json({error: 'Failed to fetch registration'});
         }
     }
