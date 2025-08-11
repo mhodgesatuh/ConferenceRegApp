@@ -137,7 +137,9 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                 <div id="update-section" className="space-y-4">
                     <hr className="my-4"/>
                     <div className="flex flex-col gap-1">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">
+                            Email<sup className="text-red-500">*</sup>
+                        </Label>
                         <Input
                             id="email"
                             type="email"
@@ -151,7 +153,9 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         )}
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Label htmlFor="pin">Pin</Label>
+                        <Label htmlFor="pin">
+                            Pin<sup className="text-red-500">*</sup>
+                        </Label>
                         <Input
                             id="pin"
                             type="text"

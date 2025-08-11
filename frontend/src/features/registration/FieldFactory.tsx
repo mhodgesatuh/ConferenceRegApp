@@ -52,7 +52,10 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
 
     return (
         <div key={field.name} className="flex flex-col gap-1">
-            <Label htmlFor={field.name}>{field.label}</Label>
+            <Label htmlFor={field.name}>
+                {field.label}
+                {field.required && <sup className="text-red-500">*</sup>}
+            </Label>
             <Input
                 id={field.name}
                 name={field.name}
