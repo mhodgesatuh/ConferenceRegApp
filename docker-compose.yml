@@ -29,11 +29,17 @@ services:
       - "5001:5000"
     env_file:
       - .env
+    environment:
+      LOG_DIR: /var/log/conference
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_TO_FILE: ${LOG_TO_FILE:-true}
     labels:
       - "com.project.name=conference-backend"
       - "com.project.description=Express API for conference registration"
     depends_on:
       - conference-db
+    volumes:
+      - ${LOG_DIR:-conference_logs}:/var/log/conference
 
   conference-db:
     image: mariadb:10.11
@@ -56,3 +62,4 @@ services:
 
 volumes:
   mariadb_data:
+  conference_logs:
