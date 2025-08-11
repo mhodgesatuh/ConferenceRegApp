@@ -12,22 +12,28 @@ SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
 ##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 logs: ## View logs for current environment (dev if LOG_DIR is set to ./logs, else prod)
-	@if [ "$$(grep -E '^LOG_DIR=\.\/logs' .env 2>/dev/null)" != "" ]; then \
-	  if [ -f ./logs/app.log ]; then \
-	    echo " - showing dev logs from ./logs/app.log"; \
-	    less ./logs/app.log; \
+	@LOG_PREFIX=$$(grep -E '^LOG_PREFIX=' .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	[ -z "$$LOG_PREFIX" ] && LOG_PREFIX=app; \
+	if [ "$$(grep -E '^LOG_DIR=\.\/logs' .env 2>/dev/null)" != "" ]; then \
+	  FILE=$$(ls -1 ./logs/$$LOG_PREFIX-*.log 2>/dev/null | tail -n 1); \
+	  if [ "$$FILE" != "" ]; then \
+	    echo " - showing dev logs from $$FILE"; \
+	    less $$FILE; \
 	  else \
-	    echo " - no dev log file found at ./logs/app.log"; \
+	    echo " - no dev log file found in ./logs"; \
 	  fi; \
 	else \
-	  echo " - showing prod logs from /var/log/conference/app.log inside container"; \
+	  echo " - showing prod logs from /var/log/conference inside container"; \
 	  docker compose exec -it conference-backend sh -c '\
-	    if [ -f /var/log/conference/app.log ]; then \
-	      less /var/log/conference/app.log; \
+	    LOG_PREFIX="'"$$LOG_PREFIX"'"; \
+	    FILE=$$(ls -1 /var/log/conference/$$LOG_PREFIX-*.log 2>/dev/null | tail -n 1); \
+	    if [ "$$FILE" != "" ]; then \
+	      less $$FILE; \
 	    else \
-	      echo " - no prod log file found at /var/log/conference/app.log"; \
+	      echo " - no prod log file found in /var/log/conference"; \
 	    fi'; \
 	fi
+
 
 ##–––––– Quick Start –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 

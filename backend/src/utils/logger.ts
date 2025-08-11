@@ -14,7 +14,7 @@
  *      LOG_LEVEL=info
  *      LOG_TO_FILE=true
  * 4) In production (container):
- *      LOG_DIR=/var/log/conference-reg
+ *      LOG_DIR=/var/log/conference
  *      LOG_LEVEL=info
  *      LOG_TO_FILE=true
  *      # mount LOG_DIR as a persistent volume
@@ -29,6 +29,11 @@ import fs from "fs";
 import path from "path";
 import { promises as fsp } from "fs";
 import type { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+
+// Load environment variables before reading them so that developers
+// using a local `.env` file get the correct logging configuration.
+dotenv.config();
 
 // ---------- Configuration ----------
 const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
