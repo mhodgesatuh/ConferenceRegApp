@@ -9,6 +9,26 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
 
+##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+logs: ## View logs for current environment (dev if LOG_DIR is set to ./logs, else prod)
+	@if [ "$$(grep -E '^LOG_DIR=\.\/logs' .env 2>/dev/null)" != "" ]; then \
+	  if [ -f ./logs/app.log ]; then \
+	    echo " - showing dev logs from ./logs/app.log"; \
+	    less ./logs/app.log; \
+	  else \
+	    echo " - no dev log file found at ./logs/app.log"; \
+	  fi; \
+	else \
+	  echo " - showing prod logs from /var/log/conference/app.log inside container"; \
+	  docker compose exec -it conference-backend sh -c '\
+	    if [ -f /var/log/conference/app.log ]; then \
+	      less /var/log/conference/app.log; \
+	    else \
+	      echo " - no prod log file found at /var/log/conference/app.log"; \
+	    fi'; \
+	fi
+
 ##–––––– Quick Start –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 init: ## Initialize dev environment: install deps, reset DB, and apply schema
@@ -173,4 +193,3 @@ help: ## Show available targets grouped by section
         frontend-build frontend-clean frontend-dev frontend-install \
         help init init-backend init-frontend restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up
-
