@@ -63,6 +63,13 @@ volume so the logs survive container restarts.
 
 ## 5. Install Project Dependencies
 
+### /etc/hosts
+When Drizzle executes on the host, it cannot resolve conference-db, producing 
+the ENOTFOUND error. To resolve that add the following entry for development in 
+the localhost environment.
+
+    127.0.0.1 conference-db
+
 ### Backend (Express, Drizzle ORM)
 
 ```bash
