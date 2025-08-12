@@ -1,5 +1,33 @@
-# Local Development Setup for ConferenceRegApp (macOS)
+# Local Development Setup for ConferenceReg
 
+<!-- TOC -->
+* [Setup](#setup)
+  * [1. Install Docker Desktop](#1-install-docker-desktop)
+  * [2. Install Required Tools](#2-install-required-tools)
+  * [3. Clone the Repository](#3-clone-the-repository)
+  * [4. Configure Environment Variables](#4-configure-environment-variables)
+  * [5. Install Project Dependencies](#5-install-project-dependencies)
+    * [/etc/hosts](#etchosts)
+    * [Backend (Express, Drizzle ORM)](#backend-express-drizzle-orm)
+    * [Frontend (React, Vite)](#frontend-react-vite)
+    * [One-Time Setup for shadcn/ui (run from `frontend`)](#one-time-setup-for-shadcnui-run-from-frontend)
+  * [6. Install dotenv-cli](#6-install-dotenv-cli)
+  * [7. Drizzle ORM CLI](#7-drizzle-orm-cli)
+  * [8. Initialize the Database](#8-initialize-the-database)
+  * [9. Start the Frontend (Vite Dev Server)](#9-start-the-frontend-vite-dev-server)
+  * [10. Useful Development Commands](#10-useful-development-commands)
+* [Makefile Commands](#makefile-commands)
+  * [**Logs**](#logs)
+  * [**Quick Start**](#quick-start)
+  * [**Drizzle ORM: Schema Management**](#drizzle-orm-schema-management)
+  * [**Docker: Container Lifecycle**](#docker-container-lifecycle)
+  * [**Frontend Development**](#frontend-development)
+  * [**High-Level Composites**](#high-level-composites)
+* [You're Ready!](#youre-ready)
+* [Future work](#future-work)
+<!-- TOC -->
+
+# Setup
 This guide walks you through setting up your local development environment on
 macOS for the **ConferenceRegApp** project. It covers required tools, project
 dependencies, containerization, and workflow setup.
@@ -84,7 +112,7 @@ cd ../frontend
 npm install
 ```
 
-### 🛠 One-Time Setup for shadcn/ui (run from `frontend`)
+### One-Time Setup for shadcn/ui (run from `frontend`)
 
 ```bash
 npx shadcn@latest
@@ -162,24 +190,61 @@ This will:
 
 ## 10. Useful Development Commands
 
-| Command               | Description                                  |
-|-----------------------|----------------------------------------------|
-| `make init`           | Reset DB container, apply schema             |
-| `make schema`         | Push current schema to the database          |
-| `make build`          | Build Docker images                          |
-| `make up`             | Start containers in detached mode            |
-| `make down`           | Stop and remove containers                   |
-| `make tail-logs`      | View logs from running containers            |
-| `make frontend-dev`   | Start Vite dev server                        |
-| `make frontend-build` | Build frontend for production                |
-| `make clean`          | Remove all containers, volumes, and images   |
-| `make studio`         | Launch Drizzle Studio (web UI for DB schema) |
-| `make update-schema`  | Generate and apply schema migrations         |
-| `make help`           | List all make targets                        |
+# Makefile Commands
+
+## **Logs**
+| Command | Description |
+|---------|-------------|
+| `logs` | View logs for current environment (dev if `LOG_DIR` is set to `./logs`, else prod) |
+
+## **Quick Start**
+| Command | Description |
+|---------|-------------|
+| `init` | Initialize dev environment: install deps, reset DB, and apply schema |
+| `init-backend` | Rebuild and restart the backend container only |
+
+## **Drizzle ORM: Schema Management**
+| Command | Description |
+|---------|-------------|
+| `baseline` | Snapshot current schema into a new “init” migration |
+| `drop-tables` | Drop all existing tables in the database |
+| `reset-db` | Completely remove and recreate the database from `.env` |
+| `schema` | Incrementally apply only new migrations to the database |
+| `generate` | Diff schema locally → write SQL + journal (then run `make commit-migrations`) |
+| `commit-migration` | Stage & commit new Drizzle migration files |
+| `studio-check` | Verify certs & hosts entry for Drizzle Studio |
+| `studio-cert` | Generate & install dev certs for Drizzle Studio (requires mkcert) |
+| `studio` | Launch Drizzle Studio |
+
+## **Docker: Container Lifecycle**
+| Command | Description |
+|---------|-------------|
+| `build` | Build Docker images for frontend and backend |
+| `up` | Start containers in detached mode |
+| `down` | Stop and remove containers |
+| `restart` | Restart all containers |
+| `tail-logs` | Tail logs from all containers |
+| `clean` | Stop and remove all containers, volumes, and images |
+
+## **Frontend Development**
+| Command | Description |
+|---------|-------------|
+| `init-frontend` | Rebuild and restart the frontend container only |
+| `frontend-dev` | Run the frontend dev server (Vite) |
+| `frontend-install` | Install frontend dependencies |
+| `frontend-build` | Build the frontend (for production) |
+| `frontend-clean` | Remove frontend dist build |
+
+## **High-Level Composites**
+| Command | Description |
+|---------|-------------|
+| `deploy` | Build images, apply only new migrations, and start the stack |
+| `update-schema` | Generate new migrations and apply them |
+| `help` | Show available targets grouped by section |
 
 ---
 
-## You're Ready!
+# You're Ready!
 
 Your environment is now set up to develop and test the **ConferenceRegApp** project locally on macOS.
 
@@ -194,8 +259,7 @@ make init
 Then visit: [http://localhost:3000](http://localhost:3000)
 
 ---
-
-## Future work
+# Future work
 
 If you’re using a single npm install and haven’t forced production mode, devDependencies (including rimraf) will already be pulled in.
 
@@ -204,91 +268,8 @@ If you have NODE_ENV=production set in your Dockerfile or CI, switch to a two-st
 dockerfile
 Copy
 Edit
-# ─── Builder Stage ─────────────────────────────────────────────
-FROM node:20-alpine AS builder
-WORKDIR /app/backend
-COPY backend/package*.json tsconfig.base.json tsconfig.json ./
-# installs both dependencies & devDependencies
-RUN npm ci
-COPY backend/ ./
-RUN npm run build    # runs "npm run clean && tsc"
-
-# ─── Runtime Stage ─────────────────────────────────────────────
-FROM node:20-alpine
-WORKDIR /app/backend
-# only install production deps
-COPY backend/package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/backend/dist ./dist
-
-EXPOSE 5000
-CMD ["node", "dist/src/index.js"]
-Builder: npm ci brings in rimraf, TypeScript, etc., so your npm run build can rimraf dist before compiling.
-
-Runtime: npm ci --omit=dev installs only your "dependencies", keeping the final image lean.
-
-Rebuild your image
-
-bash
-Copy
-Edit
-docker build -t conference-backend .
-Verify
-
-bash
-Copy
-Edit
-docker run --rm conference-backend \
-sh -c "ls node_modules/rimraf && node dist/src/index.js"
-You should see the rimraf folder in node_modules in the builder stage (not in the final runtime), and your app should start without errors.
-
-Why this works
-
-Committing rimraf to devDependencies makes it available for any npm install that includes devDeps.
-
-A multi-stage build lets you isolate dev tools (like rimraf) in the build image but strip them out of the runtime image.
-
-That way, npm run clean (and npm run build) always succeed inside Docker, and your production container stays as small as possible.
 
 ---
-
-## Appendix: Bootstrapping Commands
-
-These are the commands that were run when the project was first created. They
-are kept here for reference in case you need to recreate the setup from
-scratch. You do **not** need to run them when simply cloning the repository.
-
-### Root project
-
-```bash
-npm init -y
-```
-
-### Backend scaffold
-
-```bash
-mkdir backend
-cd backend
-npm init -y
-npm install express mysql2 cors body-parser dotenv drizzle-orm
-npm install -D typescript ts-node ts-node-dev rimraf drizzle-kit vitest \
-  @types/node @types/express
-npx tsc --init
-```
-
-### Frontend scaffold
-
-```bash
-npm create vite@latest frontend -- --template react-ts
-cd frontend
-npm install
-npm install -D tailwindcss postcss autoprefixer vite-tsconfig-paths
-npx tailwindcss init -p
-```
-
-
-
-
 
 
 
