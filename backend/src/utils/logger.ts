@@ -4,8 +4,8 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import type { Request, Response, NextFunction } from "express";
-import { Logger as TsLogger, type ILogObj } from "tslog";
+import type {NextFunction, Request, Response} from "express";
+import {type ILogObj, Logger as TsLogger} from "tslog";
 
 dotenv.config();
 
@@ -37,10 +37,10 @@ export const log = new TsLogger<ILogObj>({
 /** optional file transport (JSON lines) */
 if (LOG_TO_FILE) {
     if (!fs.existsSync(LOG_DIR)) {
-        fs.mkdirSync(LOG_DIR, { recursive: true });
+        fs.mkdirSync(LOG_DIR, {recursive: true});
     }
     const logFilePath = path.join(LOG_DIR, `${LOG_PREFIX}.log`);
-    const stream = fs.createWriteStream(logFilePath, { flags: "a" });
+    const stream = fs.createWriteStream(logFilePath, {flags: "a"});
 
     // v4: attachTransport(callback) — meta is inside logObj._meta
     log.attachTransport((logObj) => {
@@ -78,7 +78,7 @@ export function errorLogger() {
     return function (err: unknown, req: Request, res: Response, _next: NextFunction) {
         const status = (res.statusCode >= 400 && res.statusCode) || 500;
         log.error(
-            err instanceof Error ? { msg: err.message, stack: err.stack } : { msg: String(err) },
+            err instanceof Error ? {msg: err.message, stack: err.stack} : {msg: String(err)},
             {
                 method: req.method,
                 path: req.originalUrl || req.url,
@@ -86,7 +86,7 @@ export function errorLogger() {
             }
         );
         if (!res.headersSent) {
-            res.status(status).json({ error: "Internal Server Error" });
+            res.status(status).json({error: "Internal Server Error"});
         }
     };
 }

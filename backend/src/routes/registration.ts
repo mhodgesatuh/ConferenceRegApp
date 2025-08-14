@@ -1,3 +1,6 @@
+// backend/src/routes/registration.ts
+//
+
 import {Router} from 'express';
 import {db} from '@/db/client';
 import {credentials, registrations} from '@/db/schema';
