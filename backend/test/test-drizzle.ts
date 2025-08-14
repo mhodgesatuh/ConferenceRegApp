@@ -2,6 +2,7 @@
 //
 
 import { mysqlTable } from 'drizzle-orm/mysql-core';
+import { log } from '@/utils/logger';
 
 const t = mysqlTable('my_test_table', {});
-console.log(t);
+log.info(t);

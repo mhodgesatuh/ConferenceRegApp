@@ -115,6 +115,7 @@ router.post<{}, any, CreateRegistrationBody>(
                 loginPin,
             });
 
+            log.info('Registration created', {id, email});
             res.status(201).json({id, loginPin});
         } catch (err) {
             log.error('Error saving registration', {error: err});
@@ -162,6 +163,7 @@ router.get(
                 return;
             }
 
+            log.info('Registration lookup successful', {email});
             res.json({registration});
         } catch (err) {
             log.error('Error fetching registration', {error: err});
@@ -203,7 +205,7 @@ router.get(
             }
 
             // In a real implementation, send the pin via email here.
-            log.info(`Sending pin ${credential.loginPin} to ${email}`);
+            log.info('Sending pin', {pin: credential.loginPin, email});
 
             res.json({sent: true});
         } catch (err) {
@@ -247,6 +249,7 @@ router.get<{ id: string }, any>(
                 return;
             }
 
+            log.info('Registration fetched', {id});
             res.json({registration});
         } catch (err) {
             log.error('Error fetching registration', {error: err});
