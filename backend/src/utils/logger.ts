@@ -1,4 +1,4 @@
-// backend/src/logger.ts
+// backend/src/utils/logger.ts
 //
 
 import fs from "fs";

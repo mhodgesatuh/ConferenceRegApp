@@ -1,3 +1,5 @@
 // backend/src/tests/route-test.ts
 
-console.log("Route test file compiles and runs.");
+import {log} from "@/utils/logger";
+
+log.info("Route test file compiles and runs.");
