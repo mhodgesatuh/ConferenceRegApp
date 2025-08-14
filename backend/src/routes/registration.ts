@@ -46,6 +46,16 @@ function generatePin(length: number): string {
 
 const router = Router();
 
+// Columns marked as NOT NULL in the database schema. These need to be
+// present before attempting to insert a record.
+const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
+    'email',
+    'lastName',
+    'proxyEmail',
+    'question1',
+    'question2',
+];
+
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>(
     '/',
@@ -77,7 +87,8 @@ router.post<{}, any, CreateRegistrationBody>(
                 isSponsor,
             } = req.body;
 
-            if (!email || !lastName || !proxyEmail || !question1 || !question2) {
+            const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
+            if (missing.length) {
                 res.status(400).json({error: 'Missing required information'});
                 return;
             }
