@@ -21,10 +21,10 @@ import {
     getRequiredFieldNames,
     getVisibleFields,
     hasAnyProxyData,
-    PROXY_FIELDS_SET,
-    userHasUpdatePrivilege,
     isValidEmail,
     isValidPhone,
+    PROXY_FIELDS_SET,
+    userHasUpdatePrivilege,
 } from './formRules';
 
 const PAGE_TITLE = 'Conference Registration';

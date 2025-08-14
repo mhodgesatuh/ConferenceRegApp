@@ -6,9 +6,9 @@
 //
 
 import * as React from 'react';
-import { Checkbox as PrimitiveCheckbox } from './checkbox';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import {Checkbox as PrimitiveCheckbox} from './checkbox';
+import {Label} from '@/components/ui/label';
+import {cn} from '@/lib/utils';
 
 export interface CheckboxWrapperProps
     extends React.ComponentPropsWithoutRef<typeof PrimitiveCheckbox> {
@@ -18,7 +18,7 @@ export interface CheckboxWrapperProps
 }
 
 export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxWrapperProps>(
-    ({ className, label, id, disableUnless, disabled, ...props }, ref) => {
+    ({className, label, id, disableUnless, disabled, ...props}, ref) => {
         const checkboxId = id || React.useId();
 
         // Honor explicit `disabled` first; otherwise disable unless condition is true.

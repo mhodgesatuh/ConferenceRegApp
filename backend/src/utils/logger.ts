@@ -2,12 +2,11 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import type { Request, Response, NextFunction } from "express";
-import { Logger, TLogLevelName } from "tslog";
 
 dotenv.config();
 
 const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
-const LOG_LEVEL = (process.env.LOG_LEVEL || "info") as TLogLevelName;
+const LOG_LEVEL = (process.env.LOG_LEVEL || "info");
 const LOG_TO_FILE = String(process.env.LOG_TO_FILE || "true").toLowerCase() === "true";
 const LOG_PREFIX = process.env.LOG_PREFIX || "app";
 

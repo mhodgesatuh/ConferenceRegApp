@@ -1,11 +1,13 @@
 // src/index.ts
+//
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import registrationRoutes from './routes/registration';
 import {db} from './db/client';
 import {sql} from 'drizzle-orm';
-import {log, requestLogger, errorLogger} from './utils/logger';
+import {errorLogger, log, requestLogger} from "@/utils/logger";
 
 dotenv.config();
 
@@ -22,7 +24,8 @@ app.use(errorLogger());
 
 async function start() {
     try {
-        await db.execute(sql`ALTER TABLE registrations AUTO_INCREMENT = 100`);
+        await db.execute(sql`ALTER TABLE registrations
+            AUTO_INCREMENT = 100`);
     } catch (err) {
         log.error('Failed to ensure registration id start value', {error: err});
     }

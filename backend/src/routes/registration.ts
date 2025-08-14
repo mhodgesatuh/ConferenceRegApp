@@ -1,9 +1,9 @@
 import {Router} from 'express';
 import {db} from '@/db/client';
 import {credentials, registrations} from '@/db/schema';
-import {log} from '@/utils/logger';
 
 import {and, eq} from 'drizzle-orm';
+import {log} from "@/utils/logger";
 
 interface CreateRegistrationBody {
     id?: number;

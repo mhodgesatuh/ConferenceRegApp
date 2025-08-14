@@ -17,7 +17,7 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
     const [email, setEmail] = useState('');
     const [pin, setPin] = useState('');
-    const [wantsUpdate, setWantsUpdate] = useState(false);
+    const [requestsRegUpdate, setRequestsRegUpdate] = useState(false);
     const [emailPinChecked, setEmailPinChecked] = useState(false);
     const [pinMessage, setPinMessage] = useState<{ text: string; isError: boolean } | null>(null);
     const [emailError, setEmailError] = useState('');
@@ -128,12 +128,12 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
             <Checkbox
                 id="update-prev-reg"
                 label="Update previous registration"
-                checked={wantsUpdate}
-                onCheckedChange={(val) => setWantsUpdate(Boolean(val))}
+                checked={requestsRegUpdate}
+                onCheckedChange={(val) => setRequestsRegUpdate(Boolean(val))}
             />
 
             {/* Conditional update section */}
-            {wantsUpdate && (
+            {requestsRegUpdate && (
                 <div id="update-section" className="space-y-4">
                     <hr className="my-4"/>
                     <div className="flex flex-col gap-1">

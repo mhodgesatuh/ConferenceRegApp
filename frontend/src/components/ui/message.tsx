@@ -6,15 +6,15 @@
 //
 
 import * as React from 'react';
-import { X } from 'lucide-react';
-import { cn } from './utils';
+import {X} from 'lucide-react';
+import {cn} from './utils';
 
 export interface MessageProps {
     text: string;
     isError?: boolean;
 }
 
-export const Message: React.FC<MessageProps> = ({ text, isError = false }) => {
+export const Message: React.FC<MessageProps> = ({text, isError = false}) => {
     const [visible, setVisible] = React.useState(true);
     const [closing, setClosing] = React.useState(false);
 
@@ -51,7 +51,7 @@ export const Message: React.FC<MessageProps> = ({ text, isError = false }) => {
                 )}
                 aria-label="Dismiss"
             >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4"/>
             </button>
         </div>
     );
