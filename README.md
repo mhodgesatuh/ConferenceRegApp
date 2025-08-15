@@ -103,6 +103,8 @@ the localhost environment.
 ```bash
 cd backend
 npm install
+npm i module-alias
+npm i -D tsconfig-paths
 ```
 
 ### Frontend (React, Vite)
