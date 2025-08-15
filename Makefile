@@ -123,7 +123,7 @@ studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert
 	@echo "Certificates created and moved to $(BACKEND_DIR)/"
 
 studio: ## Launch Drizzle Studio
-	@echo "Starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=local.drizzle.studio"
+	@echo "Starting Drizzle Studio → https://local.drizzle.studio:3337"
 	$(SET_BACKEND_ENV) npm ci && npm run studio
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
