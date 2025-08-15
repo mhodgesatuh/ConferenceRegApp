@@ -9,3 +9,4 @@ backend/node_modules/
 /frontend/src/**/*.js
 /backend/src/**/*.js
 
+/logs/
