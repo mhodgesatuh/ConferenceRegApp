@@ -1,4 +1,5 @@
 // drizzle.config.tx
+//
 
 import type {Config} from 'drizzle-kit';
 

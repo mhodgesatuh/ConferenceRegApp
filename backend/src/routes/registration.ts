@@ -1,11 +1,11 @@
 // backend/src/routes/registration.ts
 //
 
-import { Router } from "express";
-import { db } from "@/db/client";
-import { credentials, registrations } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
-import { log, sendError } from "@/utils/logger";
+import {Router} from "express";
+import {db} from "@/db/client";
+import {credentials, registrations} from "@/db/schema";
+import {and, eq} from "drizzle-orm";
+import {log, sendError} from "@/utils/logger";
 
 interface CreateRegistrationBody {
     id?: number;
@@ -86,13 +86,13 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
 
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
-            sendError(res, 400, "Missing required information", { missing });
+            sendError(res, 400, "Missing required information", {missing});
             return;
         }
 
         const loginPin = generatePin(8);
 
-        const [{ id }] = await db
+        const [{id}] = await db
             .insert(registrations)
             .values({
                 email,
@@ -126,8 +126,8 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
             loginPin,
         });
 
-        log.info("Registration created", { id, email });
-        res.status(201).json({ id, loginPin });
+        log.info("Registration created", {id, email});
+        res.status(201).json({id, loginPin});
     } catch (err) {
         sendError(res, 500, "Failed to save registration", {
             cause: err instanceof Error ? err.message : String(err),
@@ -137,10 +137,10 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
 
 /* GET /login?email=addr&pin=code */
 router.get("/login", async (req, res): Promise<void> => {
-    const { email, pin } = req.query as { email?: string; pin?: string };
+    const {email, pin} = req.query as { email?: string; pin?: string };
 
     if (!email || !pin) {
-        sendError(res, 400, "Missing credentials", { emailProvided: !!email, pinProvided: !!pin });
+        sendError(res, 400, "Missing credentials", {emailProvided: !!email, pinProvided: !!pin});
         return;
     }
 
@@ -160,12 +160,12 @@ router.get("/login", async (req, res): Promise<void> => {
                 : undefined;
 
         if (!registration) {
-            sendError(res, 404, "Registration not found", { email });
+            sendError(res, 404, "Registration not found", {email});
             return;
         }
 
-        log.info("Registration lookup successful", { email });
-        res.json({ registration });
+        log.info("Registration lookup successful", {email});
+        res.json({registration});
     } catch (err) {
         sendError(res, 500, "Failed to fetch registration", {
             email,
@@ -176,7 +176,7 @@ router.get("/login", async (req, res): Promise<void> => {
 
 /* GET /lost-pin?email=addr */
 router.get("/lost-pin", async (req, res): Promise<void> => {
-    const { email } = req.query as { email?: string };
+    const {email} = req.query as { email?: string };
 
     if (!email) {
         sendError(res, 400, "Email required");
@@ -187,7 +187,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
         const [registration] = await db.select().from(registrations).where(eq(registrations.email, email));
 
         if (!registration) {
-            sendError(res, 404, "Please contact PCATT", { email });
+            sendError(res, 404, "Please contact PCATT", {email});
             return;
         }
 
@@ -197,15 +197,15 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             .where(eq(credentials.registrationId, registration.id));
 
         if (!credential) {
-            sendError(res, 404, "Please contact PCATT", { email, registrationId: registration.id });
+            sendError(res, 404, "Please contact PCATT", {email, registrationId: registration.id});
             return;
         }
 
         // In a real implementation, send the pin via email here.
         // (Consider not logging the actual pin in production logs.)
-        log.info("Sending pin", { email /*, pin: credential.loginPin */ });
+        log.info("Sending pin", {email /*, pin: credential.loginPin */});
 
-        res.json({ sent: true });
+        res.json({sent: true});
     } catch (err) {
         sendError(res, 500, "Failed to send pin", {
             email,
@@ -218,7 +218,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
 router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
-        sendError(res, 400, "Invalid ID", { raw: req.params.id });
+        sendError(res, 400, "Invalid ID", {raw: req.params.id});
         return;
     }
 
@@ -238,12 +238,12 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
                 : undefined;
 
         if (!registration) {
-            sendError(res, 404, "Registration not found", { id });
+            sendError(res, 404, "Registration not found", {id});
             return;
         }
 
-        log.info("Registration fetched", { id });
-        res.json({ registration });
+        log.info("Registration fetched", {id});
+        res.json({registration});
     } catch (err) {
         sendError(res, 500, "Failed to fetch registration", {
             id,

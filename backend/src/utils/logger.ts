@@ -4,8 +4,8 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import type { NextFunction, Request, Response } from "express";
-import { type ILogObj, Logger as TsLogger } from "tslog";
+import type {NextFunction, Request, Response} from "express";
+import {type ILogObj, Logger as TsLogger} from "tslog";
 
 dotenv.config();
 
@@ -60,28 +60,28 @@ function normalizePayload(logObj: any) {
     }
 
     // Remaining args → fields
-    const fields: Record<string, unknown> = { ...named };
+    const fields: Record<string, unknown> = {...named};
     for (let i = 1; i < args.length; i++) fields[`arg${i}`] = args[i];
 
     // Flatten Error objects for readability
     for (const [k, v] of Object.entries(fields)) {
         if (v instanceof Error) {
-            fields[k] = { message: v.message, stack: v.stack };
+            fields[k] = {message: v.message, stack: v.stack};
         }
     }
 
-    return { meta, msg, fields };
+    return {meta, msg, fields};
 }
 
 /** --- helper: format a single line for file transport --- */
 function formatLine(logObj: unknown): string {
-    const { meta, msg, fields } = normalizePayload(logObj as any);
+    const {meta, msg, fields} = normalizePayload(logObj as any);
 
     const dt = meta?.date instanceof Date ? meta.date : new Date();
-    const ts = new Date(dt instanceof Date ? dt.getTime() : Date.now())
-        .toISOString()
-        .replace("T", " ")
-        .replace("Z", "");
+    const ts = new Date(dt instanceof Date ? dt.getTime() : Date.now()).toLocaleString("en-US", {
+        timeZone: "Pacific/Honolulu",
+        hour12: false, // keep 24-hour format
+    });
 
     const level = String(meta?.logLevelName || "info").toUpperCase().padEnd(5);
     const loggerName = meta?.loggerName || LOG_PREFIX;
@@ -105,9 +105,9 @@ function formatLine(logObj: unknown): string {
 let fileStream: fs.WriteStream | undefined;
 
 if (LOG_TO_FILE) {
-    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, {recursive: true});
     const logFilePath = path.join(LOG_DIR, `${LOG_PREFIX}.log`);
-    fileStream = fs.createWriteStream(logFilePath, { flags: "a" }); // append mode
+    fileStream = fs.createWriteStream(logFilePath, {flags: "a"}); // append mode
 
     // Attach a transport that writes one formatted line per log call
     log.attachTransport((logObj) => {
@@ -159,7 +159,7 @@ export function errorLogger() {
             status,
         });
         if (!res.headersSent) {
-            res.status(status).json({ error: "Internal Server Error" });
+            res.status(status).json({error: "Internal Server Error"});
         }
     };
 }
@@ -171,6 +171,6 @@ export function sendError(
     message: string,
     context?: Record<string, unknown>
 ) {
-    log.error({ msg: message, ...context });
-    return res.status(status).json({ error: message });
+    log.error({msg: message, ...context});
+    return res.status(status).json({error: message});
 }
