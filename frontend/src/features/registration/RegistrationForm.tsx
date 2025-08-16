@@ -207,7 +207,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 setMessage({text: 'Registration saved successfully.', type: 'success'});
             } else {
                 const data = await res.json().catch(() => ({}));
-                setMessage({text: data.error ?? 'Failed to save registration', type: 'error'});
+                setMessage({text: data.error, type: 'error'});
             }
         } catch (err) {
             console.error('Registration submission failed', err);

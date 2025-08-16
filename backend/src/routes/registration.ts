@@ -45,6 +45,8 @@ function generatePin(length: number): string {
 
 const router = Router();
 
+const SAVE_REGISTRATION_ERROR = "Failed to save registration";
+
 // Columns marked as NOT NULL in the database schema. These need to be
 // present before attempting to insert a record.
 const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
@@ -129,8 +131,8 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
         log.info("Registration created", {id, email});
         res.status(201).json({id, loginPin});
     } catch (err) {
-        sendError(res, 500, "Failed to save registration", {
-            cause: err instanceof Error ? err.message : String(err),
+        sendError(res, 500, SAVE_REGISTRATION_ERROR, {
+            error: err instanceof Error ? err : new Error(String(err)),
         });
     }
 });
