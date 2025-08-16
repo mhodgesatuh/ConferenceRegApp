@@ -5,6 +5,8 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const backendPort = parseInt(env.BACKEND_PORT) || 5000;
+    const backendHost = env.BACKEND_HOST || 'localhost';
 
     return {
         root: '.', // implicit
@@ -12,6 +14,12 @@ export default defineConfig(({mode}) => {
         server: {
             host: true,
             port: parseInt(env.UI_PORT) || 3000,
+            proxy: {
+                '/api': {
+                    target: `http://${backendHost}:${backendPort}`,
+                    changeOrigin: true,
+                },
+            },
         },
         build: {
             outDir: 'dist',        // ← explicit output folder
