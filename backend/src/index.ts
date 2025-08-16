@@ -1,4 +1,4 @@
-// src/index.ts
+// frontend/src/index.ts
 //
 
 import express from 'express';

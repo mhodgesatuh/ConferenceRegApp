@@ -70,7 +70,8 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
-    const email = req.body?.email?.trim().toLowerCase(); // normalize
+    const email = req.body?.email?.trim().toLowerCase(); // normalize if desired
+
     try {
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
@@ -81,13 +82,12 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
                 body: redact(req.body),
             });
             sendError(res, 400, "Missing required information", {missing});
-            return;
+            return; // <-- clean exit, still Promise<void>
         }
 
         const loginPin = generatePin(8);
 
-        // Atomic write
-        const {id} = await db.transaction(async (tx) => {
+        const {id} = await db.transaction<{ id: number }>(async (tx) => {
             const [{id}] = await tx
                 .insert(registrations)
                 .values({
@@ -117,11 +117,7 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
                 })
                 .$returningId();
 
-            await tx.insert(credentials).values({
-                registrationId: id,
-                loginPin,
-            });
-
+            await tx.insert(credentials).values({registrationId: id, loginPin});
             return {id};
         });
 
@@ -138,9 +134,9 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
         sendError(res, 500, SAVE_REGISTRATION_ERROR, {
             cause: err instanceof Error ? err.message : String(err),
         });
+        return; // <-- just return; (void), no Response returned
     }
 });
-
 
 /* GET /login?email=addr&pin=code */
 router.get("/login", async (req, res): Promise<void> => {
@@ -279,5 +275,16 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
         });
     }
 });
+
+// --- Router-level 404 (must be last) ---
+router.all("*", (req, res) => {
+    const ROUTE_NOT_FOUND = "Internal error: route not found";
+    log.warn(ROUTE_NOT_FOUND, { method: req.method, path: req.originalUrl });
+    sendError(res, 404, req.method === "POST" ? ROUTE_NOT_FOUND : "Not found", {
+        method: req.method,
+        path: req.originalUrl,
+    });
+});
+
 
 export default router;

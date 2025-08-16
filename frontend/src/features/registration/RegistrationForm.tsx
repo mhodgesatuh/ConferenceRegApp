@@ -195,7 +195,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             });
 
             if (res.ok) {
-                const data = await res.json().catch(() => ({}));
+                const data = await res.json().catch(() => ({} as any));
                 if (data.id) {
                     dispatch({type: 'CHANGE_FIELD', name: 'id', value: data.id});
                     setShowId(true);
@@ -206,14 +206,40 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 }
                 setMessage({text: 'Registration saved successfully.', type: 'success'});
             } else {
-                const data = await res.json().catch(() => ({}));
-                setMessage({text: data.error, type: 'error'});
+                // Robust error handling: prefer JSON { error, cause, missing }, else fall back to text
+                const ct = res.headers.get('content-type') ?? '';
+                let data: any = undefined;
+                let msg = '';
+
+                if (ct.includes('application/json')) {
+                    data = await res.json().catch(() => undefined);
+                    const dev = import.meta.env.MODE !== 'production';
+                    // Show the backend's `error` message; in dev also include `cause` if present
+                    msg =
+                        (dev && (data?.cause || data?.error)) ||
+                        data?.error ||
+                        `Request failed (${res.status})`;
+                } else {
+                    // Non-JSON error bodies
+                    msg = (await res.text().catch(() => '')) || `Request failed (${res.status})`;
+                }
+
+                // If server returned which fields were missing, reflect that in the UI
+                if (Array.isArray(data?.missing) && data.missing.length > 0) {
+                    markMissing(data.missing as string[]);
+                    document.getElementById(data.missing[0])?.focus();
+                }
+
+                setMessage({text: msg, type: 'error'});
             }
         } catch (err) {
             console.error('Registration submission failed', err);
-            setMessage({text: 'Failed to submit registration', type: 'error'});
+            const msg =
+                'Failed to submit registration' + (err instanceof Error && err.message ? `: ${err.message}` : '');
+            setMessage({text: msg, type: 'error'});
         }
     };
+
 
     const isError = message.type === 'error';
     const errorFor = (f: FormField) => errors[f.name];

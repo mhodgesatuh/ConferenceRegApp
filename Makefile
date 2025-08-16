@@ -167,6 +167,8 @@ frontend-clean: ## Remove frontend dist build
 
 ##–––––– High-Level Composites –––––––––––––––––––––––––––––––––––––––––––––
 
+rebuild: down build up frontend-dev ## Redeploy a new set of containers
+
 deploy: build schema up ## Build images, apply only new migrations, and start the stack
 
 update-schema: generate schema ## Generate new migrations and apply them
@@ -198,4 +200,5 @@ help: ## Show available targets grouped by section
 .PHONY: build clean commit-migration deploy down drop-tables generate \
         frontend-build frontend-clean frontend-dev frontend-install \
         help init init-backend init-frontend restart reset-db schema \
-        studio studio-cert studio-check tail-logs update-schema up
+        studio studio-cert studio-check tail-logs update-schema up \
+        rebuild
