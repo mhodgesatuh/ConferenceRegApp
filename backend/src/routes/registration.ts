@@ -57,91 +57,102 @@ const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
     "question2",
 ];
 
+/** Redact potentially sensitive fields before logging */
+function redact(body: Partial<CreateRegistrationBody> | undefined) {
+    if (!body) return {};
+    const clone = {...body};
+    (["loginPin", "pin", "password"] as const).forEach((k) => {
+        // @ts-expect-error – dynamic cleanup
+        if (k in clone) clone[k] = "<redacted>";
+    });
+    return clone;
+}
+
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
+    const email = req.body?.email?.trim().toLowerCase(); // normalize
     try {
-        const {
-            email,
-            phone1,
-            phone2,
-            firstName,
-            lastName,
-            namePrefix,
-            nameSuffix,
-            hasProxy,
-            proxyName,
-            proxyPhone,
-            proxyEmail,
-            cancelledAttendance,
-            cancellationReason,
-            day1Attendee,
-            day2Attendee,
-            question1,
-            question2,
-            isCancelled,
-            isAttendee,
-            isMonitor,
-            isOrganizer,
-            isPresenter,
-            isSponsor,
-        } = req.body;
-
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
+            log.warn("Validation failed: missing required fields", {
+                email,
+                registrationId: undefined,
+                missing,
+                body: redact(req.body),
+            });
             sendError(res, 400, "Missing required information", {missing});
             return;
         }
 
         const loginPin = generatePin(8);
 
-        const [{id}] = await db
-            .insert(registrations)
-            .values({
-                email,
-                phone1,
-                phone2,
-                firstName,
-                lastName,
-                namePrefix,
-                nameSuffix,
-                hasProxy,
-                proxyName,
-                proxyPhone,
-                proxyEmail,
-                cancelledAttendance,
-                cancellationReason,
-                day1Attendee,
-                day2Attendee,
-                question1,
-                question2,
-                isAttendee,
-                isCancelled,
-                isMonitor,
-                isOrganizer,
-                isPresenter,
-                isSponsor,
-            })
-            .$returningId();
+        // Atomic write
+        const {id} = await db.transaction(async (tx) => {
+            const [{id}] = await tx
+                .insert(registrations)
+                .values({
+                    email,
+                    phone1: req.body.phone1,
+                    phone2: req.body.phone2,
+                    firstName: req.body.firstName,
+                    lastName: req.body.lastName,
+                    namePrefix: req.body.namePrefix,
+                    nameSuffix: req.body.nameSuffix,
+                    hasProxy: req.body.hasProxy,
+                    proxyName: req.body.proxyName,
+                    proxyPhone: req.body.proxyPhone,
+                    proxyEmail: req.body.proxyEmail,
+                    cancelledAttendance: req.body.cancelledAttendance,
+                    cancellationReason: req.body.cancellationReason,
+                    day1Attendee: req.body.day1Attendee,
+                    day2Attendee: req.body.day2Attendee,
+                    question1: req.body.question1,
+                    question2: req.body.question2,
+                    isAttendee: req.body.isAttendee,
+                    isCancelled: req.body.isCancelled,
+                    isMonitor: req.body.isMonitor,
+                    isOrganizer: req.body.isOrganizer,
+                    isPresenter: req.body.isPresenter,
+                    isSponsor: req.body.isSponsor,
+                })
+                .$returningId();
 
-        await db.insert(credentials).values({
-            registrationId: id,
-            loginPin,
+            await tx.insert(credentials).values({
+                registrationId: id,
+                loginPin,
+            });
+
+            return {id};
         });
 
-        log.info("Registration created", {id, email});
+        log.info("Registration created", {email, registrationId: id});
         res.status(201).json({id, loginPin});
     } catch (err) {
+        log.error(SAVE_REGISTRATION_ERROR, {
+            email,
+            registrationId: undefined,
+            cause: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+            body: redact(req.body),
+        });
         sendError(res, 500, SAVE_REGISTRATION_ERROR, {
-            error: err instanceof Error ? err : new Error(String(err)),
+            cause: err instanceof Error ? err.message : String(err),
         });
     }
 });
+
 
 /* GET /login?email=addr&pin=code */
 router.get("/login", async (req, res): Promise<void> => {
     const {email, pin} = req.query as { email?: string; pin?: string };
 
     if (!email || !pin) {
+        log.warn("Login failed: missing credentials", {
+            email,
+            registrationId: undefined,
+            emailProvided: !!email,
+            pinProvided: !!pin,
+        });
         sendError(res, 400, "Missing credentials", {emailProvided: !!email, pinProvided: !!pin});
         return;
     }
@@ -153,22 +164,23 @@ router.get("/login", async (req, res): Promise<void> => {
             .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
             .where(and(eq(registrations.email, email), eq(credentials.loginPin, pin)));
 
-        const registration =
-            record && record.registrations
-                ? {
-                    ...record.registrations,
-                    loginPin: record.credentials.loginPin,
-                }
-                : undefined;
-
-        if (!registration) {
+        if (!record?.registrations) {
+            log.warn("Registration lookup: not found", {email, registrationId: undefined});
             sendError(res, 404, "Registration not found", {email});
             return;
         }
 
-        log.info("Registration lookup successful", {email});
-        res.json({registration});
+        log.info("Registration lookup successful", {
+            email,
+            registrationId: record.registrations.id,
+        });
+        res.json({registration: {...record.registrations, loginPin: record.credentials.loginPin}});
     } catch (err) {
+        log.error("Failed to fetch registration (login)", {
+            email,
+            registrationId: undefined,
+            cause: err instanceof Error ? err.message : String(err),
+        });
         sendError(res, 500, "Failed to fetch registration", {
             email,
             cause: err instanceof Error ? err.message : String(err),
@@ -181,6 +193,10 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     const {email} = req.query as { email?: string };
 
     if (!email) {
+        log.warn("Lost PIN: email required", {
+            email: undefined,
+            registrationId: undefined,
+        });
         sendError(res, 400, "Email required");
         return;
     }
@@ -189,6 +205,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
         const [registration] = await db.select().from(registrations).where(eq(registrations.email, email));
 
         if (!registration) {
+            log.warn("Lost PIN: registration not found", {email, registrationId: undefined});
             sendError(res, 404, "Please contact PCATT", {email});
             return;
         }
@@ -199,16 +216,19 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             .where(eq(credentials.registrationId, registration.id));
 
         if (!credential) {
+            log.warn("Lost PIN: credential not found", {email, registrationId: registration.id});
             sendError(res, 404, "Please contact PCATT", {email, registrationId: registration.id});
             return;
         }
 
-        // In a real implementation, send the pin via email here.
-        // (Consider not logging the actual pin in production logs.)
-        log.info("Sending pin", {email /*, pin: credential.loginPin */});
-
+        log.info("Sending pin", {email, registrationId: registration.id});
         res.json({sent: true});
     } catch (err) {
+        log.error("Failed to send pin", {
+            email,
+            registrationId: undefined,
+            cause: err instanceof Error ? err.message : String(err),
+        });
         sendError(res, 500, "Failed to send pin", {
             email,
             cause: err instanceof Error ? err.message : String(err),
@@ -220,6 +240,11 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
 router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
+        log.warn("Fetch by id: invalid id", {
+            email: undefined,
+            registrationId: undefined,
+            rawId: req.params.id, // keep raw separately
+        });
         sendError(res, 400, "Invalid ID", {raw: req.params.id});
         return;
     }
@@ -231,22 +256,23 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
             .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
             .where(eq(registrations.id, id));
 
-        const registration =
-            record && record.registrations
-                ? {
-                    ...record.registrations,
-                    loginPin: record.credentials.loginPin,
-                }
-                : undefined;
-
-        if (!registration) {
+        if (!record?.registrations) {
+            log.warn("Fetch by id: not found", {email: undefined, registrationId: id});
             sendError(res, 404, "Registration not found", {id});
             return;
         }
 
-        log.info("Registration fetched", {id});
-        res.json({registration});
+        log.info("Registration fetched", {
+            email: record.registrations.email,
+            registrationId: id,
+        });
+        res.json({registration: {...record.registrations, loginPin: record.credentials.loginPin}});
     } catch (err) {
+        log.error("Failed to fetch registration by id", {
+            email: undefined,
+            registrationId: id,
+            cause: err instanceof Error ? err.message : String(err),
+        });
         sendError(res, 500, "Failed to fetch registration", {
             id,
             cause: err instanceof Error ? err.message : String(err),
