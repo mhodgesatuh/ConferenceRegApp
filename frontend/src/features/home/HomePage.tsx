@@ -119,10 +119,14 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                 <img src="/conference_intro.png" alt="PCATT Logo" className="w-full"/>
             </div>
 
-            {/* Primary action */}
-            <div className="flex gap-2">
-                <Button type="button" onClick={goRegister}>Register to Attend</Button>
-            </div>
+            {/* Primary action - only show when update is NOT selected */}
+            {!requestsRegUpdate && (
+                <div className="flex gap-2">
+                    <Button type="button" onClick={goRegister}>
+                        Register to Attend
+                    </Button>
+                </div>
+            )}
 
             {/* Wrapper-based checkbox */}
             <Checkbox
@@ -148,9 +152,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                             required
                             autoComplete="email"
                         />
-                        {emailError && (
-                            <Message text={emailError} isError/>
-                        )}
+                        {emailError && <Message text={emailError} isError />}
                     </div>
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="pin">
@@ -177,12 +179,13 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         disableUnless={isValidEmail(email) && pin.trim() === ''}
                     />
                     {pinMessage && (
-                        <Message text={pinMessage.text} isError={pinMessage.isError}/>
+                        <Message text={pinMessage.text} isError={pinMessage.isError} />
                     )}
                 </div>
             )}
         </form>
     );
+
 };
 
 export default HomePage;
