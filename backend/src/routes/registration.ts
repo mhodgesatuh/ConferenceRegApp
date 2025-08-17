@@ -169,7 +169,7 @@ router.get("/login", async (req, res): Promise<void> => {
             return;
         }
 
-        log.info("Registration lookup successful", {
+        log.info("Login successful", {
             email,
             registrationId: record.registrations.id,
         });
