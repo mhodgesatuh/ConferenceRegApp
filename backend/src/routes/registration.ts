@@ -1,5 +1,4 @@
 // backend/src/routes/registration.ts
-//
 
 import {Router} from "express";
 import {db} from "@/db/client";
@@ -52,7 +51,6 @@ const SAVE_REGISTRATION_ERROR = "Failed to save registration";
 const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
     "email",
     "lastName",
-    "proxyEmail",
     "question1",
     "question2",
 ];
@@ -70,7 +68,7 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
-    const email = req.body?.email?.trim().toLowerCase(); // normalize if desired
+    const email = req.body?.email?.trim().toLowerCase();
 
     try {
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
@@ -82,43 +80,46 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
                 body: redact(req.body),
             });
             sendError(res, 400, "Missing required information", {missing});
-            return; // <-- clean exit, still Promise<void>
+            return;
         }
 
         const loginPin = generatePin(8);
 
+        // Save registration + credential in a single transaction
         const {id} = await db.transaction<{ id: number }>(async (tx) => {
-            const [{id}] = await tx
-                .insert(registrations)
-                .values({
-                    email,
-                    phone1: req.body.phone1,
-                    phone2: req.body.phone2,
-                    firstName: req.body.firstName,
-                    lastName: req.body.lastName,
-                    namePrefix: req.body.namePrefix,
-                    nameSuffix: req.body.nameSuffix,
-                    hasProxy: req.body.hasProxy,
-                    proxyName: req.body.proxyName,
-                    proxyPhone: req.body.proxyPhone,
-                    proxyEmail: req.body.proxyEmail,
-                    cancelledAttendance: req.body.cancelledAttendance,
-                    cancellationReason: req.body.cancellationReason,
-                    day1Attendee: req.body.day1Attendee,
-                    day2Attendee: req.body.day2Attendee,
-                    question1: req.body.question1,
-                    question2: req.body.question2,
-                    isAttendee: req.body.isAttendee,
-                    isCancelled: req.body.isCancelled,
-                    isMonitor: req.body.isMonitor,
-                    isOrganizer: req.body.isOrganizer,
-                    isPresenter: req.body.isPresenter,
-                    isSponsor: req.body.isSponsor,
-                })
-                .$returningId();
+            const result = await tx.insert(registrations).values({
+                email,
+                phone1: req.body.phone1,
+                phone2: req.body.phone2,
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                namePrefix: req.body.namePrefix,
+                nameSuffix: req.body.nameSuffix,
+                hasProxy: req.body.hasProxy,
+                proxyName: req.body.proxyName,
+                proxyPhone: req.body.proxyPhone,
+                proxyEmail: req.body.proxyEmail,
+                cancelledAttendance: req.body.cancelledAttendance,
+                cancellationReason: req.body.cancellationReason,
+                day1Attendee: req.body.day1Attendee,
+                day2Attendee: req.body.day2Attendee,
+                question1: req.body.question1,
+                question2: req.body.question2,
+                isAttendee: req.body.isAttendee,
+                isCancelled: req.body.isCancelled,
+                isMonitor: req.body.isMonitor,
+                isOrganizer: req.body.isOrganizer,
+                isPresenter: req.body.isPresenter,
+                isSponsor: req.body.isSponsor,
+            });
 
-            await tx.insert(credentials).values({registrationId: id, loginPin});
-            return {id};
+            // MariaDB/MySQL: auto-increment PK is available as insertId
+            const newId = Number((result as any)?.insertId);
+            if (!newId) throw new Error("Insert did not return insertId");
+
+            await tx.insert(credentials).values({registrationId: newId, loginPin});
+
+            return {id: newId};
         });
 
         log.info("Registration created", {email, registrationId: id});
@@ -134,7 +135,6 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
         sendError(res, 500, SAVE_REGISTRATION_ERROR, {
             cause: err instanceof Error ? err.message : String(err),
         });
-        return; // <-- just return; (void), no Response returned
     }
 });
 
@@ -149,7 +149,10 @@ router.get("/login", async (req, res): Promise<void> => {
             emailProvided: !!email,
             pinProvided: !!pin,
         });
-        sendError(res, 400, "Missing credentials", {emailProvided: !!email, pinProvided: !!pin});
+        sendError(res, 400, "Missing credentials", {
+            emailProvided: !!email,
+            pinProvided: !!pin,
+        });
         return;
     }
 
@@ -170,7 +173,12 @@ router.get("/login", async (req, res): Promise<void> => {
             email,
             registrationId: record.registrations.id,
         });
-        res.json({registration: {...record.registrations, loginPin: record.credentials.loginPin}});
+        res.json({
+            registration: {
+                ...record.registrations,
+                loginPin: record.credentials.loginPin,
+            },
+        });
     } catch (err) {
         log.error("Failed to fetch registration (login)", {
             email,
@@ -217,6 +225,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             return;
         }
 
+        // TODO: send email/SMS with credential.loginPin
         log.info("Sending pin", {email, registrationId: registration.id});
         res.json({sent: true});
     } catch (err) {
@@ -239,7 +248,7 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
         log.warn("Fetch by id: invalid id", {
             email: undefined,
             registrationId: undefined,
-            rawId: req.params.id, // keep raw separately
+            rawId: req.params.id,
         });
         sendError(res, 400, "Invalid ID", {raw: req.params.id});
         return;
@@ -262,7 +271,12 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
             email: record.registrations.email,
             registrationId: id,
         });
-        res.json({registration: {...record.registrations, loginPin: record.credentials.loginPin}});
+        res.json({
+            registration: {
+                ...record.registrations,
+                loginPin: record.credentials.loginPin,
+            },
+        });
     } catch (err) {
         log.error("Failed to fetch registration by id", {
             email: undefined,
@@ -279,12 +293,11 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
 // --- Router-level 404 (must be last) ---
 router.all("*", (req, res) => {
     const ROUTE_NOT_FOUND = "Internal error: route not found";
-    log.warn(ROUTE_NOT_FOUND, { method: req.method, path: req.originalUrl });
+    log.warn(ROUTE_NOT_FOUND, {method: req.method, path: req.originalUrl});
     sendError(res, 404, req.method === "POST" ? ROUTE_NOT_FOUND : "Not found", {
         method: req.method,
         path: req.originalUrl,
     });
 });
-
 
 export default router;

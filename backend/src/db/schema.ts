@@ -34,7 +34,7 @@ export const registrations = mysqlTable('registrations', {
     // Proxy information
     proxyName: varchar('proxy_name', {length: 128}),
     proxyPhone: varchar('proxy_phone', {length: 32}),
-    proxyEmail: varchar('proxy_email', {length: 128}).notNull(),
+    proxyEmail: varchar('proxy_email', {length: 128}),
 
     // Registration information
     day1Attendee: boolean('day1_attendee').default(false),

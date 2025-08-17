@@ -43,7 +43,8 @@ services:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "200"
     ports:
-      - "127.0.0.1:5443:5000"     # API at https://127.0.0.1:5443
+      - "127.0.0.1:5443:5000"
+      # API at https://127.0.0.1:5443
     volumes:
       - ./backend:/app/backend
       - ./backend/certs:/certs:ro

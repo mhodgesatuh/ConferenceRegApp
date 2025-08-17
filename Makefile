@@ -18,6 +18,8 @@ ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)"
 # Source .env and cd backend for Drizzle CLI
 SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
 
+RUN_IN_BACKEND = $(COMPOSE) run --rm $(SERVICE_BACKEND) sh -lc
+
 ##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 logs: ## View logs (latest). If LOG_DIR=./logs in .env, show local dev logs; otherwise show container logs
@@ -54,7 +56,7 @@ ifndef CI
 	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
 endif
 	$(MAKE) reset-db
-	@echo " - waiting for database to become ready..."
+	@echo " - database starting up..."
 	@until $(COMPOSE) exec $(SERVICE_DB) mysqladmin ping -h"127.0.0.1" --silent; do \
 		sleep 1; \
 	done
@@ -72,12 +74,22 @@ backend-shell: ## Open a shell in the backend container (current profile)
 
 ##–––––– Drizzle ORM: Schema Management –––––––––––––––––––––––––––––––––––––
 
+generate: ## Diff schema locally → write SQL + journal (then run `make commit-migration`)
+	$(ECHO_PROFILE)
+	@$(COMPOSE) up -d $(SERVICE_BACKEND)
+	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit generate && \
+	  echo " - migration files written to backend/drizzle/migrations/"'
+
+schema: ## Incrementally apply only new migrations to the database
+	$(ECHO_PROFILE)
+	@$(COMPOSE) up -d $(SERVICE_BACKEND)
+	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit migrate'
+
 baseline: ## Snapshot current schema into a new “init” migration
 	$(ECHO_PROFILE)
-	@echo " - creating a baseline 'init' migration from your current schema…"
-	$(SET_BACKEND_ENV) npm ci && \
-	$(DRIZZLE) generate --name init && \
-	echo " - baseline migration written to backend/drizzle/migrations/"
+	@$(COMPOSE) up -d $(SERVICE_BACKEND)
+	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit generate --name init && \
+	  echo " - baseline migration written to backend/drizzle/migrations/"'
 
 drop-tables: ## Drop all existing tables in the database
 	$(ECHO_PROFILE)
@@ -98,18 +110,6 @@ reset-db: ## Completely remove and recreate the database from .env (current prof
 	@echo " - recreating fresh database from .env…"
 	$(COMPOSE) up -d $(SERVICE_DB)
 	@echo " - database reset complete. next step: make schema"
-
-schema: ## Incrementally apply only new migrations to the database
-	$(ECHO_PROFILE)
-	@echo " - applying **pending** migrations to the database..."
-	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) migrate
-	@echo " - done. to browse with Drizzle Studio, run:"
-	@echo "   make studio"
-
-generate: ## Diff schema locally → write SQL + journal (then run `make commit-migration`)
-	$(ECHO_PROFILE)
-	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) generate && \
-	echo " - migration files written to backend/drizzle/migrations/"
 
 commit-migration: ## Stage & commit new Drizzle migration files
 	$(ECHO_PROFILE)
@@ -144,10 +144,15 @@ studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert
 	@mv local.drizzle.studio*.pem $(BACKEND_DIR)/certs
 	@echo " - certificates created and moved to $(BACKEND_DIR)/certs"
 
+# Run Drizzle Studio inside the backend container on HTTP
 studio: ## Launch Drizzle Studio
 	$(ECHO_PROFILE)
-	@echo " - starting Drizzle Studio → https://local.drizzle.studio:3337"
-	$(SET_BACKEND_ENV) npm ci && npm run studio
+	@echo " - starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=127.0.0.1 (use Firefox)"
+	@$(COMPOSE) run --rm -p 127.0.0.1:3337:3337 $(SERVICE_BACKEND) sh -lc '\
+	  cd /app/backend && \
+	  npm ci && \
+	  npx drizzle-kit studio --host=0.0.0.0 --port=3337 \
+	'
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
