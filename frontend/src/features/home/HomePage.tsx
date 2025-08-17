@@ -97,13 +97,6 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
     }, [email]);
 
     useEffect(() => {
-        if (!email) {
-            setEmailPinChecked(false);
-            setPinMessage(null);
-        }
-    }, [email]);
-
-    useEffect(() => {
         if (pin.trim() !== '') {
             setEmailPinChecked(false);
             setPinMessage(null);

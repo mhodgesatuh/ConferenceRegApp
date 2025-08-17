@@ -128,7 +128,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         // Don’t allow unchecking hasProxy if proxy details exist
         if (name === 'hasProxy' && proxyDataPresent && !checked) return;
 
-        // Pair rule: day1/day2 — clearing missing from both if either toggled
+        // Pair rule: day1/day2 — clear missing from both if either toggled
         if (name === 'day1Attendee' || name === 'day2Attendee') {
             clearMissing('day1Attendee');
             clearMissing('day2Attendee');
@@ -136,7 +136,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
             clearMissing(name);
         }
 
-        // Clearing proxy fields if proxy turned off
+        // Clear proxy fields if proxy turned off
         if (name === 'hasProxy' && !checked) {
             PROXY_FIELDS_SET.forEach((field) => {
                 clearMissing(field);
@@ -225,7 +225,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 }
 
                 // If server returned which fields were missing, reflect that in the UI
-                if (Array.isArray(data?.missing) && data.missing.length > 0) {
+                if (data && Array.isArray(data.missing) && data.missing.length > 0) {
                     markMissing(data.missing as string[]);
                     document.getElementById(data.missing[0])?.focus();
                 }

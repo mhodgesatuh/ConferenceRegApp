@@ -73,6 +73,7 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
     try {
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
+            // TODO: don't need this log
             log.warn("Validation failed: missing required fields", {
                 email,
                 registrationId: undefined,
