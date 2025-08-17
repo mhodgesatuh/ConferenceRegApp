@@ -6,7 +6,9 @@ import fs from "fs";
 import path from "path";
 import type {NextFunction, Request, Response} from "express";
 
-const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
+const ROOT_DIR = path.resolve(__dirname, "../../..");
+const rawLogDir = process.env.LOG_DIR || "logs";
+const LOG_DIR = path.isAbsolute(rawLogDir) ? rawLogDir : path.join(ROOT_DIR, rawLogDir);
 const LOG_PREFIX = process.env.LOG_PREFIX || "app";
 
 fs.mkdirSync(LOG_DIR, {recursive: true});
@@ -21,17 +23,19 @@ const MIN_LEVEL = levelMap[LOG_LEVEL] ?? levelMap.debug;
 export const log = new Logger({name: "app", minLevel: MIN_LEVEL});
 
 log.attachTransport((raw: unknown) => {
-    const o = raw as {
-        date?: unknown;
-        logLevelName?: string;
-        loggerName?: string;
-        argumentsArray?: unknown[];
+    const o = raw as Record<string, unknown> & {
+        _meta?: {
+            date?: unknown;
+            logLevelName?: string;
+            name?: string;
+        };
     };
 
-    const d = o?.date instanceof Date
-        ? o.date
-        : (typeof o?.date === "string" || typeof o?.date === "number")
-            ? new Date(o.date)
+    const meta = o._meta ?? {};
+    const d = meta.date instanceof Date
+        ? meta.date
+        : (typeof meta.date === "string" || typeof meta.date === "number")
+            ? new Date(meta.date)
             : new Date();
 
     const ts = d.toLocaleString("en-US", {
@@ -41,16 +45,21 @@ log.attachTransport((raw: unknown) => {
         hour12: false
     });
 
-    const level = String(o?.logLevelName ?? "").toUpperCase().padEnd(5);
-    const logger = o?.loggerName ?? "app";
-    const msg = (o?.argumentsArray ?? []).map(a => {
-        if (typeof a === "string") return a;
-        try {
-            return JSON.stringify(a);
-        } catch {
-            return String(a);
-        }
-    }).join(" ");
+    const level = String(meta.logLevelName ?? "").toUpperCase().padEnd(5);
+    const logger = meta.name ?? "app";
+    const msg = Object.keys(o)
+        .filter((k) => k !== "_meta")
+        .sort()
+        .map((k) => {
+            const a = o[k];
+            if (typeof a === "string") return a;
+            try {
+                return JSON.stringify(a);
+            } catch {
+                return String(a);
+            }
+        })
+        .join(" ");
 
     stream.write(`[${ts}] ${level} ${logger} ${msg}\n`);
 });
