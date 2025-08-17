@@ -1,34 +1,63 @@
 // backend/src/utils/logger.ts
 //
 
-import "dotenv/config"; // ensure env is loaded before reading process.env
+import {Logger} from "tslog";
 import fs from "fs";
 import path from "path";
-import { Logger } from "tslog";
-import type { Request, Response, NextFunction } from "express";
+import type {NextFunction, Request, Response} from "express";
 
 const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
-const LOG_TO_FILE = String(process.env.LOG_TO_FILE ?? "true").toLowerCase() === "true";
 const LOG_PREFIX = process.env.LOG_PREFIX || "app";
-const LOG_LEVEL = (process.env.LOG_LEVEL || "info").toLowerCase() as any;
 
-export const log = new Logger({ name: "app", minLevel: LOG_LEVEL });
+fs.mkdirSync(LOG_DIR, {recursive: true});
+const filePath = path.join(LOG_DIR, `${LOG_PREFIX}.log`);
+const stream = fs.createWriteStream(filePath, {flags: "a"});
 
-if (LOG_TO_FILE) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
-    const filePath = path.join(LOG_DIR, `${LOG_PREFIX}.log`);
-    const stream = fs.createWriteStream(filePath, { flags: "a" });
-    log.attachTransport((logObj) => {
-        const ts = new Date(logObj.date.getTime()).toLocaleString("en-US", { timeZone: "Pacific/Honolulu" });
-        stream.write(`[${ts}] ${logObj.logLevelName.padEnd(5)} ${logObj.loggerName || "app"} ${logObj.argumentsArray.map(a => {
-            try { return typeof a === "string" ? a : JSON.stringify(a); } catch { return String(a); }
-        }).join(" ")}\n`);
+const levelMap = {silly: 0, trace: 1, debug: 2, info: 3, warn: 4, error: 5, fatal: 6} as const;
+type LevelName = keyof typeof levelMap;
+const LOG_LEVEL = ((process.env.LOG_LEVEL || "debug").toLowerCase() as LevelName);
+const MIN_LEVEL = levelMap[LOG_LEVEL] ?? levelMap.debug;
+
+export const log = new Logger({name: "app", minLevel: MIN_LEVEL});
+
+log.attachTransport((raw: unknown) => {
+    const o = raw as {
+        date?: unknown;
+        logLevelName?: string;
+        loggerName?: string;
+        argumentsArray?: unknown[];
+    };
+
+    const d = o?.date instanceof Date
+        ? o.date
+        : (typeof o?.date === "string" || typeof o?.date === "number")
+            ? new Date(o.date)
+            : new Date();
+
+    const ts = d.toLocaleString("en-US", {
+        timeZone: "Pacific/Honolulu",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false
     });
-}
+
+    const level = String(o?.logLevelName ?? "").toUpperCase().padEnd(5);
+    const logger = o?.loggerName ?? "app";
+    const msg = (o?.argumentsArray ?? []).map(a => {
+        if (typeof a === "string") return a;
+        try {
+            return JSON.stringify(a);
+        } catch {
+            return String(a);
+        }
+    }).join(" ");
+
+    stream.write(`[${ts}] ${level} ${logger} ${msg}\n`);
+});
 
 export function requestLogger() {
     return (req: Request, _res: Response, next: NextFunction) => {
-        log.info("HTTP", { method: req.method, path: req.originalUrl });
+        log.info("HTTP", {method: req.method, path: req.originalUrl});
         next();
     };
 }
@@ -41,10 +70,15 @@ export function errorLogger() {
             cause: err instanceof Error ? err.message : String(err),
             stack: err instanceof Error ? err.stack : undefined,
         });
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({error: "Internal server error"});
     };
 }
 
-export function sendError(res: Response, status: number, error: string, details?: Record<string, unknown>): void {
-    res.status(status).json({ error, ...(details ?? {}) });
+export function sendError(
+    res: Response,
+    status: number,
+    error: string,
+    details?: Record<string, unknown>
+) {
+    res.status(status).json({error, ...(details ?? {})});
 }

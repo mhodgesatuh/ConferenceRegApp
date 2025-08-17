@@ -54,10 +54,17 @@ yet installed:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Install the project tools:
+Install the project development tools:
 
 ```bash
 brew install git node npm docker
+brew install mkcert nss
+mkcert -install  # creates & trusts a local root CA
+mkdir -p backend/certs
+# Generate a cert that covers common dev hosts
+mkcert -key-file backend/certs/localhost-key.pem \
+       -cert-file backend/certs/localhost.pem \
+       localhost 127.0.0.1 ::1
 ```
 
 ---
@@ -103,6 +110,8 @@ the localhost environment.
 ```bash
 cd backend
 npm install
+npm install compression
+npm install -D @types/compression
 npm i module-alias
 npm i -D tsconfig-paths
 ```

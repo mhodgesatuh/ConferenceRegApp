@@ -7,11 +7,21 @@
 DRIZZLE := npx drizzle-kit
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
+SERVICE_BACKEND := conference-backend
+SERVICE_DB := conference-db
+
+# Profile selection: default to dev unless ENV_PROFILE=prod
+PROFILE := $(if $(filter $(ENV_PROFILE),prod),prod,dev)
+COMPOSE := docker compose $(if $(filter $(PROFILE),dev),--profile dev,)
+ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)"
+
+# Source .env and cd backend for Drizzle CLI
 SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
 
 ##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-logs: ## View logs for current environment (dev if LOG_DIR is set to ./logs, else prod)
+logs: ## View logs (latest). If LOG_DIR=./logs in .env, show local dev logs; otherwise show container logs
+	$(ECHO_PROFILE)
 	@LOG_PREFIX=$$(grep -E '^LOG_PREFIX=' .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$LOG_PREFIX" ] && LOG_PREFIX=app; \
 	if [ "$$(grep -E '^LOG_DIR=\.\/logs' .env 2>/dev/null)" != "" ]; then \
@@ -23,84 +33,94 @@ logs: ## View logs for current environment (dev if LOG_DIR is set to ./logs, els
 	    echo " - no dev log file found in ./logs"; \
 	  fi; \
 	else \
-	  echo " - showing prod logs from /var/log/conference inside container"; \
-	  docker compose exec -it conference-backend sh -c '\
+	  echo " - showing container logs from /var/log/conference"; \
+	  $(COMPOSE) exec -it $(SERVICE_BACKEND) sh -c '\
 	    LOG_PREFIX="'"$$LOG_PREFIX"'"; \
 	    FILE=$$(ls -1 /var/log/conference/$$LOG_PREFIX-*.log 2>/dev/null | tail -n 1); \
 	    if [ "$$FILE" != "" ]; then \
 	      less $$FILE; \
 	    else \
-	      echo " - no prod log file found in /var/log/conference"; \
+	      echo " - no log file found in /var/log/conference"; \
 	    fi'; \
 	fi
 
-
 ##–––––– Quick Start –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-init: ## Initialize dev environment: install deps, reset DB, and apply schema
+init: ## Initialize environment: reset DB and apply schema (DANGER: wipes data)
+	$(ECHO_PROFILE)
 	@echo "Docker Desktop must be running before proceeding."
 	@echo "WARNING: this will wipe out all existing data."
 ifndef CI
-	  @read -p "Press 'return' when ready or [Ctrl+C] to quit: "
+	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
 endif
-
 	$(MAKE) reset-db
-	@echo "Wait for database: "
-	@until docker compose exec conference-db mysqladmin ping -h"127.0.0.1" --silent; do \
+	@echo " - waiting for database to become ready..."
+	@until $(COMPOSE) exec $(SERVICE_DB) mysqladmin ping -h"127.0.0.1" --silent; do \
 		sleep 1; \
 	done
-
 	$(MAKE) drop-tables
 	$(MAKE) schema
 
-init-backend: ## Rebuild and restart the backend container only
-	docker compose build --no-cache conference-backend
-	docker compose up -d conference-backend
+init-backend: ## Rebuild and restart the backend container only (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) build --no-cache $(SERVICE_BACKEND)
+	$(COMPOSE) up -d $(SERVICE_BACKEND)
+
+backend-shell: ## Open a shell in the backend container (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) exec $(SERVICE_BACKEND) sh
 
 ##–––––– Drizzle ORM: Schema Management –––––––––––––––––––––––––––––––––––––
 
 baseline: ## Snapshot current schema into a new “init” migration
-	@echo "Creating a baseline 'init' migration from your current schema…"
+	$(ECHO_PROFILE)
+	@echo " - creating a baseline 'init' migration from your current schema…"
 	$(SET_BACKEND_ENV) npm ci && \
 	$(DRIZZLE) generate --name init && \
-	echo " → baseline migration written to backend/drizzle/migrations/"
+	echo " - baseline migration written to backend/drizzle/migrations/"
 
 drop-tables: ## Drop all existing tables in the database
-	@echo "Dropping all tables from the database..."
-	docker compose exec conference-db \
-	       sh -c 'mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME -Nse \
-	       "SET FOREIGN_KEY_CHECKS = 0; \
-	       SELECT CONCAT(\"DROP TABLE IF EXISTS \", table_name, \";\") \
-	       FROM information_schema.tables WHERE table_schema = \"$$DB_NAME\";" \
-	       | mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME'
+	$(ECHO_PROFILE)
+	@echo " - dropping all tables from the database..."
+	$(COMPOSE) exec $(SERVICE_DB) \
+	  sh -c 'mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME -Nse \
+	    "SET FOREIGN_KEY_CHECKS = 0; \
+	     SELECT CONCAT(\"DROP TABLE IF EXISTS \", table_name, \";\") \
+	     FROM information_schema.tables WHERE table_schema = \"$$DB_NAME\";" \
+	    | mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME'
 
-reset-db: ## Completely remove and recreate the database from .env
-	@echo "Removing database container and volume 'mariadb_data'..."
-	docker compose down --volumes --remove-orphans
-	@echo "Force-removing mariadb_data volume just in case..."
-	docker volume rm mariadb_data || true
-	@echo "Recreating fresh database from .env..."
-	docker compose up -d conference-db
-	@echo "Database reset complete. Next step: make schema"
+reset-db: ## Completely remove and recreate the database from .env (current profile)
+	$(ECHO_PROFILE)
+	@echo " - removing containers and volumes…"
+	$(COMPOSE) down --volumes --remove-orphans || true
+	@echo " - force-removing mariadb_data volume (if present)…"
+	-@docker volume rm mariadb_data >/dev/null 2>&1 || true
+	@echo " - recreating fresh database from .env…"
+	$(COMPOSE) up -d $(SERVICE_DB)
+	@echo " - database reset complete. next step: make schema"
 
 schema: ## Incrementally apply only new migrations to the database
-	@echo "Applying **pending** migrations to the database..."
+	$(ECHO_PROFILE)
+	@echo " - applying **pending** migrations to the database..."
 	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) migrate
-	@echo "When you want to browse/migrate via Drizzle Studio, run:"
-	@echo " make studio"
+	@echo " - done. to browse with Drizzle Studio, run:"
+	@echo "   make studio"
 
-generate: ## Diff schema locally → write SQL + journal (then run `make commit-migrations`)
+generate: ## Diff schema locally → write SQL + journal (then run `make commit-migration`)
+	$(ECHO_PROFILE)
 	$(SET_BACKEND_ENV) npm ci && $(DRIZZLE) generate && \
-  	echo "Migration files written to backend/drizzle/migrations/"
+	echo " - migration files written to backend/drizzle/migrations/"
 
 commit-migration: ## Stage & commit new Drizzle migration files
+	$(ECHO_PROFILE)
 	@git add $(BACKEND_DIR)/drizzle/migrations
 	@git commit -m "chore: add new Drizzle migration files"
 
 studio-check: ## Verify certs & hosts entry for Drizzle Studio
-	@echo "🔍 Checking Drizzle Studio prerequisites…"
-	@if [ ! -f $(BACKEND_DIR)/local.drizzle.studio.pem ] || [ ! -f $(BACKEND_DIR)/local.drizzle.studio-key.pem ]; then \
-	  echo "Missing cert files in '$(BACKEND_DIR)/'."; \
+	$(ECHO_PROFILE)
+	@echo "🔍 checking Drizzle Studio prerequisites…"
+	@if [ ! -f $(BACKEND_DIR)/certs/local.drizzle.studio.pem ] || [ ! -f $(BACKEND_DIR)/certs/local.drizzle.studio-key.pem ]; then \
+	  echo "Missing cert files in '$(BACKEND_DIR)/certs/'."; \
 	  echo " - Run 'make studio-cert' to generate and install them."; \
 	  exit 1; \
 	fi
@@ -110,68 +130,72 @@ studio-check: ## Verify certs & hosts entry for Drizzle Studio
 	  echo "   127.0.0.1 local.drizzle.studio"; \
 	  exit 1; \
 	fi
-	@echo " - All Drizzle Studio prerequisites are in place."
+	@echo " - all Drizzle Studio prerequisites are in place."
 
 studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert)
-	@echo "Generating mkcert certificates for local.drizzle.studio…"
+	$(ECHO_PROFILE)
+	@echo " - generating mkcert certificates for local.drizzle.studio…"
 	@if ! command -v mkcert >/dev/null 2>&1; then \
 	  echo "Error: mkcert is not installed. Install via 'brew install mkcert nss' and run 'mkcert -install'."; \
 	  exit 1; \
 	fi
 	@mkcert local.drizzle.studio
-	@mv local.drizzle.studio*.pem $(BACKEND_DIR)/
-	@echo "Certificates created and moved to $(BACKEND_DIR)/"
+	@mkdir -p $(BACKEND_DIR)/certs
+	@mv local.drizzle.studio*.pem $(BACKEND_DIR)/certs
+	@echo " - certificates created and moved to $(BACKEND_DIR)/certs"
 
 studio: ## Launch Drizzle Studio
-	@echo "Starting Drizzle Studio → https://local.drizzle.studio:3337"
+	$(ECHO_PROFILE)
+	@echo " - starting Drizzle Studio → https://local.drizzle.studio:3337"
 	$(SET_BACKEND_ENV) npm ci && npm run studio
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
-build: ## Build Docker images for frontend and backend
-	docker compose build --no-cache
+build: ## Build Docker images (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) build --no-cache
 
-up: ## Start containers in detached mode
-	docker compose up -d
+up: ## Start containers in detached mode (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) up -d
+	echo "Running: https://127.0.0.1:8080/"
 
-down: ## Stop and remove containers
-	docker compose down
+down: ## Stop and remove containers (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) down
 
-restart: ## Restart all containers
+restart: ## Restart all containers (current profile)
+	$(ECHO_PROFILE)
 	$(MAKE) down
 	$(MAKE) up
 
-tail-logs: ## Tail logs from all containers
-	docker compose logs -f
+tail-logs: ## Tail logs from all containers (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) logs -f
 
-clean: ## Stop and remove all containers, volumes, and images
-	docker compose down --volumes --rmi all
-
-##–––––– Frontend Development –––––––––––––––––––––––––––––––––––––––––––––
-
-init-frontend: ## Rebuild and restart the frontend container only
-	docker compose build --no-cache conference-frontend
-	docker compose up -d conference-frontend
-
-frontend-dev: ## Run the frontend dev server (Vite)
-	cd $(FRONTEND_DIR) && npm install && npm run dev
-
-frontend-install: ## Install frontend dependencies
-	cd $(FRONTEND_DIR) && npm install
-
-frontend-build: ## Build the frontend (for production)
-	cd $(FRONTEND_DIR) && npm run build
-
-frontend-clean: ## Remove frontend dist build
-	cd $(FRONTEND_DIR) && rm -rf dist
+clean: ## Stop and remove all containers, volumes, and images (current profile)
+	$(ECHO_PROFILE)
+	$(COMPOSE) down --volumes --rmi all || true
 
 ##–––––– High-Level Composites –––––––––––––––––––––––––––––––––––––––––––––
 
-rebuild: down build up frontend-dev ## Redeploy a new set of containers
+rebuild: ## Redeploy a new set of containers (current profile)
+	$(ECHO_PROFILE)
+	@echo "Open dev at: https://127.0.0.1:8080"
+	$(MAKE) down
+	$(MAKE) build
+	$(MAKE) up
 
-deploy: build schema up ## Build images, apply only new migrations, and start the stack
+deploy: ## Build images, apply pending migrations, and start the stack (current profile)
+	$(ECHO_PROFILE)
+	$(MAKE) build
+	$(MAKE) schema
+	$(MAKE) up
 
-update-schema: generate schema ## Generate new migrations and apply them
+update-schema: ## Generate new migrations and apply them (current profile)
+	$(ECHO_PROFILE)
+	$(MAKE) generate
+	$(MAKE) schema
 
 # -----------------------------------------------------------------------------
 # DEFAULT TARGET
@@ -179,7 +203,8 @@ update-schema: generate schema ## Generate new migrations and apply them
 
 .DEFAULT_GOAL := help
 
-help: ## Show available targets grouped by section
+help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
+	@echo "ENV_PROFILE=$(PROFILE)"
 	@echo "Available targets:"; \
 	awk '/^##––––––/ { \
 	    hdr = $$0; \
@@ -190,7 +215,7 @@ help: ## Show available targets grouped by section
 	    split($$0, parts, "##"); \
 	    target = parts[1]; desc = parts[2]; \
 	    sub(/[ \t]*$$/, "", target); \
-	    printf "  %-15s %s\n", target, desc; \
+	    printf "  %-18s %s\n", target, desc; \
 	}' $(MAKEFILE_LIST)
 
 # -----------------------------------------------------------------------------
@@ -198,7 +223,6 @@ help: ## Show available targets grouped by section
 # -----------------------------------------------------------------------------
 
 .PHONY: build clean commit-migration deploy down drop-tables generate \
-        frontend-build frontend-clean frontend-dev frontend-install \
-        help init init-backend init-frontend restart reset-db schema \
+        help init init-backend backend-shell restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up \
-        rebuild
+        rebuild logs

@@ -1,38 +1,72 @@
-// frontend/src/index.ts
-//
-
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import registrationRoutes from './routes/registration';
-import {db} from './db/client';
-import {sql} from 'drizzle-orm';
-import {errorLogger, log, requestLogger} from "@/utils/logger";
-
-dotenv.config();
+// backend/src/index.ts
+import express from "express";
+import path from "path";
+import fs from "fs";
+import http from "http";
+import https from "https";
+import helmet from "helmet";
+import compression from "compression";
+import cors from "cors";
+import registrationRoutes from "./routes/registration";
 
 const app = express();
-const port = process.env.BACKEND_PORT || process.env.PORT || 5000;
+const host = process.env.BIND_HOST || "0.0.0.0";
+const port = Number(process.env.BACKEND_PORT || 5000);
+const httpsEnabled = process.env.HTTPS === "true";
+const certPath = process.env.HTTPS_CERT || "/certs/localhost.pem";
+const keyPath  = process.env.HTTPS_KEY  || "/certs/localhost-key.pem";
 
-app.use(cors());
+// 1) Core middleware
+app.set("trust proxy", 1); // if behind a proxy now or later
 app.use(express.json());
-app.use(requestLogger());
+app.use(compression());
+// In dev you can loosen or disable CORS; in prod prefer same-origin behind a proxy.
+app.use(cors({ origin: false }));
 
-app.use('/api/registrations', registrationRoutes);
+// 2) Security headers (tune CSP as needed)
+app.use(helmet({
+    // example CSP; adjust for your app (fonts, APIs, analytics, etc.)
+    contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
+        useDefaults: true,
+        directives: {
+            "default-src": ["'self'"],
+            "img-src": ["'self'", "data:"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+            "script-src": ["'self'"],
+            "connect-src": ["'self'", "/api"],
+        }
+    } : false, // disable CSP in dev to avoid HMR headaches
+    crossOriginEmbedderPolicy: false,
+}));
 
-app.use(errorLogger());
+// 3) API first
+app.use("/api/registrations", registrationRoutes);
 
-async function start() {
-    try {
-        await db.execute(sql`ALTER TABLE registrations
-            AUTO_INCREMENT = 100`);
-    } catch (err) {
-        log.error('Failed to ensure registration id start value', {error: err});
-    }
+// 4) Serve frontend build in production
+if (process.env.NODE_ENV === "production") {
+    const clientDir = path.resolve(process.cwd(), "../frontend/dist");
 
-    app.listen(port, () => {
-        log.info(`Server running on port ${port}`);
+    // Static assets: long cache
+    app.use(express.static(clientDir, {
+        setHeaders(res, filePath) {
+            if (/\.(js|css|woff2?|png|jpg|svg)$/.test(filePath)) {
+                res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            }
+        }
+    }));
+
+    // SPA fallback: no-cache for index.html
+    app.get("*", (_req, res) => {
+        res.setHeader("Cache-Control", "no-store");
+        res.sendFile(path.join(clientDir, "index.html"));
     });
 }
 
-start();
+// 5) Start
+const server = httpsEnabled
+    ? https.createServer({ key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }, app)
+    : http.createServer(app);
+
+server.listen(port, host, () => {
+    console.log(`Server on ${httpsEnabled ? "https" : "http"}://${host}:${port}`);
+});

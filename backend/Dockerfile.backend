@@ -2,6 +2,11 @@
 
 FROM node:24-alpine
 
+ENV TZ=Pacific/Honolulu
+RUN apk add --no-cache tzdata \
+ && cp /usr/share/zoneinfo/$TZ /etc/localtime \
+ && echo $TZ > /etc/timezone
+
 WORKDIR /app/backend
 COPY package*.json ./
 

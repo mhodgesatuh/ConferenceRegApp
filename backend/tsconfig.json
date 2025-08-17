@@ -8,14 +8,20 @@
         "incremental": true,
         "baseUrl": ".",
         "paths": { "@/*": ["src/*"] },
-
         "lib": ["ESNext"],
+        "target": "ES2020",
         "module": "CommonJS",
         "moduleResolution": "node",
-        "target": "ES2020",
         "rootDir": "src",
         "outDir": "dist"
     },
-    "include": ["src/**/*", "test/**/*"],
-    "exclude": ["node_modules", "dist", "src/tests"]
-}
+    "include": ["src/**/*"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "src/tests",
+        "test",
+        "../drizzle.config.ts",
+        "../vitest.config.ts",
+        "../vite.config.ts"
+    ]}
