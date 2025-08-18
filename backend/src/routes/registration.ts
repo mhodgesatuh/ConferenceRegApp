@@ -77,6 +77,15 @@ const toNull = (v: unknown) => {
     return s.length === 0 ? null : s;
 };
 
+/** Phone validation (only when present). Empty → allowed (saved as NULL) */
+const isValidPhone = (v: unknown): boolean => {
+    const s = toNull(v);
+    if (s === null) return true; // empty/blank is allowed
+    const digits = s.replace(/\D/g, "");
+    // Typical E.164-ish sanity: 10–15 digits
+    return digits.length >= 10 && digits.length <= 15;
+};
+
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
     const email = req.body?.email?.trim().toLowerCase();
@@ -85,6 +94,15 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
             sendError(res, 400, "Missing required information", { missing });
+            return;
+        }
+
+        // Validate phones only if provided; empty is OK
+        if (!isValidPhone(req.body.phone1) || !isValidPhone(req.body.phone2)) {
+            sendError(res, 400, "Invalid phone number(s)", {
+                phone1: req.body.phone1,
+                phone2: req.body.phone2,
+            });
             return;
         }
 
@@ -110,7 +128,7 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
                 day2Attendee: toBool(req.body.day2Attendee),
                 question1: String(req.body.question1).trim(),
                 question2: String(req.body.question2).trim(),
-                isAttendee: true,
+                isAttendee: true, // always true on create
                 isCancelled: toBool(req.body.isCancelled),
                 isMonitor: toBool(req.body.isMonitor),
                 isOrganizer: toBool(req.body.isOrganizer),
@@ -152,6 +170,108 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
             body: redact(req.body),
         });
         sendError(res, 500, SAVE_REGISTRATION_ERROR, {
+            cause: err instanceof Error ? err.message : String(err),
+        });
+    }
+});
+
+/* PUT /:id — update existing registration
+   Empty phone1/phone2 are accepted (stored as NULL); validation only if present */
+router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+        sendError(res, 400, "Invalid ID", { raw: req.params.id });
+        return;
+    }
+
+    // Validate phones ONLY if provided and non-empty
+    if (!isValidPhone(req.body.phone1) || !isValidPhone(req.body.phone2)) {
+        sendError(res, 400, "Invalid phone number(s)", {
+            phone1: req.body.phone1,
+            phone2: req.body.phone2,
+        });
+        return;
+    }
+
+    try {
+        const updateValues = {
+            // email is typically immutable; update only if you allow it
+            // email: req.body.email ? String(req.body.email).trim().toLowerCase() : undefined,
+            phone1: toNull(req.body.phone1),
+            phone2: toNull(req.body.phone2),
+            firstName: req.body.firstName !== undefined ? toNull(req.body.firstName) : undefined,
+            lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined,
+            namePrefix: req.body.namePrefix !== undefined ? toNull(req.body.namePrefix) : undefined,
+            nameSuffix: req.body.nameSuffix !== undefined ? toNull(req.body.nameSuffix) : undefined,
+            hasProxy: req.body.hasProxy !== undefined ? toBool(req.body.hasProxy) : undefined,
+            proxyName: req.body.proxyName !== undefined ? toNull(req.body.proxyName) : undefined,
+            proxyPhone: req.body.proxyPhone !== undefined ? toNull(req.body.proxyPhone) : undefined,
+            proxyEmail:
+                req.body.proxyEmail !== undefined
+                    ? toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null)
+                    : undefined,
+            cancelledAttendance:
+                req.body.cancelledAttendance !== undefined ? toBool(req.body.cancelledAttendance) : undefined,
+            cancellationReason:
+                req.body.cancellationReason !== undefined ? toNull(req.body.cancellationReason) : undefined,
+            day1Attendee: req.body.day1Attendee !== undefined ? toBool(req.body.day1Attendee) : undefined,
+            day2Attendee: req.body.day2Attendee !== undefined ? toBool(req.body.day2Attendee) : undefined,
+            question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
+            question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
+            // Don't force isAttendee=true on update; preserve/allow explicit changes
+            isAttendee: req.body.isAttendee !== undefined ? toBool(req.body.isAttendee) : undefined,
+            isCancelled: req.body.isCancelled !== undefined ? toBool(req.body.isCancelled) : undefined,
+            isMonitor: req.body.isMonitor !== undefined ? toBool(req.body.isMonitor) : undefined,
+            isOrganizer: req.body.isOrganizer !== undefined ? toBool(req.body.isOrganizer) : undefined,
+            isPresenter: req.body.isPresenter !== undefined ? toBool(req.body.isPresenter) : undefined,
+            isSponsor: req.body.isSponsor !== undefined ? toBool(req.body.isSponsor) : undefined,
+        } as const;
+
+        // Remove undefined keys so we only update what was provided
+        const clean: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(updateValues)) {
+            if (v !== undefined) clean[k] = v;
+        }
+
+        const result = await db.update(registrations).set(clean).where(eq(registrations.id, id));
+
+        if ((result as unknown as { affectedRows?: number }).affectedRows === 0) {
+            sendError(res, 404, "Registration not found", { id });
+            return;
+        }
+
+        // Return the updated record (including loginPin for convenience)
+        const [record] = await db
+            .select()
+            .from(registrations)
+            .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
+            .where(eq(registrations.id, id))
+            .limit(1);
+
+        if (!record?.registrations) {
+            sendError(res, 404, "Registration not found", { id });
+            return;
+        }
+
+        log.info("Registration updated", {
+            email: record.registrations.email,
+            registrationId: id,
+        });
+
+        res.json({
+            registration: {
+                ...record.registrations,
+                loginPin: record.credentials.loginPin,
+            },
+        });
+    } catch (err) {
+        log.error("Failed to update registration", {
+            registrationId: id,
+            cause: err instanceof Error ? err.message : String(err),
+            body: redact(req.body),
+        });
+        sendError(res, 500, "Failed to update registration", {
+            id,
             cause: err instanceof Error ? err.message : String(err),
         });
     }
@@ -321,15 +441,10 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
 router.all("*", (req, res) => {
     const ROUTE_NOT_FOUND = "Internal error: route not found";
     log.warn(ROUTE_NOT_FOUND, { method: req.method, path: req.originalUrl });
-    sendError(
-        res,
-        404,
-        req.method === "POST" ? ROUTE_NOT_FOUND : "Not found",
-        {
-            method: req.method,
-            path: req.originalUrl,
-        },
-    );
+    sendError(res, 404, req.method === "POST" ? ROUTE_NOT_FOUND : "Not found", {
+        method: req.method,
+        path: req.originalUrl,
+    });
 });
 
 export default router;
