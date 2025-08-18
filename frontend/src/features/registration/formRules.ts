@@ -48,6 +48,13 @@ export function canSeeField(
     const {state, hasUpdatePrivilege, isSaved, showId} = ctx;
 
     if (!showId && field.name === 'id') return false;
+    if (
+        isSaved &&
+        (field.name === 'hasProxy' ||
+            PROXY_FIELDS_SET.has(field.name) ||
+            (field.type === 'section' && field.name === 'section-proxy'))
+    )
+        return false;
     if (!isSaved && CANCEL_FIELDS_SET.has(field.name)) return false;
     if (!state.hasProxy && PROXY_FIELDS_SET.has(field.name)) return false;
     if (field.scope === 'admin' && !hasUpdatePrivilege) return false;

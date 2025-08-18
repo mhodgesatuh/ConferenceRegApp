@@ -80,13 +80,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
         [fields, state, hasUpdatePrivilege, isSaved, showId]
     );
 
-    // Hide hasProxy when editing (isSaved true)
-    const fieldsForRender = useMemo(() => {
-        if (isSaved) {
-            return visibleFields.filter((f) => f.name !== 'hasProxy');
-        }
-        return visibleFields;
-    }, [visibleFields, isSaved]);
+    // Proxy-related fields are filtered in formRules when editing
+    const fieldsForRender = visibleFields;
 
     // Effects
 
