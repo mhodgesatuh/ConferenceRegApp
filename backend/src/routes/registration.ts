@@ -1,11 +1,18 @@
 // backend/src/routes/registration.ts
 
 import { Router } from "express";
-import { db } from "@/db/client";
-import { credentials, registrations } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
 import { log, sendError } from "@/utils/logger";
 import { sendEmail } from "@/utils/email";
+
+import { generatePin, isValidPhone, toBool, toNull } from "./registration.utils";
+import {
+    createRegistration,
+    updateRegistration,
+    getRegistrationWithPinById,
+    getRegistrationWithPinByLogin,
+    getRegistrationByEmail,
+    getCredentialByRegId,
+} from "./registration.service";
 
 interface CreateRegistrationBody {
     id?: number;
@@ -34,15 +41,6 @@ interface CreateRegistrationBody {
     isSponsor?: boolean;
 }
 
-// Generate a pin for users to use to return to their registration info.
-function generatePin(length: number): string {
-    let pin = "";
-    for (let i = 0; i < length; i++) {
-        pin += Math.floor(Math.random() * 10).toString();
-    }
-    return pin;
-}
-
 const router = Router();
 
 const SAVE_REGISTRATION_ERROR = "Failed to save registration";
@@ -66,26 +64,6 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
     return clone;
 }
 
-/** Normalize booleans (MariaDB tinyint(1)) */
-const toBool = (v: unknown, defaultVal = false) =>
-    typeof v === "boolean" ? v : v == null ? defaultVal : Boolean(v);
-
-/** Normalize strings to null if blank */
-const toNull = (v: unknown) => {
-    if (v == null) return null;
-    const s = String(v).trim();
-    return s.length === 0 ? null : s;
-};
-
-/** Phone validation (only when present). Empty → allowed (saved as NULL) */
-const isValidPhone = (v: unknown): boolean => {
-    const s = toNull(v);
-    if (s === null) return true; // empty/blank is allowed
-    const digits = s.replace(/\D/g, "");
-    // Typical E.164-ish sanity: 10–15 digits
-    return digits.length >= 10 && digits.length <= 15;
-};
-
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
     const email = req.body?.email?.trim().toLowerCase();
@@ -108,9 +86,8 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
 
         const loginPin = generatePin(8);
 
-        // Save registration + credential in a single transaction
-        const { id } = await db.transaction<{ id: number }>(async (tx) => {
-            const result = await tx.insert(registrations).values({
+        const { id } = await createRegistration(
+            {
                 email,
                 phone1: toNull(req.body.phone1),
                 phone2: toNull(req.body.phone2),
@@ -134,30 +111,9 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
                 isOrganizer: toBool(req.body.isOrganizer),
                 isPresenter: toBool(req.body.isPresenter),
                 isSponsor: toBool(req.body.isSponsor),
-            });
-
-            // MariaDB/MySQL: auto-increment PK is available as insertId (ResultSetHeader / OkPacket)
-            const insertId = (result as unknown as { insertId?: number })?.insertId;
-            let newId: number | undefined =
-                typeof insertId === "number" && insertId > 0 ? insertId : undefined;
-
-            // Fallback: load the row we just created. Prefer a unique column if enforced.
-            if (!newId) {
-                const row = await tx
-                    .select({ id: registrations.id })
-                    .from(registrations)
-                    .where(eq(registrations.email, email!))
-                    .limit(1);
-                if (row.length === 0) {
-                    throw new Error("Insert did not return insertId and row not found");
-                }
-                newId = row[0].id!;
-            }
-
-            await tx.insert(credentials).values({ registrationId: newId, loginPin });
-
-            return { id: newId };
-        });
+            },
+            loginPin
+        );
 
         log.info("Registration created", { email, registrationId: id });
         res.status(201).json({ id, loginPin });
@@ -175,8 +131,7 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
     }
 });
 
-/* PUT /:id — update existing registration
-   Empty phone1/phone2 are accepted (stored as NULL); validation only if present */
+/* PUT /:id — update existing registration */
 router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
@@ -195,8 +150,7 @@ router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (
 
     try {
         const updateValues = {
-            // email is typically immutable; update only if you allow it
-            // email: req.body.email ? String(req.body.email).trim().toLowerCase() : undefined,
+            email: req.body.email ? String(req.body.email).trim().toLowerCase() : undefined,
             phone1: toNull(req.body.phone1),
             phone2: toNull(req.body.phone2),
             firstName: req.body.firstName !== undefined ? toNull(req.body.firstName) : undefined,
@@ -233,7 +187,7 @@ router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (
             if (v !== undefined) clean[k] = v;
         }
 
-        const result = await db.update(registrations).set(clean).where(eq(registrations.id, id));
+        const result = await updateRegistration(id, clean);
 
         if ((result as unknown as { affectedRows?: number }).affectedRows === 0) {
             sendError(res, 404, "Registration not found", { id });
@@ -241,12 +195,7 @@ router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (
         }
 
         // Return the updated record (including loginPin for convenience)
-        const [record] = await db
-            .select()
-            .from(registrations)
-            .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
-            .where(eq(registrations.id, id))
-            .limit(1);
+        const [record] = await getRegistrationWithPinById(id);
 
         if (!record?.registrations) {
             sendError(res, 404, "Registration not found", { id });
@@ -297,11 +246,7 @@ router.get("/login", async (req, res): Promise<void> => {
     }
 
     try {
-        const [record] = await db
-            .select()
-            .from(registrations)
-            .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
-            .where(and(eq(registrations.email, email), eq(credentials.loginPin, pin)));
+        const [record] = await getRegistrationWithPinByLogin(email, pin);
 
         if (!record?.registrations) {
             log.warn("Registration lookup: not found", { email, registrationId: undefined });
@@ -346,10 +291,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     }
 
     try {
-        const [registration] = await db
-            .select()
-            .from(registrations)
-            .where(eq(registrations.email, email));
+        const [registration] = await getRegistrationByEmail(email);
 
         if (!registration) {
             log.warn("Lost PIN: registration not found", { email, registrationId: undefined });
@@ -357,10 +299,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             return;
         }
 
-        const [credential] = await db
-            .select()
-            .from(credentials)
-            .where(eq(credentials.registrationId, registration.id));
+        const [credential] = await getCredentialByRegId(registration.id);
 
         if (!credential) {
             log.warn("Lost PIN: credential not found", { email, registrationId: registration.id });
@@ -402,11 +341,7 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
     }
 
     try {
-        const [record] = await db
-            .select()
-            .from(registrations)
-            .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
-            .where(eq(registrations.id, id));
+        const [record] = await getRegistrationWithPinById(id);
 
         if (!record?.registrations) {
             log.warn("Fetch by id: not found", { email: undefined, registrationId: id });
