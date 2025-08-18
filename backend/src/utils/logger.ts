@@ -87,7 +87,11 @@ export function sendError(
     res: Response,
     status: number,
     error: string,
-    details?: Record<string, unknown>
-) {
-    res.status(status).json({error, ...(details ?? {})});
+    extra?: Record<string, unknown>
+): void {
+    const payload = { error, ...(extra ?? {}) };
+
+    // Explicit header
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(status).send(JSON.stringify(payload));
 }

@@ -29,6 +29,8 @@ import {
 
 const PAGE_TITLE = 'Conference Registration';
 
+const INTERNAL_ERROR_MSG = "Oh snap! Something went wrong. Please contact PCATT, or try again later.";
+
 type MessageType = '' | 'success' | 'error';
 
 type RegistrationFormProps = {
@@ -214,14 +216,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                 if (ct.includes('application/json')) {
                     data = await res.json().catch(() => undefined);
                     const dev = import.meta.env.MODE !== 'production';
-                    // Show the backend's `error` message; in dev also include `cause` if present
                     msg =
                         (dev && (data?.cause || data?.error)) ||
-                        data?.error ||
-                        `Request failed (${res.status})`;
+                        data?.error || `(${res.status})`;
                 } else {
                     // Non-JSON error bodies
-                    msg = (await res.text().catch(() => '')) || `Request failed (${res.status})`;
+                    msg = (await res.text().catch(() => '')) || `(${res.status})`;
                 }
 
                 // If server returned which fields were missing, reflect that in the UI
@@ -230,13 +230,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
                     document.getElementById(data.missing[0])?.focus();
                 }
 
-                setMessage({text: msg, type: 'error'});
+                console.error('Registration error: ', msg);
+                setMessage({text: INTERNAL_ERROR_MSG, type: 'error'});
             }
         } catch (err) {
-            console.error('Registration submission failed', err);
-            const msg =
-                'Failed to submit registration' + (err instanceof Error && err.message ? `: ${err.message}` : '');
-            setMessage({text: msg, type: 'error'});
+            console.error('Registration error: ', err);
+            setMessage({text: INTERNAL_ERROR_MSG, type: 'error'});
         }
     };
 
