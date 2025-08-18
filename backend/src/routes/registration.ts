@@ -1,11 +1,11 @@
 // backend/src/routes/registration.ts
 
-import {Router} from "express";
-import {db} from "@/db/client";
-import {credentials, registrations} from "@/db/schema";
-import {and, eq} from "drizzle-orm";
-import {log, sendError} from "@/utils/logger";
-import {sendEmail} from "@/utils/email";
+import { Router } from "express";
+import { db } from "@/db/client";
+import { credentials, registrations } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { log, sendError } from "@/utils/logger";
+import { sendEmail } from "@/utils/email";
 
 interface CreateRegistrationBody {
     id?: number;
@@ -59,13 +59,23 @@ const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
 /** Redact potentially sensitive fields before logging */
 function redact(body: Partial<CreateRegistrationBody> | undefined) {
     if (!body) return {};
-    const clone = {...body};
+    const clone: Record<string, unknown> = { ...body };
     (["loginPin", "pin", "password"] as const).forEach((k) => {
-        // @ts-expect-error – dynamic cleanup
         if (k in clone) clone[k] = "<redacted>";
     });
     return clone;
 }
+
+/** Normalize booleans (MariaDB tinyint(1)) */
+const toBool = (v: unknown, defaultVal = false) =>
+    typeof v === "boolean" ? v : v == null ? defaultVal : Boolean(v);
+
+/** Normalize strings to null if blank */
+const toNull = (v: unknown) => {
+    if (v == null) return null;
+    const s = String(v).trim();
+    return s.length === 0 ? null : s;
+};
 
 /* POST / */
 router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
@@ -74,51 +84,65 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
     try {
         const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
         if (missing.length) {
-            sendError(res, 400, "Missing required information", {missing});
+            sendError(res, 400, "Missing required information", { missing });
             return;
         }
 
         const loginPin = generatePin(8);
 
         // Save registration + credential in a single transaction
-        const {id} = await db.transaction<{ id: number }>(async (tx) => {
+        const { id } = await db.transaction<{ id: number }>(async (tx) => {
             const result = await tx.insert(registrations).values({
                 email,
-                phone1: req.body.phone1,
-                phone2: req.body.phone2,
-                firstName: req.body.firstName,
-                lastName: req.body.lastName,
-                namePrefix: req.body.namePrefix,
-                nameSuffix: req.body.nameSuffix,
-                hasProxy: req.body.hasProxy,
-                proxyName: req.body.proxyName,
-                proxyPhone: req.body.proxyPhone,
-                proxyEmail: req.body.proxyEmail,
-                cancelledAttendance: req.body.cancelledAttendance,
-                cancellationReason: req.body.cancellationReason,
-                day1Attendee: req.body.day1Attendee,
-                day2Attendee: req.body.day2Attendee,
-                question1: req.body.question1,
-                question2: req.body.question2,
-                isAttendee: req.body.isAttendee,
-                isCancelled: req.body.isCancelled,
-                isMonitor: req.body.isMonitor,
-                isOrganizer: req.body.isOrganizer,
-                isPresenter: req.body.isPresenter,
-                isSponsor: req.body.isSponsor,
+                phone1: toNull(req.body.phone1),
+                phone2: toNull(req.body.phone2),
+                firstName: toNull(req.body.firstName),
+                lastName: String(req.body.lastName).trim(),
+                namePrefix: toNull(req.body.namePrefix),
+                nameSuffix: toNull(req.body.nameSuffix),
+                hasProxy: toBool(req.body.hasProxy),
+                proxyName: toNull(req.body.proxyName),
+                proxyPhone: toNull(req.body.proxyPhone),
+                proxyEmail: toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null),
+                cancelledAttendance: toBool(req.body.cancelledAttendance),
+                cancellationReason: toNull(req.body.cancellationReason),
+                day1Attendee: toBool(req.body.day1Attendee),
+                day2Attendee: toBool(req.body.day2Attendee),
+                question1: String(req.body.question1).trim(),
+                question2: String(req.body.question2).trim(),
+                isAttendee: true,
+                isCancelled: toBool(req.body.isCancelled),
+                isMonitor: toBool(req.body.isMonitor),
+                isOrganizer: toBool(req.body.isOrganizer),
+                isPresenter: toBool(req.body.isPresenter),
+                isSponsor: toBool(req.body.isSponsor),
             });
 
-            // MariaDB/MySQL: auto-increment PK is available as insertId
-            const newId = Number((result as any)?.insertId);
-            if (!newId) throw new Error("Insert did not return insertId");
+            // MariaDB/MySQL: auto-increment PK is available as insertId (ResultSetHeader / OkPacket)
+            const insertId = (result as unknown as { insertId?: number })?.insertId;
+            let newId: number | undefined =
+                typeof insertId === "number" && insertId > 0 ? insertId : undefined;
 
-            await tx.insert(credentials).values({registrationId: newId, loginPin});
+            // Fallback: load the row we just created. Prefer a unique column if enforced.
+            if (!newId) {
+                const row = await tx
+                    .select({ id: registrations.id })
+                    .from(registrations)
+                    .where(eq(registrations.email, email!))
+                    .limit(1);
+                if (row.length === 0) {
+                    throw new Error("Insert did not return insertId and row not found");
+                }
+                newId = row[0].id!;
+            }
 
-            return {id: newId};
+            await tx.insert(credentials).values({ registrationId: newId, loginPin });
+
+            return { id: newId };
         });
 
-        log.info("Registration created", {email, registrationId: id});
-        res.status(201).json({id, loginPin});
+        log.info("Registration created", { email, registrationId: id });
+        res.status(201).json({ id, loginPin });
     } catch (err) {
         log.error(SAVE_REGISTRATION_ERROR, {
             email,
@@ -135,7 +159,8 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
 
 /* GET /login?email=addr&pin=code */
 router.get("/login", async (req, res): Promise<void> => {
-    const {email, pin} = req.query as { email?: string; pin?: string };
+    const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
+    const pin = req.query.pin ? String(req.query.pin).trim() : undefined;
 
     if (!email || !pin) {
         log.warn("Login failed: missing credentials", {
@@ -159,8 +184,8 @@ router.get("/login", async (req, res): Promise<void> => {
             .where(and(eq(registrations.email, email), eq(credentials.loginPin, pin)));
 
         if (!record?.registrations) {
-            log.warn("Registration lookup: not found", {email, registrationId: undefined});
-            sendError(res, 404, "Registration not found", {email});
+            log.warn("Registration lookup: not found", { email, registrationId: undefined });
+            sendError(res, 404, "Registration not found", { email });
             return;
         }
 
@@ -189,7 +214,7 @@ router.get("/login", async (req, res): Promise<void> => {
 
 /* GET /lost-pin?email=addr */
 router.get("/lost-pin", async (req, res): Promise<void> => {
-    const {email} = req.query as { email?: string };
+    const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
 
     if (!email) {
         log.warn("Lost PIN: email required", {
@@ -201,11 +226,14 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     }
 
     try {
-        const [registration] = await db.select().from(registrations).where(eq(registrations.email, email));
+        const [registration] = await db
+            .select()
+            .from(registrations)
+            .where(eq(registrations.email, email));
 
         if (!registration) {
-            log.warn("Lost PIN: registration not found", {email, registrationId: undefined});
-            sendError(res, 404, "Please contact PCATT", {email});
+            log.warn("Lost PIN: registration not found", { email, registrationId: undefined });
+            sendError(res, 404, "Please contact PCATT", { email });
             return;
         }
 
@@ -215,8 +243,8 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             .where(eq(credentials.registrationId, registration.id));
 
         if (!credential) {
-            log.warn("Lost PIN: credential not found", {email, registrationId: registration.id});
-            sendError(res, 404, "Please contact PCATT", {email, registrationId: registration.id});
+            log.warn("Lost PIN: credential not found", { email, registrationId: registration.id });
+            sendError(res, 404, "Please contact PCATT", { email, registrationId: registration.id });
             return;
         }
 
@@ -225,8 +253,8 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             subject: "Your login pin",
             text: `Your login PIN is ${credential.loginPin}`,
         });
-        log.info("Sending pin", {email, registrationId: registration.id});
-        res.json({sent: true});
+        log.info("Sending pin", { email, registrationId: registration.id });
+        res.json({ sent: true });
     } catch (err) {
         log.error("Failed to send pin", {
             email,
@@ -249,7 +277,7 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
             registrationId: undefined,
             rawId: req.params.id,
         });
-        sendError(res, 400, "Invalid ID", {raw: req.params.id});
+        sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
     }
 
@@ -261,8 +289,8 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
             .where(eq(registrations.id, id));
 
         if (!record?.registrations) {
-            log.warn("Fetch by id: not found", {email: undefined, registrationId: id});
-            sendError(res, 404, "Registration not found", {id});
+            log.warn("Fetch by id: not found", { email: undefined, registrationId: id });
+            sendError(res, 404, "Registration not found", { id });
             return;
         }
 
@@ -292,11 +320,16 @@ router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
 // --- Router-level 404 (must be last) ---
 router.all("*", (req, res) => {
     const ROUTE_NOT_FOUND = "Internal error: route not found";
-    log.warn(ROUTE_NOT_FOUND, {method: req.method, path: req.originalUrl});
-    sendError(res, 404, req.method === "POST" ? ROUTE_NOT_FOUND : "Not found", {
-        method: req.method,
-        path: req.originalUrl,
-    });
+    log.warn(ROUTE_NOT_FOUND, { method: req.method, path: req.originalUrl });
+    sendError(
+        res,
+        404,
+        req.method === "POST" ? ROUTE_NOT_FOUND : "Not found",
+        {
+            method: req.method,
+            path: req.originalUrl,
+        },
+    );
 });
 
 export default router;

@@ -70,8 +70,11 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
             }
 
             if (!res.ok || !data.sent) {
+                const errorText = res.status === 404
+                    ? 'Unknown email address'
+                    : (data.error ?? 'Please contact PCATT');
                 setPinMessage({
-                    text: data.error ?? 'Please contact PCATT',
+                    text: errorText,
                     isError: true,
                 });
                 setEmailPinChecked(false);

@@ -30,7 +30,7 @@ export interface FormField {
 // Export a typed constant for each form element type.
 export const registrationFormData: FormField[] = [
     {
-        name: 'label',
+        name: 'section-creds',
         label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
         type: 'section',
         scope: 'registration',
@@ -50,7 +50,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'label',
+        name: 'section-info',
         label: 'Provide your (attendee) contact information.',
         type: 'section',
         scope: 'registration',
@@ -126,7 +126,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'label',
+        name: 'section-cancel',
         label: 'If you need to cancel, please return to this form to let us know.',
         type: 'section',
         scope: 'registration',
@@ -146,7 +146,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'label',
+        name: 'section-proxy',
         label: 'If you are registering another person, please provide your contact information.',
         type: 'section',
         required: false,
@@ -181,7 +181,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'label',
+        name: 'section-roles',
         label: 'For internal use: indicate additional attendee roles.',
         type: 'section',
         scope: 'admin',

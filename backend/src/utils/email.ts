@@ -1,3 +1,5 @@
+// backend/src/utils/email.ts
+
 import {log} from "@/utils/logger";
 
 export async function sendEmail({

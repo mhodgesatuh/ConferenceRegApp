@@ -74,6 +74,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                             onClick={copyPin}
                             className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="Copy PIN"
+                            title="copy"
                         >
                             <Copy className="h-4 w-4" />
                         </button>
@@ -82,6 +83,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                             onClick={() => setPinVisible((v) => !v)}
                             className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label={pinVisible ? 'Hide PIN' : 'Show PIN'}
+                            title={pinVisible ? 'hide' : 'show'}
                         >
                             {pinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
