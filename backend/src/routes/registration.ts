@@ -5,6 +5,7 @@ import {db} from "@/db/client";
 import {credentials, registrations} from "@/db/schema";
 import {and, eq} from "drizzle-orm";
 import {log, sendError} from "@/utils/logger";
+import {sendEmail} from "@/utils/email";
 
 interface CreateRegistrationBody {
     id?: number;
@@ -219,7 +220,11 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             return;
         }
 
-        // TODO: send email/SMS with credential.loginPin
+        await sendEmail({
+            to: email,
+            subject: "Your login pin",
+            text: `Your login PIN is ${credential.loginPin}`,
+        });
         log.info("Sending pin", {email, registrationId: registration.id});
         res.json({sent: true});
     } catch (err) {
