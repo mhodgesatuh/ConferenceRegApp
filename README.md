@@ -1,10 +1,13 @@
-# Local Development Setup for ConferenceReg
+# Local Development for ConferenceReg
 
 <!-- TOC -->
-* [Setup](#setup)
+* [Local Development for ConferenceReg](#local-development-for-conferencereg)
+  * [Requirements for macOS](#requirements-for-macos)
+  * [Developer Notes](#developer-notes)
+* [Setup for macOS](#setup-for-macos)
   * [1. Install Docker Desktop](#1-install-docker-desktop)
-  * [2. Install Required Tools](#2-install-required-tools)
-  * [3. Clone the Repository](#3-clone-the-repository)
+  * [2. Clone the Repository](#2-clone-the-repository)
+  * [3. Install Required Tools](#3-install-required-tools)
   * [4. Configure Environment Variables](#4-configure-environment-variables)
   * [5. Install Project Dependencies](#5-install-project-dependencies)
     * [/etc/hosts](#etchosts)
@@ -12,22 +15,32 @@
     * [Frontend (React, Vite)](#frontend-react-vite)
     * [One-Time Setup for shadcn/ui (run from `frontend`)](#one-time-setup-for-shadcnui-run-from-frontend)
   * [6. Install dotenv-cli](#6-install-dotenv-cli)
-  * [7. Drizzle ORM CLI](#7-drizzle-orm-cli)
+  * [7. Install Drizzle ORM CLI](#7-install-drizzle-orm-cli)
   * [8. Initialize the Database](#8-initialize-the-database)
-  * [9. Start the Frontend (Vite Dev Server)](#9-start-the-frontend-vite-dev-server)
-  * [10. Useful Development Commands](#10-useful-development-commands)
-* [Makefile Commands](#makefile-commands)
-  * [**Logs**](#logs)
-  * [**Quick Start**](#quick-start)
-  * [**Drizzle ORM: Schema Management**](#drizzle-orm-schema-management)
-  * [**Docker: Container Lifecycle**](#docker-container-lifecycle)
-  * [**Frontend Development**](#frontend-development)
-  * [**High-Level Composites**](#high-level-composites)
+  * [Useful Makefile Commands](#useful-makefile-commands)
+    * [Logs](#logs)
+    * [Quick Start](#quick-start)
+    * [Database & Drizzle ORM](#database--drizzle-orm)
+    * [Drizzle Studio](#drizzle-studio)
+    * [Docker Lifecycle](#docker-lifecycle)
+    * [High-Level Workflows](#high-level-workflows)
+    * [Help](#help)
 * [You're Ready!](#youre-ready)
 * [Future work](#future-work)
 <!-- TOC -->
 
-# Setup
+## Requirements for macOS
+
+- [Docker](https://www.docker.com/) with Docker Compose
+- `git` and `make`
+
+## Developer Notes
+
+- Frontend: <https://localhost:8080/>
+- Commands honor the `ENV_PROFILE` variable. Set `ENV_PROFILE=prod` to run against the production profile.
+- TLS certificates are stored in `backend/certs` and are mounted into the backend container.
+
+# Setup for macOS
 This guide walks you through setting up your local development environment on
 macOS for the **ConferenceRegApp** project. It covers required tools, project
 dependencies, containerization, and workflow setup.
@@ -45,23 +58,40 @@ Docker is required for managing the MariaDB database in containers.
 
 ---
 
-## 2. Install Required Tools
+## 2. Clone the Repository
 
-These tools are installed via [Homebrew](https://brew.sh/). If Homebrew is not
-yet installed:
+From the command line cd to the directory into which the project will be 
+downloaded. This will be your project directory.
+
+```bash
+git clone https://github.com/mhodgesatuh/ConferenceRegApp.git
+cd ConferenceRegApp
+```
+
+For the rest of this installation process you will be working in the root 
+`ConferenceRegApp` or else the `frontend` or `backend` child directories.
+
+---
+
+## 3. Install Required Tools
+
+These macOS tools are installed via [Homebrew](https://brew.sh/). If Homebrew 
+is not yet installed:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Install the project development tools:
+Install the project development tools
+
+- Ensure `ConferenceRegApp` is the current working directory.
 
 ```bash
 brew install git node npm docker
 brew install mkcert nss
 mkcert -install  # creates & trusts a local root CA
 mkdir -p backend/certs
-# Generate a cert that covers common dev hosts
+# Generate the self-signed cert so that we can use https.
 mkcert -key-file backend/certs/localhost-key.pem \
        -cert-file backend/certs/localhost.pem \
        localhost 127.0.0.1 ::1
@@ -69,18 +99,11 @@ mkcert -key-file backend/certs/localhost-key.pem \
 
 ---
 
-## 3. Clone the Repository
-
-```bash
-git clone https://github.com/mhodgesatuh/ConferenceRegApp.git
-cd ConferenceRegApp
-```
-
----
-
 ## 4. Configure Environment Variables
 
-Copy the example environment file and adjust the values for your local setup:
+Copy the example environment file and adjust the values for your local setup.
+
+- Ensure `ConferenceRegApp` is the current working directory.
 
 ```bash
 cp .env.sample .env
@@ -99,16 +122,20 @@ volume so the logs survive container restarts.
 ## 5. Install Project Dependencies
 
 ### /etc/hosts
-When Drizzle executes on the host, it cannot resolve conference-db, producing 
-the ENOTFOUND error. To resolve that add the following entry for development in 
-the localhost environment.
+When Drizzle executes on the host, it cannot resolve `conference-db`, producing 
+the `ENOTFOUND` error. To resolve this, add the following entry for development  
+in the localhost environment.
 
     127.0.0.1 conference-db
 
 ### Backend (Express, Drizzle ORM)
 
+NPM (Node Package Manager) is the default package manager that comes bundled with 
+Node.js.  It is used to manage code packages (or libraries) for  Node.js projects.
+
+Ensure `ConferenceRegApp/backend` is the current working directory.
+
 ```bash
-cd backend
 npm install
 npm install compression
 npm install -D @types/compression
@@ -118,12 +145,21 @@ npm i -D tsconfig-paths
 
 ### Frontend (React, Vite)
 
+NPM must also be installed on the frontend since it is will be running in its own
+container.
+
+Ensure `ConferenceRegApp/frontend` is the current working directory.
+
 ```bash
-cd ../frontend
 npm install
 ```
 
 ### One-Time Setup for shadcn/ui (run from `frontend`)
+
+Shadcn is a collection of reusable React components that are copied directly into
+the project.
+
+- Ensure `ConferenceRegApp/frontend` is the current working directory.
 
 ```bash
 npx shadcn@latest
@@ -139,31 +175,26 @@ npx shadcn@latest add button
 
 Use `dotenv-cli` to load `.env` variables into `make` and CLI tools.
 
-Install it into the root project as a development dependency:
+- Ensure `ConferenceRegApp` is the current working directory.
 
 ```bash
 npm install -D dotenv-cli
 ```
 
-Optionally, install it globally (not required):
-
-```bash
-npm install -g dotenv-cli
-```
-
 ---
 
-## 7. Drizzle ORM CLI
+## 7. Install Drizzle ORM CLI
 
-The Drizzle CLI is used for schema management and DB migrations.
+The Drizzle CLI is used for schema management and DB schema updates such that
+data can be preserved.
 
-It's already listed in `backend/devDependencies` and can be reinstalled:
+- Ensure `ConferenceRegApp/backend` is the current working directory.
 
 ```bash
-cd backend
 npm install -D drizzle-kit
-cd ..
 ```
+
+Recommended: `cd` back to `ConferenceRegApp`.
 
 ---
 
@@ -184,80 +215,92 @@ This command:
 
 ---
 
-## 9. Start the Frontend (Vite Dev Server)
+## Useful Makefile Commands
 
-In a separate terminal tab or window:
-
-```bash
-make frontend-dev
-```
-
-This will:
-
-- Install frontend dependencies if needed
-- Start the Vite dev server on `http://localhost:3000`
+This project uses a `Makefile` to simplify working with Docker containers, the 
+Drizzle ORM schema, and development utilities.
 
 ---
 
-## 10. Useful Development Commands
+### Logs
+- **`make logs`** – Show application logs.
+    - If `.env` points to `./logs`, it shows local dev logs.
+    - Otherwise, it shows container logs inside `/var/log/conference`.
 
-# Makefile Commands
+- **`make tail-logs`** – Continuously stream logs from all containers.
 
-## **Logs**
-| Command | Description |
-|---------|-------------|
-| `logs` | View logs for current environment (dev if `LOG_DIR` is set to `./logs`, else prod) |
+---
 
-## **Quick Start**
-| Command | Description |
-|---------|-------------|
-| `init` | Initialize dev environment: install deps, reset DB, and apply schema |
-| `init-backend` | Rebuild and restart the backend container only |
+### Quick Start
+- **`make init`** – Initialize the environment. ⚠️ *Dangerous: wipes all existing database data*.  
+  Recreates the DB, applies schema, and starts the containers.
 
-## **Drizzle ORM: Schema Management**
-| Command | Description |
-|---------|-------------|
-| `baseline` | Snapshot current schema into a new “init” migration |
-| `drop-tables` | Drop all existing tables in the database |
-| `reset-db` | Completely remove and recreate the database from `.env` |
-| `schema` | Incrementally apply only new migrations to the database |
-| `generate` | Diff schema locally → write SQL + journal (then run `make commit-migrations`) |
-| `commit-migration` | Stage & commit new Drizzle migration files |
-| `studio-check` | Verify certs & hosts entry for Drizzle Studio |
-| `studio-cert` | Generate & install dev certs for Drizzle Studio (requires mkcert) |
-| `studio` | Launch Drizzle Studio |
+- **`make init-backend`** – Rebuild and restart only the backend container.
 
-## **Docker: Container Lifecycle**
-| Command | Description |
-|---------|-------------|
-| `build` | Build Docker images for frontend and backend |
-| `up` | Start containers in detached mode |
-| `down` | Stop and remove containers |
-| `restart` | Restart all containers |
-| `tail-logs` | Tail logs from all containers |
-| `clean` | Stop and remove all containers, volumes, and images |
+- **`make backend-shell`** – Open a shell inside the backend container.
 
-## **Frontend Development**
-| Command | Description |
-|---------|-------------|
-| `init-frontend` | Rebuild and restart the frontend container only |
-| `frontend-dev` | Run the frontend dev server (Vite) |
-| `frontend-install` | Install frontend dependencies |
-| `frontend-build` | Build the frontend (for production) |
-| `frontend-clean` | Remove frontend dist build |
+---
 
-## **High-Level Composites**
-| Command | Description |
-|---------|-------------|
-| `deploy` | Build images, apply only new migrations, and start the stack |
-| `update-schema` | Generate new migrations and apply them |
-| `help` | Show available targets grouped by section |
+### Database & Drizzle ORM
+- **`make generate`** – Generate migration files based on schema changes.  
+  *(Writes files to `backend/drizzle/migrations/`)*
+
+- **`make schema`** – Apply any new migrations to the database.
+
+- **`make baseline`** – Create an “init” baseline migration from the current schema.
+
+- **`make drop-tables`** – Drop all existing tables in the database. ⚠️ Use with caution.
+
+- **`make reset-db`** – Reset the database (containers & volumes removed, DB recreated).
+
+- **`make commit-migration`** – Stage & commit newly generated migration files to Git.
+
+---
+
+### Drizzle Studio
+- **`make studio-check`** – Verify prerequisites for running Drizzle Studio  
+  (certificates + `/etc/hosts` entry for `local.drizzle.studio`).
+
+- **`make studio-cert`** – Generate development TLS certificates for Drizzle Studio  
+  (requires [mkcert](https://github.com/FiloSottile/mkcert)).
+
+- **`make studio`** – Launch Drizzle Studio in the backend container.  
+  Access at [https://local.drizzle.studio/?port=3337&host=127.0.0.1](https://local.drizzle.studio/?port=3337&host=127.0.0.1) (Firefox recommended).
+
+---
+
+### Docker Lifecycle
+- **`make build`** – Build all Docker images.
+
+- **`make up`** – Start containers in detached mode.
+
+- **`make down`** – Stop and remove containers.
+
+- **`make restart`** – Restart all containers.
+
+- **`make clean`** – Stop and remove all containers, volumes, and images.
+
+---
+
+### High-Level Workflows
+- **`make rebuild`** – Tear down and rebuild the full stack (useful for a fresh dev start).
+
+- **`make deploy`** – Build images, run pending DB migrations, and start the stack.
+
+- **`make update-schema`** – Generate and apply new migrations in one step.
+
+---
+
+### Help
+- **`make help`** – Show all available targets with descriptions.
+
 
 ---
 
 # You're Ready!
 
-Your environment is now set up to develop and test the **ConferenceRegApp** project locally on macOS.
+Your environment is now set up to develop and test the **ConferenceRegApp** 
+project locally on macOS.
 
 Make sure Docker Desktop remains running while you develop.
 
@@ -267,7 +310,7 @@ To confirm everything is working, try:
 make init
 ```
 
-Then visit: [http://localhost:3000](http://localhost:3000)
+Then visit: [https://localhost:8080](https://localhost:8080)
 
 ---
 # Future work
