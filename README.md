@@ -294,6 +294,30 @@ Drizzle ORM schema, and development utilities.
 ### Help
 - **`make help`** – Show all available targets with descriptions.
 
+---
+
+# Docker Desktop Bug Workaround
+
+The mounting of the log file fails due to docker security, and there is a bug
+that prevents adding the following from Docker Desktop directly. So this is the
+workaround.
+
+```bash
+# This is the file to be edited.
+ls -al "Library/Group Containers/group.com.docker/settings.json"
+```
+
+Update the section of the file that appears as follows, where the last line is
+the new one in the macOS example. Replace `user` and `project_path` accordingly.
+
+    "filesharingDirectories": [
+    "/Users",
+    "/Volumes",
+    "/private",
+    "/tmp",
+    "/var/folders",
+    "/Users/user/project_path/ConferenceRegApp/logs"
+],
 
 ---
 
