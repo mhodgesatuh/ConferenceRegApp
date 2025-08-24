@@ -1,5 +1,7 @@
 /.idea/
 /.env
+/env.prod
+
 node_modules/
 backend/node_modules/
 /backend/dist/

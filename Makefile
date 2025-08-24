@@ -12,22 +12,27 @@ SERVICE_DB := conference-db
 
 # Profile selection: default to dev unless ENV_PROFILE=prod
 PROFILE := $(if $(filter $(ENV_PROFILE),prod),prod,dev)
-COMPOSE_FILE := $(if $(filter $(PROFILE),prod),docker-compose.prod.yml,docker-compose.yml)
-COMPOSE := docker compose -f $(COMPOSE_FILE) $(if $(filter $(PROFILE),dev),--profile dev,)
-ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)"
 
-# Source .env and cd backend for Drizzle CLI
-SET_BACKEND_ENV := set -a && . $(CURDIR)/.env && set +a && cd $(BACKEND_DIR) &&
+# Use a single compose file; pick env file based on profile
+COMPOSE_FILE := docker-compose.yml
+ENV_FILE := $(if $(filter $(PROFILE),prod),.env.prod,.env)
+
+# Compose command ensures both interpolation and container env_file use the same .env
+COMPOSE := ENV_FILE=$(ENV_FILE) docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
+ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)  ENV_FILE=$(ENV_FILE)"
+
+# Source .env and cd backend for Drizzle CLI (kept for reference if needed)
+SET_BACKEND_ENV := set -a && . $(CURDIR)/$(ENV_FILE) && set +a && cd $(BACKEND_DIR) &&
 
 RUN_IN_BACKEND = $(COMPOSE) run --rm $(SERVICE_BACKEND) sh -lc
 
 ##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-logs: ## View logs (latest). If LOG_DIR=./logs in .env, show local dev logs; otherwise show container logs
+logs: ## View logs (latest). If LOG_DIR=./logs in env file, show local dev logs; otherwise show container logs
 	$(ECHO_PROFILE)
-	@LOG_PREFIX=$$(grep -E '^LOG_PREFIX=' .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	@LOG_PREFIX=$$(grep -E '^LOG_PREFIX=' $(ENV_FILE) 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$LOG_PREFIX" ] && LOG_PREFIX=app; \
-	if [ "$$(grep -E '^LOG_DIR=\.\/logs' .env 2>/dev/null)" != "" ]; then \
+	if [ "$$(grep -E '^LOG_DIR=\.\/logs' $(ENV_FILE) 2>/dev/null)" != "" ]; then \
 	  FILE=$$(ls -1 ./logs/$$LOG_PREFIX-*.log 2>/dev/null | tail -n 1); \
 	  if [ "$$FILE" != "" ]; then \
 	    echo " - showing dev logs from $$FILE"; \
@@ -102,13 +107,13 @@ drop-tables: ## Drop all existing tables in the database
 	     FROM information_schema.tables WHERE table_schema = \"$$DB_NAME\";" \
 	    | mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME'
 
-reset-db: ## Completely remove and recreate the database from .env (current profile)
+reset-db: ## Completely remove and recreate the database (current profile/env)
 	$(ECHO_PROFILE)
 	@echo " - removing containers and volumes…"
 	$(COMPOSE) down --volumes --remove-orphans || true
 	@echo " - force-removing mariadb_data volume (if present)…"
 	-@docker volume rm mariadb_data >/dev/null 2>&1 || true
-	@echo " - recreating fresh database from .env…"
+	@echo " - recreating fresh database from $(ENV_FILE)…"
 	$(COMPOSE) up -d $(SERVICE_DB)
 	@echo " - database reset complete. next step: make schema"
 
@@ -157,64 +162,64 @@ studio: ## Launch Drizzle Studio
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
-build: ## Build Docker images (current profile)
+build: ## Build Docker images (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) build --no-cache
 
-up: ## Start containers in detached mode (current profile)
+up: ## Start containers in detached mode (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d
-	echo "Running: https://127.0.0.1:8080/"
+	@echo "Running: http://127.0.0.1/"
 
-down: ## Stop and remove containers (current profile)
+down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down
 
-restart: ## Restart all containers (current profile)
+restart: ## Restart all containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(MAKE) down
 	$(MAKE) up
 
-tail-logs: ## Tail logs from all containers (current profile)
+tail-logs: ## Tail logs from all containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) logs -f
 
-clean: ## Stop and remove all containers, volumes, and images (current profile)
+clean: ## Stop and remove all containers, volumes, and images (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down --volumes --rmi all || true
 
 ##–––––– High-Level Composites –––––––––––––––––––––––––––––––––––––––––––––
 
-rebuild: ## Redeploy a new set of containers (current profile)
+rebuild: ## Redeploy a new set of containers (current profile/env)
 	$(ECHO_PROFILE)
-	@echo "Open dev at: https://127.0.0.1:8080"
+	@echo "Open dev at: http://127.0.0.1/"
 	$(MAKE) down
 	$(MAKE) build
 	$(MAKE) up
 
-deploy: ## Build images, apply pending migrations, and start the stack (current profile)
+deploy: ## Build images, apply pending migrations, and start the stack (current profile/env)
 	$(ECHO_PROFILE)
 	$(MAKE) build
 	$(MAKE) schema
 	$(MAKE) up
 
-update-schema: ## Generate new migrations and apply them (current profile)
-        $(ECHO_PROFILE)
-        $(MAKE) generate
-        $(MAKE) schema
+update-schema: ## Generate new migrations and apply them (current profile/env)
+	$(ECHO_PROFILE)
+	$(MAKE) generate
+	$(MAKE) schema
 
-##–––––– Production Shortcuts –––––––––––––––––––––––––––––––––––––––––––––––
+##–––––– Profile Shortcuts ––––––––––––––––––––––––––––––––––––––––––––––––––
 
-prod-build: ## Build Docker images using the production compose file
+prod-build: ## Build images using .env.prod
 	ENV_PROFILE=prod $(MAKE) build
 
-prod-up: ## Start production containers in detached mode
+prod-up: ## Start stack using .env.prod
 	ENV_PROFILE=prod $(MAKE) up
 
-prod-down: ## Stop and remove production containers
+prod-down: ## Stop stack using .env.prod
 	ENV_PROFILE=prod $(MAKE) down
 
-prod-deploy: ## Build images, apply migrations, and start the production stack
+prod-deploy: ## Build, migrate, start using .env.prod
 	ENV_PROFILE=prod $(MAKE) deploy
 
 # -----------------------------------------------------------------------------
@@ -224,7 +229,7 @@ prod-deploy: ## Build images, apply migrations, and start the production stack
 .DEFAULT_GOAL := help
 
 help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
-	@echo "ENV_PROFILE=$(PROFILE)"
+	@echo "ENV_PROFILE=$(PROFILE)  ENV_FILE=$(ENV_FILE)"
 	@echo "Available targets:"; \
 	awk '/^##––––––/ { \
 	    hdr = $$0; \
