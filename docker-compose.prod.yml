@@ -14,36 +14,13 @@ services:
     networks: [appnet]
 
   conference-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.backend
-    env_file:
-      - .env
+    build: ./backend
     environment:
       - INTERNAL_SECRET=s3cr3t-long-random
       - NODE_ENV=production
       - UI_ORIGIN=http://localhost
-    depends_on:
-      - conference-db
-    networks: [appnet]
-
-  conference-db:
-    image: mariadb:10.11
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${DB_NAME}
-      MARIADB_USER: ${DB_USER}
-      MARIADB_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
     networks: [appnet]
 
 networks:
   appnet:
     driver: bridge
-
-volumes:
-  mariadb_data:
