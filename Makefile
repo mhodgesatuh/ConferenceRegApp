@@ -208,13 +208,6 @@ update-schema: ## Generate new migrations and apply them (current profile/env)
 	$(MAKE) generate
 	$(MAKE) schema
 
-##–––––– Dependencies ––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-
-update-dependencies: ## Update npm dependencies in root, backend, and frontend
-	@npm update
-	@cd $(BACKEND_DIR) && npm update
-	@cd $(FRONTEND_DIR) && npm update
-
 ##–––––– Profile Shortcuts ––––––––––––––––––––––––––––––––––––––––––––––––––
 
 prod-build: ## Build images using .env.prod
@@ -256,5 +249,5 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 
 .PHONY: build clean commit-migration deploy down drop-tables generate \
         help init init-backend backend-shell restart reset-db schema \
-        studio studio-cert studio-check tail-logs update-schema update-dependencies up \
+        studio studio-cert studio-check tail-logs update-schema up \
         rebuild logs prod-build prod-up prod-down prod-deploy
