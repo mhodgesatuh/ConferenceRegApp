@@ -27,6 +27,7 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       NODE_ENV: production
       UI_ORIGIN: http://localhost
+      UPDATE_DEPS: ${UPDATE_DEPS:-false}
     depends_on:
       - conference-db
     networks: [appnet]

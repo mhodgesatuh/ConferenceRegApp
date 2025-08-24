@@ -286,6 +286,7 @@ Drizzle ORM schema, and development utilities.
 - **`make rebuild`** – Tear down and rebuild the full stack (useful for a fresh dev start).
 
 - **`make deploy`** – Build images, run pending DB migrations, and start the stack.
+  Set `UPDATE_DEPS=true` to refresh backend Node packages inside the container during deployment.
 
 - **`make update-schema`** – Generate and apply new migrations in one step.
 
