@@ -17,4 +17,4 @@ COPY . .
 RUN npm run build
 
 EXPOSE 8080
-CMD ["npm", "start"]
+CMD ["sh", "-c", "if [ \"$UPDATE_DEPS\" = \"true\" ]; then npm update && npm run build; fi; npm start"]
