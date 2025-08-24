@@ -10,10 +10,11 @@ services:
     environment:
       - INTERNAL_SECRET=s3cr3t-long-random
     depends_on:
-      - backend
+      - conference-backend
     networks: [appnet]
 
-  backend:
+  conference-backend:
+
     build: ./backend
     environment:
       - INTERNAL_SECRET=s3cr3t-long-random
