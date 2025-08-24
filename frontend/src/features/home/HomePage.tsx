@@ -11,7 +11,7 @@ import {Message} from '@/components/ui/message';
 import {isValidEmail} from '../registration/formRules';
 
 interface HomePageProps {
-    onSuccess: (registration: any) => void;
+    onSuccess: (data: {registration: any; csrf: string}) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
@@ -26,12 +26,16 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const params = new URLSearchParams({email, pin});
-            const res = await fetch(`/api/registrations/login?${params.toString()}`);
+            const res = await fetch('/api/registrations/login', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, pin }),
+            });
             if (res.ok) {
                 const data = await res.json();
-                onSuccess(data.registration);
-                navigate('/register', {state: {registration: data.registration}});
+                onSuccess(data);
+                navigate('/register', {state: {registration: data.registration, csrf: data.csrf}});
             } else {
                 alert('Invalid login');
             }
@@ -61,6 +65,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
             const params = new URLSearchParams({email});
             const res = await fetch(
                 `/api/registrations/lost-pin?${params.toString()}`,
+                { credentials: 'include' }
             );
             let data: any = {};
             try {

@@ -9,10 +9,11 @@ import compression from "compression";
 import cors from "cors";
 import registrationRoutes from "./routes/registration";
 import {log, requestLogger, errorLogger} from "@/utils/logger";
+import {requireProxySeal} from "@/utils/auth";
 
 const app = express();
 const host = process.env.BIND_HOST || "0.0.0.0";
-const port = Number(process.env.BACKEND_PORT || 5000);
+const port = Number(process.env.BACKEND_PORT || 8080);
 const httpsEnabled = process.env.HTTPS === "true";
 const certPath = process.env.HTTPS_CERT || "/certs/localhost.pem";
 const keyPath  = process.env.HTTPS_KEY  || "/certs/localhost-key.pem";
@@ -21,9 +22,15 @@ const keyPath  = process.env.HTTPS_KEY  || "/certs/localhost-key.pem";
 app.set("trust proxy", 1); // if behind a proxy now or later
 app.use(express.json());
 app.use(compression());
-// In dev you can loosen or disable CORS; in prod prefer same-origin behind a proxy.
-app.use(cors({ origin: false }));
+const uiOrigin = process.env.UI_ORIGIN;
+app.use(cors(uiOrigin ? {
+    origin: uiOrigin,
+    credentials: true,
+    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+    allowedHeaders: ["Content-Type","x-csrf-token"],
+} : { origin: false }));
 app.use(requestLogger());
+app.use(requireProxySeal);
 
 // 2) Security headers (tune CSP as needed)
 app.use(helmet({

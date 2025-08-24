@@ -12,7 +12,8 @@ SERVICE_DB := conference-db
 
 # Profile selection: default to dev unless ENV_PROFILE=prod
 PROFILE := $(if $(filter $(ENV_PROFILE),prod),prod,dev)
-COMPOSE := docker compose $(if $(filter $(PROFILE),dev),--profile dev,)
+COMPOSE_FILE := $(if $(filter $(PROFILE),prod),docker-compose.prod.yml,docker-compose.yml)
+COMPOSE := docker compose -f $(COMPOSE_FILE) $(if $(filter $(PROFILE),dev),--profile dev,)
 ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)"
 
 # Source .env and cd backend for Drizzle CLI
@@ -198,9 +199,23 @@ deploy: ## Build images, apply pending migrations, and start the stack (current 
 	$(MAKE) up
 
 update-schema: ## Generate new migrations and apply them (current profile)
-	$(ECHO_PROFILE)
-	$(MAKE) generate
-	$(MAKE) schema
+        $(ECHO_PROFILE)
+        $(MAKE) generate
+        $(MAKE) schema
+
+##–––––– Production Shortcuts –––––––––––––––––––––––––––––––––––––––––––––––
+
+prod-build: ## Build Docker images using the production compose file
+	ENV_PROFILE=prod $(MAKE) build
+
+prod-up: ## Start production containers in detached mode
+	ENV_PROFILE=prod $(MAKE) up
+
+prod-down: ## Stop and remove production containers
+	ENV_PROFILE=prod $(MAKE) down
+
+prod-deploy: ## Build images, apply migrations, and start the production stack
+	ENV_PROFILE=prod $(MAKE) deploy
 
 # -----------------------------------------------------------------------------
 # DEFAULT TARGET
@@ -230,4 +245,4 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 .PHONY: build clean commit-migration deploy down drop-tables generate \
         help init init-backend backend-shell restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up \
-        rebuild logs
+        rebuild logs prod-build prod-up prod-down prod-deploy
