@@ -3,6 +3,7 @@
 import { Router } from "express";
 import { log, sendError } from "@/utils/logger";
 import { sendEmail } from "@/utils/email";
+import { createSession, requireAuth } from "@/utils/auth";
 
 import { generatePin, isValidPhone, toBool, toNull } from "./registration.utils";
 import {
@@ -65,7 +66,7 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 }
 
 /* POST / */
-router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void> => {
+router.post("/", requireAuth, async (req, res): Promise<void> => {
     const email = req.body?.email?.trim().toLowerCase();
 
     try {
@@ -132,7 +133,7 @@ router.post<{}, any, CreateRegistrationBody>("/", async (req, res): Promise<void
 });
 
 /* PUT /:id — update existing registration */
-router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (req, res): Promise<void> => {
+router.put("/:id", requireAuth, async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
@@ -226,10 +227,10 @@ router.put<{ id: string }, any, Partial<CreateRegistrationBody>>("/:id", async (
     }
 });
 
-/* GET /login?email=addr&pin=code */
-router.get("/login", async (req, res): Promise<void> => {
-    const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
-    const pin = req.query.pin ? String(req.query.pin).trim() : undefined;
+/* POST /login */
+router.post("/login", async (req, res): Promise<void> => {
+    const email = req.body?.email ? String(req.body.email).trim().toLowerCase() : undefined;
+    const pin = req.body?.pin ? String(req.body.pin).trim() : undefined;
 
     if (!email || !pin) {
         log.warn("Login failed: missing credentials", {
@@ -258,11 +259,13 @@ router.get("/login", async (req, res): Promise<void> => {
             email,
             registrationId: record.registrations.id,
         });
+        const csrf = createSession(res, record.registrations.id);
         res.json({
             registration: {
                 ...record.registrations,
                 loginPin: record.credentials.loginPin,
             },
+            csrf,
         });
     } catch (err) {
         log.error("Failed to fetch registration (login)", {

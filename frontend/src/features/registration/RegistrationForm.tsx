@@ -35,9 +35,10 @@ type MessageType = '' | 'success' | 'error';
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
+    csrfToken?: string;
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData, csrfToken}) => {
     // Reducer-backed form state
     const [state, dispatch] = useReducer(
         formReducer,
@@ -194,7 +195,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData}
 
             const res = await fetch('/api/registrations', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': csrfToken || '',
+                },
                 body: JSON.stringify(payload),
             });
 
