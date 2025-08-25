@@ -11,10 +11,16 @@ services:
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
     volumes:
       - ./nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - conference-backend
+      - conference-ui
     networks: [appnet]
+
+  conference-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    networks: [ appnet ]
 
   conference-backend:
     build:

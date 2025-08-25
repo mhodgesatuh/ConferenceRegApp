@@ -187,9 +187,6 @@ up: ## Start containers in detached mode (current profile/env)
 down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down
-	@echo " - stopping/removing manually started conference_ui (if running)..."
-	-@docker stop conference_ui >/dev/null 2>&1 || true
-	-@docker rm conference_ui >/dev/null 2>&1 || true
 
 restart: ## Restart all containers (current profile/env)
 	$(ECHO_PROFILE)
@@ -203,9 +200,6 @@ tail-logs: ## Tail logs from all containers (current profile/env)
 clean: ## Stop and remove all containers, volumes, and images (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down --volumes --rmi all || true
-	@echo " - stopping/removing manually started conference_ui (if running)..."
-	-@docker stop conference_ui >/dev/null 2>&1 || true
-	-@docker rm conference_ui >/dev/null 2>&1 || true
 	@echo " - removing conference-reg-app:dev image (if present)..."
 	-@docker rmi conference-reg-app:dev >/dev/null 2>&1 || true
 
