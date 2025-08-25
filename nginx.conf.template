@@ -1,6 +1,14 @@
+# nginx.conf.template
+
 worker_processes auto;
 events { worker_connections 1024; }
 http {
+    upstream conference_backend {
+        # Docker DNS resolves this on the appnet network
+        server conference-backend:8080;
+        keepalive 32;
+    }
+
   server {
     listen 8080 ssl;
     server_name _;
@@ -21,7 +29,7 @@ http {
 
     location /api/ {
       # keep or drop the trailing slash depending on whether your backend expects /api stripped
-      proxy_pass http://conference-backend:8080/;
+      proxy_pass http://conference-backend:8080;
 
       proxy_set_header Host $host;
       proxy_set_header X-Forwarded-Proto $scheme;
