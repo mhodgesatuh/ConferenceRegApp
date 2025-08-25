@@ -12,9 +12,10 @@ import {cn} from './utils';
 export interface MessageProps {
     text: string;
     isError?: boolean;
+    id?: string;
 }
 
-export const Message: React.FC<MessageProps> = ({text, isError = false}) => {
+export const Message: React.FC<MessageProps> = ({text, isError = false, id}) => {
     const [visible, setVisible] = React.useState(true);
     const [closing, setClosing] = React.useState(false);
 
@@ -29,6 +30,7 @@ export const Message: React.FC<MessageProps> = ({text, isError = false}) => {
 
     return (
         <div
+            id={id}
             className={cn(
                 'relative flex items-start gap-3 border rounded-md px-4 py-2',
                 'transition-opacity duration-200 ease-out', // fade animation

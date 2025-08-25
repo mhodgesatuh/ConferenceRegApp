@@ -35,23 +35,39 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                 )
             );
 
+        const hasError = Boolean(error);
+        const isFieldMissing = isMissing(field.name);
+        const errorId = hasError ? `${field.name}-error` : undefined;
+        const showErrorStyle = isFieldMissing || hasError;
+
         return (
-            <Checkbox
-                key={field.name}
-                id={field.name}
-                name={field.name}
-                label={field.label}
-                checked={Boolean(state[field.name])}
-                onCheckedChange={(val) => onCheckboxChange(field.name, val)}
-                disabled={isDisabled}
-                className={isMissing(field.name) ? 'bg-red-100' : undefined}
-            />
+            <>
+                <Checkbox
+                    key={field.name}
+                    id={field.name}
+                    name={field.name}
+                    label={field.label}
+                    checked={Boolean(state[field.name])}
+                    onCheckedChange={(val) => onCheckboxChange(field.name, val)}
+                    disabled={isDisabled}
+                    aria-required={field.required}
+                    aria-invalid={showErrorStyle}
+                    aria-describedby={errorId}
+                    className={showErrorStyle ? 'bg-red-100' : undefined}
+                />
+                {hasError && <Message id={errorId} text={error!} isError />}
+            </>
         );
     }
 
     if (field.type === 'pin') {
         const pinValue = String(state[field.name] ?? '');
         const copyPin = () => navigator.clipboard.writeText(pinValue);
+
+        const hasError = Boolean(error);
+        const isFieldMissing = isMissing(field.name);
+        const errorId = hasError ? `${field.name}-error` : undefined;
+        const showErrorStyle = isFieldMissing || hasError;
 
         return (
             <div key={field.name} className="flex flex-col gap-1">
@@ -66,7 +82,11 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                         type={pinVisible ? 'text' : 'password'}
                         value={pinValue}
                         readOnly
-                        className={`${isMissing(field.name) || error ? 'bg-red-100' : ''} pr-16`}
+                        required={field.required}
+                        aria-required={field.required}
+                        aria-invalid={showErrorStyle}
+                        aria-describedby={errorId}
+                        className={`${showErrorStyle ? 'bg-red-100' : ''} pr-16`}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
                         <button
@@ -89,7 +109,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                         </button>
                     </div>
                 </div>
-                {error && <Message text={error} isError />}
+                {hasError && <Message id={errorId} text={error!} isError />}
             </div>
         );
     }
@@ -97,6 +117,11 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
     // text, email, phone, number
     const isReadOnly = field.name === 'id';
     const inputType = field.type;
+
+    const hasError = Boolean(error);
+    const isFieldMissing = isMissing(field.name);
+    const errorId = hasError ? `${field.name}-error` : undefined;
+    const showErrorStyle = isFieldMissing || hasError;
 
     return (
         <div key={field.name} className="flex flex-col gap-1">
@@ -111,9 +136,13 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                 value={state[field.name] as string | number}
                 onChange={onInputChange}
                 readOnly={isReadOnly}
-                className={isMissing(field.name) || error ? 'bg-red-100' : undefined}
+                required={field.required}
+                aria-required={field.required}
+                aria-invalid={showErrorStyle}
+                aria-describedby={errorId}
+                className={showErrorStyle ? 'bg-red-100' : undefined}
             />
-            {error && <Message text={error} isError />}
+            {hasError && <Message id={errorId} text={error!} isError />}
         </div>
     );
 }
