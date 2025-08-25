@@ -12,4 +12,4 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-CMD ["sh", "-c", "if [ \"$UPDATE_DEPS\" = \"true\" ]; then npm update && npm run build; fi; npm run preview"]
+CMD ["npm", "run", "preview"]
