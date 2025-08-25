@@ -80,22 +80,35 @@ backend-shell: ## Open a shell in the backend container (current profile)
 
 ##–––––– Drizzle ORM: Schema Management –––––––––––––––––––––––––––––––––––––
 
-generate: ## Diff schema locally → write SQL + journal (then run `make commit-migration`)
+# Helper: ensure drizzle deps exist in the container (no host npm needed)
+ensure-drizzle-deps:
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit generate && \
+	@$(RUN_IN_BACKEND) 'cd /app/backend && \
+	  npm ci && \
+	  npm ls drizzle-kit >/dev/null 2>&1 || npm install --no-fund --no-audit -D drizzle-kit@latest tsx@latest; \
+	  npm ls drizzle-orm >/dev/null 2>&1 || npm install --no-fund --no-audit drizzle-orm@latest'
+
+generate: ensure-drizzle-deps ## Diff schema locally → write SQL + journal
+	$(ECHO_PROFILE)
+	@$(COMPOSE) up -d $(SERVICE_BACKEND)
+	@$(RUN_IN_BACKEND) 'cd /app/backend && \
+	  ./node_modules/.bin/drizzle-kit generate && \
 	  echo " - migration files written to backend/drizzle/migrations/"'
 
-schema: ## Incrementally apply only new migrations to the database
+schema: ensure-drizzle-deps ## Incrementally apply only new migrations
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit migrate'
+	@$(RUN_IN_BACKEND) 'cd /app/backend && \
+	  ./node_modules/.bin/drizzle-kit migrate'
 
-baseline: ## Snapshot current schema into a new “init” migration
+baseline: ensure-drizzle-deps ## Snapshot current schema into “init” migration
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && npm ci && npx drizzle-kit generate --name init && \
+	@$(RUN_IN_BACKEND) 'cd /app/backend && \
+	  ./node_modules/.bin/drizzle-kit generate --name init && \
 	  echo " - baseline migration written to backend/drizzle/migrations/"'
+
 
 drop-tables: ## Drop all existing tables in the database
 	$(ECHO_PROFILE)
@@ -174,6 +187,9 @@ up: ## Start containers in detached mode (current profile/env)
 down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down
+	@echo " - stopping/removing manually started conference_ui (if running)..."
+	-@docker stop conference_ui >/dev/null 2>&1 || true
+	-@docker rm conference_ui >/dev/null 2>&1 || true
 
 restart: ## Restart all containers (current profile/env)
 	$(ECHO_PROFILE)
@@ -187,6 +203,11 @@ tail-logs: ## Tail logs from all containers (current profile/env)
 clean: ## Stop and remove all containers, volumes, and images (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) down --volumes --rmi all || true
+	@echo " - stopping/removing manually started conference_ui (if running)..."
+	-@docker stop conference_ui >/dev/null 2>&1 || true
+	-@docker rm conference_ui >/dev/null 2>&1 || true
+	@echo " - removing conference-reg-app:dev image (if present)..."
+	-@docker rmi conference-reg-app:dev >/dev/null 2>&1 || true
 
 ##–––––– High-Level Composites –––––––––––––––––––––––––––––––––––––––––––––
 
