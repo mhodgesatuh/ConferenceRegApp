@@ -152,8 +152,10 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                             onChange={handleEmailChange}
                             required
                             autoComplete="email"
+                            aria-invalid={Boolean(emailError)}
+                            aria-describedby={emailError ? 'email-error' : undefined}
                         />
-                        {emailError && <Message text={emailError} isError />}
+                        {emailError && <Message id="email-error" text={emailError} isError />}
                     </div>
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="pin">
