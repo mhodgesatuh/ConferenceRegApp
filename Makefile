@@ -182,7 +182,7 @@ build: ## Build Docker images (current profile/env)
 up: ## Start containers in detached mode (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d
-	@echo "Running: http://127.0.0.1/"
+	@echo "Running: https://localhost:8080/"
 
 down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
@@ -213,7 +213,6 @@ clean: ## Stop and remove all containers, volumes, and images (current profile/e
 
 rebuild: ## Redeploy a new set of containers (current profile/env)
 	$(ECHO_PROFILE)
-	@echo "Open dev at: http://127.0.0.1/"
 	$(MAKE) down
 	$(MAKE) build
 	$(MAKE) up

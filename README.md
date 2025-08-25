@@ -2,6 +2,7 @@
 
 <!-- TOC -->
 * [Local Development for ConferenceReg](#local-development-for-conferencereg)
+  * [Technologies Used in This Project](#technologies-used-in-this-project)
   * [Requirements for macOS](#requirements-for-macos)
   * [Developer Notes](#developer-notes)
 * [Setup for macOS](#setup-for-macos)
@@ -25,9 +26,25 @@
     * [Docker Lifecycle](#docker-lifecycle)
     * [High-Level Workflows](#high-level-workflows)
     * [Help](#help)
+* [Docker Desktop Bug Workaround](#docker-desktop-bug-workaround)
 * [You're Ready!](#youre-ready)
 * [Future work](#future-work)
 <!-- TOC -->
+
+## Technologies Used in This Project
+
+- Docker & Docker Compose – Containerization and orchestration 
+- Drizzle ORM – Database schema & query management 
+- Express – Backend web framework
+- MariaDB – Relational database 
+- Nginx – Reverse proxy and static file serving
+- Node.js – Server-side runtime
+- React – Frontend UI library 
+- Tailwind CSS – Utility‑first CSS framework 
+- TanStack Query – Data fetching & state synchronization for React 
+- TypeScript – Static typing for both backend and frontend code 
+- Vite – Frontend build tool and dev server 
+- Vitest – Testing framework 
 
 ## Requirements for macOS
 
@@ -37,7 +54,8 @@
 ## Developer Notes
 
 - Frontend: <https://localhost:8080/>
-- Commands honor the `ENV_PROFILE` variable. Set `ENV_PROFILE=prod` to run against the production profile.
+- Makefile commands honor the `ENV_PROFILE` variable. Set `ENV_PROFILE=prod` to run against the production profile.
+- Command `make ensure-drizzle-deps` updates Drizzle.
 - TLS certificates are stored in `backend/certs` and are mounted into the backend container.
 
 # Setup for macOS
