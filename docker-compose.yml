@@ -9,6 +9,7 @@ services:
       # tell nginx where the template is and where to write the rendered config
       NGINX_ENVSUBST_TEMPLATE_DIR: /etc/nginx/templates
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      NGINX_ENVSUBST_VARS: '$INTERNAL_SECRET'
     volumes:
       - ./nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./backend/certs:/etc/nginx/certs:ro
