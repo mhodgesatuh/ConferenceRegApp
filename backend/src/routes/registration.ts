@@ -70,8 +70,9 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 function ownerOnly(req: Request, res: Response, next: NextFunction) {
     const regId = Number(req.params.id);
     const auth = (req as any).registrationAuth;
-    if (!auth || auth.registrationId !== regId) {
-        sendError(res, 403, "Unauthorized", {id: regId});
+    const authId = Number(auth?.registrationId);
+    if (!auth || Number.isNaN(authId) || authId !== regId) {
+        sendError(res, 403, "Unauthorized", { id: regId });
         return;
     }
     next();
