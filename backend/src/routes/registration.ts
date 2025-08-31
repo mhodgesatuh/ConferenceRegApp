@@ -6,7 +6,7 @@ import { sendEmail } from "@/utils/email";
 import { createSession } from "@/utils/auth";
 import { requirePin } from "@/middleware/requirePin";
 
-import { generatePin, isValidPhone, toBool, toNull } from "./registration.utils";
+import { generatePin, isValidPhone, toNull, toTinyInt } from "./registration.utils";
 import {
     createRegistration,
     updateRegistration,
@@ -110,22 +110,22 @@ router.post("/", async (req, res): Promise<void> => {
                 lastName: String(req.body.lastName).trim(),
                 namePrefix: toNull(req.body.namePrefix),
                 nameSuffix: toNull(req.body.nameSuffix),
-                hasProxy: toBool(req.body.hasProxy),
+                hasProxy: toTinyInt(req.body.hasProxy),
                 proxyName: toNull(req.body.proxyName),
                 proxyPhone: toNull(req.body.proxyPhone),
                 proxyEmail: toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null),
-                cancelledAttendance: toBool(req.body.cancelledAttendance),
+                cancelledAttendance: toTinyInt(req.body.cancelledAttendance),
                 cancellationReason: toNull(req.body.cancellationReason),
-                day1Attendee: toBool(req.body.day1Attendee),
-                day2Attendee: toBool(req.body.day2Attendee),
+                day1Attendee: toTinyInt(req.body.day1Attendee),
+                day2Attendee: toTinyInt(req.body.day2Attendee),
                 question1: String(req.body.question1).trim(),
                 question2: String(req.body.question2).trim(),
-                isAttendee: true, // always true on create
-                isCancelled: toBool(req.body.isCancelled),
-                isMonitor: toBool(req.body.isMonitor),
-                isOrganizer: toBool(req.body.isOrganizer),
-                isPresenter: toBool(req.body.isPresenter),
-                isSponsor: toBool(req.body.isSponsor),
+                isAttendee: 1, // always true on create
+                isCancelled: toTinyInt(req.body.isCancelled),
+                isMonitor: toTinyInt(req.body.isMonitor),
+                isOrganizer: toTinyInt(req.body.isOrganizer),
+                isPresenter: toTinyInt(req.body.isPresenter),
+                isSponsor: toTinyInt(req.body.isSponsor),
             },
             loginPin
         );
@@ -133,16 +133,18 @@ router.post("/", async (req, res): Promise<void> => {
         log.info("Registration created", { email, registrationId: id });
         res.status(201).json({ id, loginPin });
     } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg === "duplicate_email") {
+            sendError(res, 409, "Registration already exists", { email });
+            return;
+        }
         log.error(SAVE_REGISTRATION_ERROR, {
             email,
-            registrationId: undefined,
-            cause: err instanceof Error ? err.message : String(err),
+            cause: msg,
             stack: err instanceof Error ? err.stack : undefined,
             body: redact(req.body),
         });
-        sendError(res, 500, SAVE_REGISTRATION_ERROR, {
-            cause: err instanceof Error ? err.message : String(err),
-        });
+        sendError(res, 500, SAVE_REGISTRATION_ERROR, { cause: msg });
     }
 });
 
@@ -172,7 +174,7 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
             lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined,
             namePrefix: req.body.namePrefix !== undefined ? toNull(req.body.namePrefix) : undefined,
             nameSuffix: req.body.nameSuffix !== undefined ? toNull(req.body.nameSuffix) : undefined,
-            hasProxy: req.body.hasProxy !== undefined ? toBool(req.body.hasProxy) : undefined,
+            hasProxy: req.body.hasProxy !== undefined ? toTinyInt(req.body.hasProxy) : undefined,
             proxyName: req.body.proxyName !== undefined ? toNull(req.body.proxyName) : undefined,
             proxyPhone: req.body.proxyPhone !== undefined ? toNull(req.body.proxyPhone) : undefined,
             proxyEmail:
@@ -180,20 +182,30 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
                     ? toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null)
                     : undefined,
             cancelledAttendance:
-                req.body.cancelledAttendance !== undefined ? toBool(req.body.cancelledAttendance) : undefined,
+                req.body.cancelledAttendance !== undefined
+                    ? toTinyInt(req.body.cancelledAttendance)
+                    : undefined,
             cancellationReason:
                 req.body.cancellationReason !== undefined ? toNull(req.body.cancellationReason) : undefined,
-            day1Attendee: req.body.day1Attendee !== undefined ? toBool(req.body.day1Attendee) : undefined,
-            day2Attendee: req.body.day2Attendee !== undefined ? toBool(req.body.day2Attendee) : undefined,
+            day1Attendee:
+                req.body.day1Attendee !== undefined ? toTinyInt(req.body.day1Attendee) : undefined,
+            day2Attendee:
+                req.body.day2Attendee !== undefined ? toTinyInt(req.body.day2Attendee) : undefined,
             question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
             question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
             // Don't force isAttendee=true on update; preserve/allow explicit changes
-            isAttendee: req.body.isAttendee !== undefined ? toBool(req.body.isAttendee) : undefined,
-            isCancelled: req.body.isCancelled !== undefined ? toBool(req.body.isCancelled) : undefined,
-            isMonitor: req.body.isMonitor !== undefined ? toBool(req.body.isMonitor) : undefined,
-            isOrganizer: req.body.isOrganizer !== undefined ? toBool(req.body.isOrganizer) : undefined,
-            isPresenter: req.body.isPresenter !== undefined ? toBool(req.body.isPresenter) : undefined,
-            isSponsor: req.body.isSponsor !== undefined ? toBool(req.body.isSponsor) : undefined,
+            isAttendee:
+                req.body.isAttendee !== undefined ? toTinyInt(req.body.isAttendee) : undefined,
+            isCancelled:
+                req.body.isCancelled !== undefined ? toTinyInt(req.body.isCancelled) : undefined,
+            isMonitor:
+                req.body.isMonitor !== undefined ? toTinyInt(req.body.isMonitor) : undefined,
+            isOrganizer:
+                req.body.isOrganizer !== undefined ? toTinyInt(req.body.isOrganizer) : undefined,
+            isPresenter:
+                req.body.isPresenter !== undefined ? toTinyInt(req.body.isPresenter) : undefined,
+            isSponsor:
+                req.body.isSponsor !== undefined ? toTinyInt(req.body.isSponsor) : undefined,
         } as const;
 
         // Remove undefined keys so we only update what was provided
@@ -249,7 +261,6 @@ router.post("/login", async (req, res): Promise<void> => {
     if (!email || !pin) {
         log.warn("Login failed: missing credentials", {
             email,
-            registrationId: undefined,
             emailProvided: !!email,
             pinProvided: !!pin,
         });
@@ -264,7 +275,7 @@ router.post("/login", async (req, res): Promise<void> => {
         const [record] = await getRegistrationWithPinByLogin(email, pin);
 
         if (!record?.registrations) {
-            log.warn("Registration lookup: not found", { email, registrationId: undefined });
+            log.warn("Registration lookup: not found", { email });
             sendError(res, 404, "Registration not found", { email });
             return;
         }
@@ -284,7 +295,6 @@ router.post("/login", async (req, res): Promise<void> => {
     } catch (err) {
         log.error("Failed to fetch registration (login)", {
             email,
-            registrationId: undefined,
             cause: err instanceof Error ? err.message : String(err),
         });
         sendError(res, 500, "Failed to fetch registration", {
@@ -299,10 +309,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
 
     if (!email) {
-        log.warn("Lost PIN: email required", {
-            email: undefined,
-            registrationId: undefined,
-        });
+        log.warn("Lost PIN: email required", { email: undefined });
         sendError(res, 400, "Email required");
         return;
     }
@@ -311,7 +318,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
         const [registration] = await getRegistrationByEmail(email);
 
         if (!registration) {
-            log.warn("Lost PIN: registration not found", { email, registrationId: undefined });
+            log.warn("Lost PIN: registration not found", { email });
             sendError(res, 404, "Please contact PCATT", { email });
             return;
         }
@@ -334,7 +341,6 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     } catch (err) {
         log.error("Failed to send pin", {
             email,
-            registrationId: undefined,
             cause: err instanceof Error ? err.message : String(err),
         });
         sendError(res, 500, "Failed to send pin", {
@@ -350,7 +356,6 @@ router.get<{ id: string }, any>("/:id", requirePin, ownerOnly, async (req, res):
     if (Number.isNaN(id)) {
         log.warn("Fetch by id: invalid id", {
             email: undefined,
-            registrationId: undefined,
             rawId: req.params.id,
         });
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
