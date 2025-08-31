@@ -1,25 +1,32 @@
-// dbErrors.ts
+type AnyErr = Record<string, unknown> | undefined | null;
 
-type AnyErr = Record<string, any> | undefined | null;
-
-function unwrap(err: AnyErr): AnyErr {
+function unwrap(err: AnyErr): Record<string, unknown> | undefined {
     const e = err && typeof err === "object" ? err : undefined;
-    return (e?.cause && typeof e.cause === "object") ? e.cause : e; // drizzle often nests in cause
+    return e && typeof (e as any).cause === "object" ? ((e as any).cause as Record<string, unknown>) : e;
 }
 
-export function dbErrorDetails(err: unknown) {
-    const e = unwrap(err as AnyErr) as AnyErr;
+export interface DbErrorDetails {
+    mysqlCode?: string;
+    mysqlErrno?: number;
+    sqlState?: string;
+    sqlMessage?: string;
+    sql?: string;
+    fatal: boolean;
+}
+
+export function dbErrorDetails(err: unknown): DbErrorDetails {
+    const e = unwrap(err as AnyErr) as any;
     return {
-        mysqlCode: e?.code,       // e.g. 'ER_DUP_ENTRY'
-        mysqlErrno: e?.errno,     // e.g. 1062
-        sqlState: e?.sqlState,    // e.g. '23000'
-        sqlMessage: e?.sqlMessage || e?.message,
-        sql: e?.sql,              // raw SQL (no params)
+        mysqlCode: e?.code,
+        mysqlErrno: e?.errno,
+        sqlState: e?.sqlState,
+        sqlMessage: e?.sqlMessage ?? e?.message,
+        sql: e?.sql,
         fatal: e?.fatal === true,
     };
 }
 
-export function isDuplicateKey(err: unknown) {
+export function isDuplicateKey(err: unknown): boolean {
     const d = dbErrorDetails(err);
     return d.mysqlCode === "ER_DUP_ENTRY" || d.mysqlErrno === 1062;
 }
