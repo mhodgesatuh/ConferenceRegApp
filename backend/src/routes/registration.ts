@@ -343,10 +343,8 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
             message: "Failed to send pin",
             email,
         });
-        sendError(res, 500, "Failed to send pin", {
-            email,
-            cause: err instanceof Error ? err.message : String(err),
-        });
+        // Do not expose internal error details to the client
+        sendError(res, 500, "Failed to send pin");
     }
 });
 
@@ -387,10 +385,8 @@ router.get<{ id: string }, any>("/:id", requirePin, ownerOnly, async (req, res):
             email: undefined,
             registrationId: id,
         });
-        sendError(res, 500, "Failed to fetch registration", {
-            id,
-            cause: err instanceof Error ? err.message : String(err),
-        });
+        // Do not expose internal error details to the client
+        sendError(res, 500, "Failed to fetch registration");
     }
 });
 

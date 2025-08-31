@@ -13,7 +13,8 @@ export function logDbError(
     context: Record<string, unknown> = {}
 ): void {
     const db = dbErrorDetails(err);
-    log.error(context.message ?? "DB operation failed", {
+    const message = typeof context.message === "string" ? context.message : "DB operation failed";
+    log.error(message, {
         ...context,
         mysqlCode: db.mysqlCode,
         mysqlErrno: db.mysqlErrno,

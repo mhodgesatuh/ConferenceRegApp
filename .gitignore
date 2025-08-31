@@ -6,6 +6,8 @@ node_modules/
 backend/node_modules/
 /backend/dist/
 /backend/drizzle/migrations/
+/backend/logs/
+/backend/tsconfig.tsbuildinfo
 /frontend/dist/
 *.pem
 /frontend/src/**/*.js
