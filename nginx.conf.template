@@ -1,44 +1,56 @@
 # nginx.conf.template
 
 worker_processes auto;
+
 events { worker_connections 1024; }
+
 http {
-    upstream conference_backend {
-        # Docker DNS resolves this on the appnet network
-        server conference-backend:8080;
-        keepalive 32;
-    }
+  # Upstreams
+  upstream conference_backend {
+    server conference-backend:8080;
+    keepalive 32;
+  }
+  upstream conference_ui {
+    server conference-ui:3000;
+    keepalive 8;
+  }
+
+  # Common proxy defaults
+  proxy_http_version 1.1;
+  proxy_set_header Connection           "";
+  proxy_set_header Host                 $host;
+  proxy_set_header X-Real-IP            $remote_addr;
+  proxy_set_header X-Forwarded-For      $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto    $scheme;
+  proxy_set_header X-Forwarded-Host     $host;
+  proxy_read_timeout 60s;
+  proxy_connect_timeout 5s;
 
   server {
     listen 8080 ssl;
     server_name _;
 
+    # If HTTP hits the HTTPS listener (Nginx logs 497), redirect to https
     error_page 497 =301 https://$host:8080$request_uri;
 
-    ssl_certificate /etc/nginx/certs/localhost.pem;
+    ssl_certificate     /etc/nginx/certs/localhost.pem;
     ssl_certificate_key /etc/nginx/certs/localhost-key.pem;
 
+    # UI
     location / {
-      proxy_pass http://conference-ui:3000/;
-      proxy_set_header Host $host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-Host $host;
+      proxy_pass http://conference_ui/;  # trailing slash OK at root
     }
 
+    # API — PRESERVE /api prefix (matches your logs)
     location /api/ {
-      # keep or drop the trailing slash depending on whether your backend expects /api stripped
-      proxy_pass http://conference-backend:8080;
-
-      proxy_set_header Host $host;
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-Host $host;
-
-      # only this gets substituted by envsubst
+      proxy_pass http://conference_backend;   # no trailing slash -> keep /api
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
     }
+
+    # If you ever want to STRIP /api, use this instead:
+    # location /api/ {
+    #   proxy_pass http://conference_backend/; # trailing slash strips /api
+    #   proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
+    # }
   }
 }
