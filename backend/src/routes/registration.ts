@@ -1,9 +1,10 @@
 // backend/src/routes/registration.ts
 
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { log, sendError } from "@/utils/logger";
 import { sendEmail } from "@/utils/email";
-import { createSession, requireAuth } from "@/utils/auth";
+import { createSession } from "@/utils/auth";
+import { requirePin } from "@/middleware/requirePin";
 
 import { generatePin, isValidPhone, toBool, toNull } from "./registration.utils";
 import {
@@ -62,6 +63,16 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
         if (k in clone) clone[k] = "<redacted>";
     });
     return clone;
+}
+
+function ownerOnly(req: Request, res: Response, next: NextFunction) {
+    const regId = Number(req.params.id);
+    const auth = (req as any).registrationAuth;
+    if (!auth || auth.registrationId !== regId) {
+        sendError(res, 403, "Unauthorized", { id: regId });
+        return;
+    }
+    next();
 }
 
 /* POST / */
@@ -136,16 +147,10 @@ router.post("/", async (req, res): Promise<void> => {
 });
 
 /* PUT /:id — update existing registration */
-router.put("/:id", requireAuth, async (req, res): Promise<void> => {
+router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
-        return;
-    }
-
-    const sessionId = (req as any).registrationId as number | undefined;
-    if (sessionId !== id) {
-        sendError(res, 403, "Unauthorized", { id });
         return;
     }
 
@@ -340,7 +345,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
 });
 
 /* GET /:id */
-router.get<{ id: string }, any>("/:id", async (req, res): Promise<void> => {
+router.get<{ id: string }, any>("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         log.warn("Fetch by id: invalid id", {
