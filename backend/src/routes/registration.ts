@@ -135,6 +135,10 @@ router.post("/", async (req, res): Promise<void> => {
         log.info("Registration created", {email, registrationId: id});
         res.status(201).json({id, loginPin});
     } catch (err) {
+        if (err instanceof Error && err.message === "duplicate_email") {
+            sendError(res, 409, "Registration already exists", {email});
+            return;
+        }
         if (isDuplicateKey(err)) {
             sendError(res, 409, "Registration already exists", {email});
             return;
