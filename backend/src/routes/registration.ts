@@ -339,9 +339,9 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
         log.info("Sending pin", {email, registrationId: registration.id});
         res.json({sent: true});
     } catch (err) {
-        log.error("Failed to send pin", {
+        logDbError(log, err, {
+            message: "Failed to send pin",
             email,
-            cause: err instanceof Error ? err.message : String(err),
         });
         sendError(res, 500, "Failed to send pin", {
             email,
@@ -382,10 +382,10 @@ router.get<{ id: string }, any>("/:id", requirePin, ownerOnly, async (req, res):
             },
         });
     } catch (err) {
-        log.error("Failed to fetch registration by id", {
+        logDbError(log, err, {
+            message: "Failed to fetch registration by id",
             email: undefined,
             registrationId: id,
-            cause: err instanceof Error ? err.message : String(err),
         });
         sendError(res, 500, "Failed to fetch registration", {
             id,
