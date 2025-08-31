@@ -6,19 +6,23 @@ import { and, eq } from "drizzle-orm";
 
 export async function createRegistration(values: any, loginPin: string) {
     return db.transaction<{ id: number }>(async (tx) => {
+        // Prevent duplicate registrations by email
+        const [existing] = await tx
+            .select({ id: registrations.id })
+            .from(registrations)
+            .where(eq(registrations.email, values.email))
+            .limit(1);
+
+        if (existing) {
+            throw new Error("duplicate_email");
+        }
+
         const result = await tx.insert(registrations).values(values);
         const insertId = (result as unknown as { insertId?: number })?.insertId;
-        let newId: number | undefined =
-            typeof insertId === "number" && insertId > 0 ? insertId : undefined;
+        const newId = typeof insertId === "number" && insertId > 0 ? insertId : undefined;
 
         if (!newId) {
-            const row = await tx
-                .select({ id: registrations.id })
-                .from(registrations)
-                .where(eq(registrations.email, values.email))
-                .limit(1);
-            if (row.length === 0) throw new Error("Insert did not return insertId and row not found");
-            newId = row[0].id!;
+            throw new Error("insert_failed");
         }
 
         await tx.insert(credentials).values({ registrationId: newId, loginPin });

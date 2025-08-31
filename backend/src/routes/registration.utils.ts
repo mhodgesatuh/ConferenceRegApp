@@ -12,8 +12,20 @@ export function generatePin(length: number = 8): string {
 }
 
 /** Normalize booleans (MariaDB tinyint(1)) */
-export const toBool = (v: unknown, defaultVal = false) =>
-    typeof v === "boolean" ? v : v == null ? defaultVal : Boolean(v);
+export const toBool = (v: unknown, defaultVal = false): boolean => {
+    if (typeof v === "boolean") return v;
+    if (typeof v === "number") return v !== 0;
+    if (typeof v === "string") {
+        const s = v.trim().toLowerCase();
+        if (["false", "0", "off", "no"].includes(s)) return false;
+        if (["true", "1", "on", "yes"].includes(s)) return true;
+    }
+    return v == null ? defaultVal : Boolean(v);
+};
+
+/** Convert arbitrary truthy/falsey input to 1/0 for DB */
+export const toTinyInt = (v: unknown, defaultVal = false): number =>
+    toBool(v, defaultVal) ? 1 : 0;
 
 /** Normalize strings to null if blank */
 export const toNull = (v: unknown) => {
