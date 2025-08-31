@@ -17,11 +17,20 @@ export async function createRegistration(values: any, loginPin: string) {
             throw new Error("duplicate_email");
         }
 
-        const result = await tx.insert(registrations).values(values);
-        const insertId = (result as unknown as { insertId?: number })?.insertId;
-        const newId = typeof insertId === "number" && insertId > 0 ? insertId : undefined;
+        // Insert the registration and retrieve the generated id.  Since mysql2's
+        // driver returns an array `[result, fields]`, use Drizzle's `$returningId`
+        // helper to consistently obtain the primary key value instead of
+        // relying on `insertId`.
+        const inserted = await tx
+            .insert(registrations)
+            .values(values)
+            .$returningId();
+
+        const newId = inserted[0]?.id;
 
         if (!newId) {
+            // If an id was not returned we treat this as a failed insert
+            // rather than attempting to continue and risking inconsistent data.
             throw new Error("insert_failed");
         }
 
