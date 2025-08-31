@@ -1,4 +1,7 @@
-// schema.ts
+// backend/src/db/schema.ts
+//
+// Fields requiring notNull need to be also listed in registration.ts.
+//
 
 import {
     boolean,
