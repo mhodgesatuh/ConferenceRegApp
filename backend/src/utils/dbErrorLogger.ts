@@ -2,12 +2,16 @@
 
 import { dbErrorDetails } from "./dbErrors";
 
-export function logDbError(log: {
-        error: (arg0: any, arg1: {
-            mysqlCode: any; mysqlErrno: any; sqlState: any; sqlMessage: any; sql: any; // toggle or redact in prod if needed
-            stack: string | undefined;
-        }) => void;
-    }, err: unknown, context: Record<string, any> = {}) {
+/**
+ * Log a database-related error with standardized fields.
+ * Extracts MySQL codes and stack traces so that callers emit
+ * consistent error logs across the application.
+ */
+export function logDbError(
+    log: { error: (message: string, details: Record<string, unknown>) => void },
+    err: unknown,
+    context: Record<string, unknown> = {}
+): void {
     const db = dbErrorDetails(err);
     log.error(context.message ?? "DB operation failed", {
         ...context,
@@ -15,7 +19,7 @@ export function logDbError(log: {
         mysqlErrno: db.mysqlErrno,
         sqlState: db.sqlState,
         sqlMessage: db.sqlMessage,
-        sql: db.sql,           // toggle or redact in prod if needed
+        sql: db.sql, // toggle or redact in prod if needed
         stack: err instanceof Error ? err.stack : undefined,
     });
 }
