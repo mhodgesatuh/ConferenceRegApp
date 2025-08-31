@@ -16,7 +16,6 @@ import {
 } from "./registration.service";
 
 interface CreateRegistrationBody {
-    id?: number;
     email: string;
     phone1?: string;
     phone2?: string;
@@ -66,7 +65,11 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 }
 
 /* POST / */
-router.post("/", requireAuth, async (req, res): Promise<void> => {
+router.post("/", async (req, res): Promise<void> => {
+    if (req.body?.id) {
+        sendError(res, 405, "Use PUT /api/registrations/:id to update an existing registration");
+        return;
+    }
     const email = req.body?.email?.trim().toLowerCase();
 
     try {
@@ -137,6 +140,12 @@ router.put("/:id", requireAuth, async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
+        return;
+    }
+
+    const sessionId = (req as any).registrationId as number | undefined;
+    if (sessionId !== id) {
+        sendError(res, 403, "Unauthorized", { id });
         return;
     }
 
