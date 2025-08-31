@@ -47,7 +47,7 @@ http {
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
     }
 
-    # If you ever want to STRIP /api, use this instead:
+    # If we ever want to STRIP /api, use this instead:
     # location /api/ {
     #   proxy_pass http://conference_backend/; # trailing slash strips /api
     #   proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";

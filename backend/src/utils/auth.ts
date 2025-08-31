@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, RequestHandler, NextFunction } from "express";
 import crypto from "crypto";
 import cookie from "cookie";
 
@@ -10,13 +10,24 @@ interface Session {
 const SESSIONS = new Map<string, Session>();
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || "";
 
-export function requireProxySeal(req: Request, res: Response, next: NextFunction) {
-  if (req.header("x-internal-secret") !== INTERNAL_SECRET) {
-    res.status(403).json({ error: "forbidden" });
-    return;
-  }
-  next();
-}
+export const requireProxySeal: RequestHandler = (req, res, next) => {
+    const expected = (process.env.INTERNAL_SECRET ?? "").trim();
+    const provided = (req.headers["x-internal-secret"] as string | undefined)?.trim() ?? "";
+
+    if (!expected) {
+        res.status(500).json({ error: "INTERNAL_SECRET not configured" });
+        return; // <- return void, not Response
+    }
+
+    if (provided !== expected) {
+        // optional diag
+        // console.warn("proxy seal mismatch", { expectedLen: expected.length, providedLen: provided.length });
+        res.status(401).json({ error: "unauthorized" });
+        return; // <- return void
+    }
+
+    next();
+};
 
 export function createSession(res: Response, registrationId: number) {
   const sid = crypto.randomBytes(16).toString("hex");
