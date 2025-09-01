@@ -1,4 +1,4 @@
-// backend/test/test-drizzle.tx
+// backend/tests/test-drizzle.ts
 //
 
 import { mysqlTable } from 'drizzle-orm/mysql-core';

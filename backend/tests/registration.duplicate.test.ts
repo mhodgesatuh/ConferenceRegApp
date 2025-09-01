@@ -2,12 +2,12 @@ import express from "express";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 
-vi.mock("../src/routes/registration.service", () => ({
+vi.mock("@/routes/registration.service", () => ({
   createRegistration: vi.fn(),
 }));
 
-import router from "../src/routes/registration";
-import { createRegistration } from "../src/routes/registration.service";
+import router from "@/routes/registration";
+import { createRegistration } from "@/routes/registration.service";
 
 const app = express();
 app.use(express.json());
