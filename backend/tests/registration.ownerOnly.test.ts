@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
     logDbError: vi.fn(),
 }));
 
-vi.mock('./registration.service', () => ({
+vi.mock('@/routes/registration.service', () => ({
     createRegistration: vi.fn(),
     getCredentialByRegId: (...args: any[]) => mocks.getCredentialByRegId(...args),
     getRegistrationByEmail: (...args: any[]) => mocks.getRegistrationByEmail(...args),
@@ -30,7 +30,7 @@ vi.mock('@/utils/dbErrorLogger', () => ({
     logDbError: (...args: any[]) => mocks.logDbError(...args),
 }));
 
-import router from './registration';
+import router from '@/routes/registration';
 
 describe('ownerOnly registration id', () => {
     beforeEach(() => {
