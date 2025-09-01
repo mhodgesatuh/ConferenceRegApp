@@ -4,46 +4,56 @@ import {db} from "@/db/client";
 import {credentials, registrations} from "@/db/schema";
 import {and, eq} from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
+import { sendEmail } from "@/utils/email";
 
 export async function createRegistration(values: any, loginPin: string) {
     return db.transaction<{ id: number }>(async (tx) => {
-        // 1) Race-avoidant existence check (still add a UNIQUE index on email in schema)
-        const [existing] = await tx
-            .select({ id: registrations.id })
-            .from(registrations)
-            .where(eq(registrations.email, values.email))
-            .limit(1);
-
-        if (existing) {
-            throw new Error("duplicate_email");
-        }
-
-        // 2) Insert and normalize the new id across possible shapes
+        // Insert and normalize the new id across possible shapes
         const ret = await tx.insert(registrations).values(values).$returningId();
 
-        // Drizzle/mysql2 may return: number[]  OR  [{ id: number }]  OR a single object
         let newId: number | undefined =
             Array.isArray(ret)
                 ? (typeof ret[0] === "number" ? ret[0] : (ret[0] as any)?.id)
                 : (ret as any)?.id;
 
-        // 3) Fallback: LAST_INSERT_ID() if $returningId() didn't produce an id
+        // Fallback: LAST_INSERT_ID() if $returningId() didn't produce an id
         if (!newId) {
             const [row] = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
-            // mysql2 returns RowDataPacket-like objects; coerce defensively
-            newId = (Array.isArray(row) ? (row as any)[0]?.id : (row as any)?.id) ?? (row as any)?.id;
+            newId =
+                (Array.isArray(row) ? (row as any)[0]?.id : (row as any)?.id) ??
+                (row as any)?.id;
         }
 
         if (!newId) {
             throw new Error("insert_failed");
         }
 
-        // 4) Create credential row
+        // Create credential row (will only run if the insert above succeeded)
         await tx.insert(credentials).values({ registrationId: newId, loginPin });
 
-        // 5) Stable return shape for route layer
         return { id: newId };
     });
+}
+
+
+export type LostPinResult =
+    | { ok: true }
+    | { ok: false; code: "not_found_registration" | "not_found_credential" };
+
+export async function sendLostPinEmail(email: string): Promise<LostPinResult> {
+    const [registration] = await getRegistrationByEmail(email);
+    if (!registration) return { ok: false, code: "not_found_registration" };
+
+    const [credential] = await getCredentialByRegId(registration.id);
+    if (!credential) return { ok: false, code: "not_found_credential" };
+
+    await sendEmail({
+        to: email,
+        subject: "Your login PIN",
+        text: `Your login PIN is ${credential.loginPin}`,
+    });
+
+    return { ok: true };
 }
 
 export async function updateRegistration(id: number, cleanValues: Record<string, unknown>) {
@@ -54,7 +64,6 @@ export async function updateRegistration(id: number, cleanValues: Record<string,
         0;
     return { rowsAffected };
 }
-
 
 export async function getRegistrationWithPinById(id: number) {
     return db

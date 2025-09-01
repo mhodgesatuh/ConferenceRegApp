@@ -2,16 +2,21 @@
 
 import { NextFunction, Request, Response, Router } from "express";
 import { log, sendError } from "@/utils/logger";
-import { sendEmail } from "@/utils/email";
 import { createSession } from "@/utils/auth";
 import { isDuplicateKey } from "@/utils/dbErrors";
 import { logDbError } from "@/utils/dbErrorLogger";
 import { requirePin } from "@/middleware/requirePin";
-import { generatePin, isValidPhone, toNull, toTinyInt } from "./registration.utils";
+import {
+    generatePin,
+    hasInvalidPhones,
+    missingRequiredFields,
+    toNull,
+    toTinyInt,
+    isValidEmail,
+} from "./registration.utils";
 import {
     createRegistration,
-    getCredentialByRegId,
-    getRegistrationByEmail,
+    sendLostPinEmail,
     getRegistrationWithPinById,
     getRegistrationWithPinByLogin,
     updateRegistration,
@@ -48,43 +53,7 @@ const router = Router();
 const SAVE_REGISTRATION_ERROR = "Failed to save registration";
 const REGISTRATION_NOT_FOUND = "Registration not found";
 const FAILED_TO_FETCH_REGISTRATION = "Failed to fetch registration";
-const CONTACT_US = 'Please contact us';
-
-// Columns marked as NOT NULL in the database schema. These need to be
-// present before attempting to insert a record.
-const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
-    "email",
-    "lastName",
-    "question1",
-    "question2",
-];
-
-/**
- * Determine which required fields are missing. When `partial` is true, only
- * fields explicitly provided are validated. This allows the same validation
- * logic to be used for both create (all fields required) and update (only
- * provided fields checked).
- */
-function missingRequiredFields(
-    body: Partial<CreateRegistrationBody>,
-    partial = false
-) {
-    return REQUIRED_FIELDS.filter((field) => {
-        const value = body[field];
-        if (partial && value === undefined) return false; // ignore untouched
-        if (value === undefined || value === null) return true;
-        return String(value).trim() === "";
-    });
-}
-
-/**
- * Validate phone fields (phone1/phone2). Treat blanks/undefined as valid so
- * callers can use this for both create and partial update flows.
- * Returns true when any phone is invalid.
- */
-function hasInvalidPhones(body: Partial<CreateRegistrationBody>): boolean {
-    return !isValidPhone(body.phone1) || !isValidPhone(body.phone2);
-}
+const CONTACT_US = "Please contact us";
 
 /** Redact potentially sensitive fields before logging */
 function redact(body: Partial<CreateRegistrationBody> | undefined) {
@@ -98,7 +67,7 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 
 function ownerOnly(req: Request, res: Response, next: NextFunction) {
     const regId = Number(req.params.id);
-    const auth = (req as any).registrationAuth;
+    const auth = (req as any).registrationAuth as { registrationId?: number } | undefined;
     const authId = Number(auth?.registrationId);
     if (!auth || Number.isNaN(authId) || authId !== regId) {
         sendError(res, 403, "Unauthorized", { id: regId });
@@ -113,23 +82,32 @@ router.post("/", async (req, res): Promise<void> => {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
     }
-    const email = req.body?.email?.trim().toLowerCase();
+
+    const missing = missingRequiredFields(req.body);
+    if (missing.length) {
+        sendError(res, 400, "Missing required information", { missing });
+        return;
+    }
+
+    // email is guaranteed by the required-fields guard above
+    const email: string = String(req.body.email).trim().toLowerCase();
+
+    // Basic email format check (lightweight)
+    if (!isValidEmail(email)) {
+        sendError(res, 400, "Invalid email address", { email });
+        return;
+    }
+
+    // Validate phones before any DB work
+    if (hasInvalidPhones(req.body)) {
+        sendError(res, 400, "Invalid phone number(s)", {
+            phone1: req.body.phone1,
+            phone2: req.body.phone2,
+        });
+        return;
+    }
 
     try {
-        const missing = missingRequiredFields(req.body);
-        if (missing.length) {
-            sendError(res, 400, "Missing required information", { missing });
-            return;
-        }
-
-        if (hasInvalidPhones(req.body)) {
-            sendError(res, 400, "Invalid phone number(s)", {
-                phone1: req.body.phone1,
-                phone2: req.body.phone2,
-            });
-            return;
-        }
-
         const loginPin = generatePin(8);
 
         const { id } = await createRegistration(
@@ -164,10 +142,6 @@ router.post("/", async (req, res): Promise<void> => {
         log.info("Registration created", { email, registrationId: id });
         res.status(201).json({ id, loginPin });
     } catch (err) {
-        if (err instanceof Error && err.message === "duplicate_email") {
-            sendError(res, 409, "Registration already exists", { email });
-            return;
-        }
         if (isDuplicateKey(err)) {
             sendError(res, 409, "Registration already exists", { email });
             return;
@@ -204,13 +178,22 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
         return;
     }
 
+    // Coerce & validate email only if provided for partial updates
+    const email: string | undefined = req.body.email
+        ? String(req.body.email).trim().toLowerCase()
+        : undefined;
+    if (email !== undefined && !isValidEmail(email)) {
+        sendError(res, 400, "Invalid email address", { email });
+        return;
+    }
+
     try {
         const updateValues = {
-            email: req.body.email ? String(req.body.email).trim().toLowerCase() : undefined,
+            email, // only set if provided
             phone1: req.body.phone1 !== undefined ? toNull(req.body.phone1) : undefined,
             phone2: req.body.phone2 !== undefined ? toNull(req.body.phone2) : undefined,
             firstName: req.body.firstName !== undefined ? toNull(req.body.firstName) : undefined,
-            lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined,
+            lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined, // do not lowercase
             namePrefix: req.body.namePrefix !== undefined ? toNull(req.body.namePrefix) : undefined,
             nameSuffix: req.body.nameSuffix !== undefined ? toNull(req.body.nameSuffix) : undefined,
             hasProxy: req.body.hasProxy !== undefined ? toTinyInt(req.body.hasProxy) : undefined,
@@ -247,6 +230,7 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
             sendError(res, 400, "No fields to update");
             return;
         }
+
         const { rowsAffected } = await updateRegistration(id, clean);
         if (!rowsAffected) {
             sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
@@ -273,14 +257,13 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
             },
         });
     } catch (err) {
-        // Duplicate email on update should be 409 (same as create path)
         if (isDuplicateKey(err)) {
-            sendError(res, 409, "Registration already exists", { email: req.body.email });
+            sendError(res, 409, "Registration already exists", { email });
             return;
         }
         logDbError(log, err, {
             message: SAVE_REGISTRATION_ERROR,
-            email: req.body.email,
+            email,
             body: redact(req.body),
         });
         sendError(res, 500, SAVE_REGISTRATION_ERROR);
@@ -289,8 +272,8 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
 
 /* POST /login */
 router.post("/login", async (req, res): Promise<void> => {
-    const email = req.body?.email ? String(req.body.email).trim().toLowerCase() : undefined;
-    const pin = req.body?.pin ? String(req.body.pin).trim() : undefined;
+    const email = String(req.body?.email ?? "").trim().toLowerCase();
+    const pin = String(req.body?.pin ?? "").trim();
 
     if (!email || !pin) {
         log.warn("Login failed: missing credentials", {
@@ -339,43 +322,23 @@ router.post("/login", async (req, res): Promise<void> => {
 /* GET /lost-pin?email=addr */
 router.get("/lost-pin", async (req, res): Promise<void> => {
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
-
     if (!email) {
-        log.warn("Lost PIN: email required", { email: undefined });
         sendError(res, 400, "Email required");
         return;
     }
 
     try {
-        const [registration] = await getRegistrationByEmail(email);
-
-        if (!registration) {
-            log.warn("Lost PIN: registration not found", { email });
-            sendError(res, 404, CONTACT_US, { email });
+        const result = await sendLostPinEmail(email);
+        if (!result.ok) {
+            const payload = { email };
+            const msg = result.code === "not_found_registration" ? CONTACT_US : CONTACT_US;
+            sendError(res, 404, msg, payload);
             return;
         }
-
-        const [credential] = await getCredentialByRegId(registration.id);
-
-        if (!credential) {
-            log.warn("Lost PIN: credential not found", { email, registrationId: registration.id });
-            sendError(res, 404, CONTACT_US, { email, registrationId: registration.id });
-            return;
-        }
-
-        await sendEmail({
-            to: email,
-            subject: "Your login PIN",
-            text: `Your login PIN is ${credential.loginPin}`,
-        });
-        log.info("Sending PIN", { email, registrationId: registration.id });
+        log.info("Sending PIN", { email });
         res.json({ sent: true });
     } catch (err) {
-        logDbError(log, err, {
-            message: "Failed to send PIN",
-            email,
-        });
-        // Do not expose internal error details to the client
+        logDbError(log, err, { message: "Failed to send PIN", email });
         sendError(res, 500, "Failed to send PIN");
     }
 });
