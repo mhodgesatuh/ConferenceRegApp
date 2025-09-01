@@ -2,6 +2,7 @@
 
 <!-- TOC -->
 * [Local Development for ConferenceReg](#local-development-for-conferencereg)
+  * [Overview](#overview)
   * [Technologies Used in This Project](#technologies-used-in-this-project)
   * [Requirements for macOS](#requirements-for-macos)
   * [Developer Notes](#developer-notes)
@@ -30,6 +31,11 @@
 * [You're Ready!](#youre-ready)
 * [Future work](#future-work)
 <!-- TOC -->
+
+## Overview
+
+This README presents the technical overview for the developer. See the docs
+folder for application information.
 
 ## Technologies Used in This Project
 
