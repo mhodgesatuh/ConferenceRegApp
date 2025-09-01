@@ -19,14 +19,7 @@
   * [6. Install dotenv-cli](#6-install-dotenv-cli)
   * [7. Install Drizzle ORM CLI](#7-install-drizzle-orm-cli)
   * [8. Initialize the Database](#8-initialize-the-database)
-  * [Useful Makefile Commands](#useful-makefile-commands)
-    * [Logs](#logs)
-    * [Quick Start](#quick-start)
-    * [Database & Drizzle ORM](#database--drizzle-orm)
-    * [Drizzle Studio](#drizzle-studio)
-    * [Docker Lifecycle](#docker-lifecycle)
-    * [High-Level Workflows](#high-level-workflows)
-    * [Help](#help)
+  * [makefile](#makefile)
 * [Docker Desktop Bug Workaround](#docker-desktop-bug-workaround)
 * [You're Ready!](#youre-ready)
 * [Future work](#future-work)
@@ -239,86 +232,14 @@ This command:
 
 ---
 
-## Useful Makefile Commands
+## makefile
 
-This project uses a `Makefile` to simplify working with Docker containers, the 
-Drizzle ORM schema, and development utilities.
+The following will provide a full list of the makefile commands available for
+working on this project.
 
----
-
-### Logs
-- **`make logs`** – Show application logs.
-    - If `.env` points to `./logs`, it shows local dev logs.
-    - Otherwise, it shows container logs inside `/var/log/conference`.
-
-- **`make tail-logs`** – Continuously stream logs from all containers.
-
----
-
-### Quick Start
-- **`make init`** – Initialize the environment. ⚠️ *Dangerous: wipes all existing database data*.  
-  Recreates the DB, applies schema, and starts the containers.
-
-- **`make init-backend`** – Rebuild and restart only the backend container.
-
-- **`make backend-shell`** – Open a shell inside the backend container.
-
----
-
-### Database & Drizzle ORM
-- **`make generate`** – Generate migration files based on schema changes.  
-  *(Writes files to `backend/drizzle/migrations/`)*
-
-- **`make schema`** – Apply any new migrations to the database.
-
-- **`make baseline`** – Create an “init” baseline migration from the current schema.
-
-- **`make drop-tables`** – Drop all existing tables in the database. ⚠️ Use with caution.
-
-- **`make reset-db`** – Reset the database (containers & volumes removed, DB recreated).
-
-- **`make commit-migration`** – Stage & commit newly generated migration files to Git.
-
----
-
-### Drizzle Studio
-- **`make studio-check`** – Verify prerequisites for running Drizzle Studio  
-  (certificates + `/etc/hosts` entry for `local.drizzle.studio`).
-
-- **`make studio-cert`** – Generate development TLS certificates for Drizzle Studio  
-  (requires [mkcert](https://github.com/FiloSottile/mkcert)).
-
-- **`make studio`** – Launch Drizzle Studio in the backend container.  
-  Access at [https://local.drizzle.studio/?port=3337&host=127.0.0.1](https://local.drizzle.studio/?port=3337&host=127.0.0.1) (Firefox recommended).
-
----
-
-### Docker Lifecycle
-- **`make build`** – Build all Docker images.
-
-- **`make up`** – Start containers in detached mode.
-
-- **`make down`** – Stop and remove containers.
-
-- **`make restart`** – Restart all containers.
-
-- **`make clean`** – Stop and remove all containers, volumes, and images.
-
----
-
-### High-Level Workflows
-- **`make rebuild`** – Tear down and rebuild the full stack (useful for a fresh dev start).
-
-- **`make deploy`** – Build images, run pending DB migrations, and start the stack.
-  Set `UPDATE_DEPS=true` to refresh backend Node packages inside the container during deployment.
-
-- **`make update-schema`** – Generate and apply new migrations in one step.
-
----
-
-### Help
-- **`make help`** – Show all available targets with descriptions.
-
+```bash
+make
+```
 ---
 
 # Docker Desktop Bug Workaround
