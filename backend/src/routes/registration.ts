@@ -59,6 +59,33 @@ const REQUIRED_FIELDS: (keyof CreateRegistrationBody)[] = [
     "question2",
 ];
 
+/**
+ * Determine which required fields are missing. When `partial` is true, only
+ * fields explicitly provided are validated. This allows the same validation
+ * logic to be used for both create (all fields required) and update (only
+ * provided fields checked).
+ */
+function missingRequiredFields(
+    body: Partial<CreateRegistrationBody>,
+    partial = false
+) {
+    return REQUIRED_FIELDS.filter((field) => {
+        const value = body[field];
+        if (partial && value === undefined) return false; // ignore untouched
+        if (value === undefined || value === null) return true;
+        return String(value).trim() === "";
+    });
+}
+
+/**
+ * Validate phone fields (phone1/phone2). Treat blanks/undefined as valid so
+ * callers can use this for both create and partial update flows.
+ * Returns true when any phone is invalid.
+ */
+function hasInvalidPhones(body: Partial<CreateRegistrationBody>): boolean {
+    return !isValidPhone(body.phone1) || !isValidPhone(body.phone2);
+}
+
 /** Redact potentially sensitive fields before logging */
 function redact(body: Partial<CreateRegistrationBody> | undefined) {
     if (!body) return {};
@@ -89,14 +116,13 @@ router.post("/", async (req, res): Promise<void> => {
     const email = req.body?.email?.trim().toLowerCase();
 
     try {
-        const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
+        const missing = missingRequiredFields(req.body);
         if (missing.length) {
             sendError(res, 400, "Missing required information", { missing });
             return;
         }
 
-        // Validate phones only if provided; empty is OK (isValidPhone allows blank)
-        if (!isValidPhone(req.body.phone1) || !isValidPhone(req.body.phone2)) {
+        if (hasInvalidPhones(req.body)) {
             sendError(res, 400, "Invalid phone number(s)", {
                 phone1: req.body.phone1,
                 phone2: req.body.phone2,
@@ -164,12 +190,17 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
         return;
     }
 
-    // Validate phones ONLY if provided and non-empty (isValidPhone allows blank)
-    if (!isValidPhone(req.body.phone1) || !isValidPhone(req.body.phone2)) {
+    if (hasInvalidPhones(req.body)) {
         sendError(res, 400, "Invalid phone number(s)", {
             phone1: req.body.phone1,
             phone2: req.body.phone2,
         });
+        return;
+    }
+
+    const missing = missingRequiredFields(req.body, true);
+    if (missing.length) {
+        sendError(res, 400, "Missing required information", { missing });
         return;
     }
 
