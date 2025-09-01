@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
     logDbError: vi.fn(),
 }));
 
-vi.mock('./registration.service', () => ({
+vi.mock('@/routes/registration.service', () => ({
     createRegistration: vi.fn(),
     getCredentialByRegId: (...args: any[]) => mocks.getCredentialByRegId(...args),
     getRegistrationByEmail: (...args: any[]) => mocks.getRegistrationByEmail(...args),
@@ -30,7 +30,7 @@ vi.mock('@/utils/dbErrorLogger', () => ({
     logDbError: (...args: any[]) => mocks.logDbError(...args),
 }));
 
-import router from './registration';
+import router from '@/routes/registration';
 
 describe('registration error handling', () => {
     beforeEach(() => {
@@ -43,7 +43,7 @@ describe('registration error handling', () => {
         app.use('/', router);
         const res = await request(app).get('/lost-pin?email=test@example.com');
         expect(res.status).toBe(500);
-        expect(res.body).toEqual({ error: 'Failed to send pin' });
+        expect(res.body).toEqual({ error: 'Failed to send PIN' });
         expect(res.body).not.toHaveProperty('cause');
         expect(res.body).not.toHaveProperty('stack');
         expect(mocks.logDbError).toHaveBeenCalled();
