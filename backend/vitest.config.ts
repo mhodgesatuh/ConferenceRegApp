@@ -1,5 +1,6 @@
 // backend/vitest.config.ts
-import path from 'path';
+
+import * as path from "path";
 import { defineConfig } from 'vitest/config';
 
 
@@ -15,4 +16,3 @@ export default defineConfig({
         globals: true,
     },
 });
-

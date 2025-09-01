@@ -57,6 +57,7 @@ export const registrations = mysqlTable('registrations', {
     hasProxy: boolean('has_proxy').default(false),
 
 }, (table) => ({
+    emailIdx: uniqueIndex('idx_registrations_email').on(table.email),
     cancelledAttendanceIdx: index('idx_cancelled_attendance').on(table.cancelledAttendance),
     isAttendeeIdx: index('idx_is_attendee').on(table.isAttendee),
     isMonitorIdx: index('idx_is_monitor').on(table.isMonitor),

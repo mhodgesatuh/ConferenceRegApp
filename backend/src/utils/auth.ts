@@ -1,3 +1,5 @@
+// backend/src/utils/auth.ts
+
 import { Request, Response, RequestHandler, NextFunction } from "express";
 import crypto from "crypto";
 import cookie from "cookie";
