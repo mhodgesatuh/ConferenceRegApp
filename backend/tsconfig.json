@@ -21,7 +21,6 @@
         "node_modules",
         "dist",
         "src/tests",
-        "test",
         "tests",
         "../drizzle.config.ts",
         "../vitest.config.ts",
