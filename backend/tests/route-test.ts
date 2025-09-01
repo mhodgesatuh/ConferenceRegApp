@@ -1,4 +1,4 @@
-// backend/src/tests/route-test.ts
+// backend/tests/route-test.ts
 
 import {log} from "@/utils/logger";
 
