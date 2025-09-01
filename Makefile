@@ -9,6 +9,8 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 SERVICE_BACKEND := conference-backend
 SERVICE_DB := conference-db
+DEBUG_PORT := 9229
+DEBUG_VITEST_PORT := 9230
 
 # Profile selection: default to dev unless ENV_PROFILE=prod
 PROFILE := $(if $(filter $(ENV_PROFILE),prod),prod,dev)
@@ -222,7 +224,43 @@ update-schema: ## Generate new migrations and apply them (current profile/env)
 	$(MAKE) generate
 	$(MAKE) schema
 
-##–––––– Profile Shortcuts ––––––––––––––––––––––––––––––––––––––––––––––––––
+debug: ## Run backend in Node debug mode (publish $(DEBUG_PORT))
+	$(ECHO_PROFILE)
+	@echo " - starting backend with Node inspector on localhost:$(DEBUG_PORT)…"
+	@echo "   (use IntelliJ Attach to Node.js/Chrome → host=localhost, port=$(DEBUG_PORT))"
+	@$(COMPOSE) run --rm --service-ports \
+	  -p 127.0.0.1:$(DEBUG_PORT):$(DEBUG_PORT) \
+	  $(SERVICE_BACKEND) sh -lc '\
+	    cd /app/backend && \
+	    npm ci && \
+	    npm run start:debug \
+	  '
+
+# ------ Debugging ------------------------------------------------------------
+
+debug: ## Run backend in Node debug mode (publish $(DEBUG_PORT))
+	$(ECHO_PROFILE)
+	@echo " - starting backend with Node inspector on localhost:$(DEBUG_PORT)..."
+	@echo " - attach IntelliJ: Attach to Node.js/Chrome → host=localhost, port=$(DEBUG_PORT)"
+	@$(COMPOSE) run --rm --service-ports \
+	  -p 127.0.0.1:$(DEBUG_PORT):$(DEBUG_PORT) \
+	  $(SERVICE_BACKEND) sh -lc '\
+	    cd /app/backend && \
+	    npm run start:debug \
+	  '
+
+test-debug: ## Run Vitest in debug mode (publish $(DEBUG_VITEST_PORT))
+	$(ECHO_PROFILE)
+	@echo " - starting Vitest with Node inspector on localhost:$(DEBUG_VITEST_PORT)..."
+	@echo " - attach IntelliJ: Attach to Node.js/Chrome → host=localhost, port=$(DEBUG_VITEST_PORT)"
+	@$(COMPOSE) run --rm --service-ports \
+	  -p 127.0.0.1:$(DEBUG_VITEST_PORT):$(DEBUG_VITEST_PORT) \
+	  $(SERVICE_BACKEND) sh -lc '\
+	    cd /app/backend && \
+	    npm run test:debug \
+	  '
+
+##–––––– Prod Shortcuts ––––––––––––––––––––––––––––––––––––––––––––––––––-----
 
 prod-build: ## Build images using .env.prod
 	ENV_PROFILE=prod $(MAKE) build
@@ -235,6 +273,7 @@ prod-down: ## Stop stack using .env.prod
 
 prod-deploy: ## Build, migrate, start using .env.prod
 	ENV_PROFILE=prod $(MAKE) deploy
+
 
 # -----------------------------------------------------------------------------
 # DEFAULT TARGET
@@ -264,4 +303,5 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 .PHONY: build clean commit-migration deploy down drop-tables generate \
         help init init-backend backend-shell restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up \
-        rebuild logs prod-build prod-up prod-down prod-deploy
+        rebuild logs prod-build prod-up prod-down prod-deploy \
+        debug test-debug
