@@ -13,9 +13,10 @@ resolving the `@/...` alias in that environment (e.g., `tsconfig-paths`,
 `module-alias`, or the TypeScript compiler itself).
 
 
-| Environment | Mechanism | Config / Package | Notes |
-|-------------|-----------|------------------|-------|
-| **Development** (`npm run dev`) | `ts-node-dev` + `tsconfig-paths` | `tsconfig.vitest.json` via root `tsconfig.json`; `tsconfig-paths/register` | Maps `@/...` → `src/...` when running TypeScript directly. |
-| **Build** (`npm run build`) | TypeScript compiler | `tsconfig.build.json` → extends `tsconfig.base.json` | Compiles `src/...` to `dist/...`, resolving aliases at build time. |
-| **Production Runtime** (`npm start`) | `module-alias` | `_moduleAliases` in `package.json` (`"@": "dist"`) | Maps `@/...` → `dist/...` so imports work after compilation. |
-| **Testing** (`npm run test`) | Vitest + tsconfig alias | `vitest.config.ts` (`alias`), `tsconfig.vitest.json` | Ensures `@/...` resolves to `src/...` in test environment. |
+| Environment                          | Mechanism | Config / Package                                                           | Notes                                                             |
+|--------------------------------------|-----------|----------------------------------------------------------------------------|-------------------------------------------------------------------|
+| **Development** (`npm run dev`)      | `ts-node-dev` + `tsconfig-paths` | `tsconfig.vitest.json` via root `tsconfig.json`; `tsconfig-paths/register` | Maps `@/...` → `src/...` when running TypeScript directly.        |
+| **Build** (`npm run build`)          | TypeScript compiler | `tsconfig.build.json` → extends `tsconfig.base.json`                       | Compiles `src/...` to `dist/...`, resolving aliases at build time. |
+| **Production Runtime** (`npm start`) | `module-alias` | `_moduleAliases` in `package.json` (`"@": "dist"`)                         | Maps `@/...` → `dist/...` so imports work after compilation.      |
+| **Testing** (`npm run test`)         | Vitest + tsconfig alias | `vitest.config.ts` (`alias`), `tsconfig.vitest.json`                       | Ensures `@/...` resolves to `src/...` in test environment.        |
+| **Vitest** (`npx vitest --config vitest.config.ts --passWithNoTests`)                    | |  | |

@@ -173,6 +173,7 @@ npm install compression
 npm install -D @types/compression
 npm i module-alias
 npm i -D tsconfig-paths
+npm i -D vitest @types/node supertest
 ```
 
 ### Frontend (React, Vite)

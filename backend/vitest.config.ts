@@ -1,8 +1,6 @@
 // backend/vitest.config.ts
-
-import * as path from "path";
+import * as path from 'path';
 import { defineConfig } from 'vitest/config';
-
 
 export default defineConfig({
     resolve: {
@@ -12,7 +10,8 @@ export default defineConfig({
     },
     test: {
         environment: 'node',
-        exclude: ['src/tests/**', 'node_modules/**'],
+        include: ['src/tests/**/*.spec.ts'],   // run tests in src/tests
+        exclude: ['node_modules/**'],          // keep the default ignore
         globals: true,
     },
 });

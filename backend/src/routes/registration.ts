@@ -77,7 +77,7 @@ function ownerOnly(req: Request, res: Response, next: NextFunction) {
 }
 
 
-/* POST / */
+/* POST / (public create; CSRF-exempt) */
 router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
@@ -156,8 +156,8 @@ router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
     }
 });
 
-/* PUT /:id — update existing registration */
-router.put("/:id", requireAuth, ownerOnly, verifyCsrf, async (req, res): Promise<void> => {    const id = Number(req.params.id);
+/* PUT /:id (auth + CSRF; write) */
+router.put("/:id", requireAuth, verifyCsrf, ownerOnly, async (req, res): Promise<void> => {    const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
@@ -269,7 +269,7 @@ router.put("/:id", requireAuth, ownerOnly, verifyCsrf, async (req, res): Promise
     }
 });
 
-/* POST /login (no CSRF on first login) */
+/* POST /login (public) -> sets cookie, returns csrf */
 router.post("/login", async (req, res): Promise<void> => {
 
     const pin = String(req.body?.pin ?? "").trim();
@@ -340,8 +340,8 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
     }
 });
 
-/* GET /:id */
-router.get<{ id: string }, any>("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
+/* GET /:id (auth; no CSRF for read) */
+router.get<{ id: string }, any>("/:id", requireAuth, ownerOnly, async (req, res): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         log.warn("Fetch by id: invalid id", {

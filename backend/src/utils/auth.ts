@@ -52,24 +52,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         res.status(401).json({ error: "unauthorized" });
         return;
     }
-
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-        if (req.header("x-csrf-token") !== sess.csrf) {
-            res.status(403).json({ error: "csrf_invalid" });
-            return;
-        }
-        const origin = req.header("origin") || "";
-        const allowed = process.env.UI_ORIGIN || "";
-        if (!origin || origin !== allowed) {
-            res.status(403).json({ error: "origin_invalid" });
-            return;
-        }
-    }
-
-    // NEW: expose for downstream middleware (verifyCsrf / ownerOnly)
+    // Expose to downstream
     (req as any).registrationId = sess.registrationId;
     (req as any).csrf = sess.csrf;
-
     next();
 }
-

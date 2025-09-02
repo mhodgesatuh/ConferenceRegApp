@@ -188,47 +188,60 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (submitting) return;
-        setMessage({text: '', type: ''});
+        setMessage({ text: '', type: '' });
 
         const invalid = validateAll();
         if (invalid.length > 0) {
             document.getElementById(invalid[0])?.focus();
-            setMessage({text: 'Please review the form for errors.', type: 'error'});
+            setMessage({ text: 'Please review the form for errors.', type: 'error' });
             return;
         }
 
         // Compute required + missing using rules
         const requiredNames = getRequiredFieldNames(fieldsForRender, state);
         const missing = findMissingRequiredFields(requiredNames, state);
-
         if (missing.length > 0) {
             markMissing(missing);
             document.getElementById(missing[0])?.focus();
-            setMessage({text: 'Please review the form for missing information.', type: 'error'});
+            setMessage({ text: 'Please review the form for missing information.', type: 'error' });
             return;
         }
 
-        // Build payload: include loginPin so the backend stores EXACTLY what the user saw
-        const payload = (({id, ...rest}) => rest)(state);
         setSubmitting(true);
 
         try {
+            const isUpdate = !!state.id;
+            const url = isUpdate ? `/api/registrations/${state.id}` : `/api/registrations`;
+            const method: 'POST' | 'PUT' = isUpdate ? 'PUT' : 'POST';
+
+            // Build payload; never send id; on CREATE, also avoid sending any client PIN
+            const { id, loginPin, ...rest } = state as any;
+            const payload = isUpdate ? { ...rest } : { ...rest, loginPin: undefined };
+
             const data = await apiFetch(
-                '/api/registrations',
-                {method: 'POST', body: JSON.stringify(payload)},
-                csrfToken
+                url,
+                { method, body: JSON.stringify(payload) },
+                // only send CSRF on authenticated updates
+                isUpdate ? csrfToken : undefined
             );
 
-            // Expecting { id } on success
-            if (data?.id) {
-                dispatch({type: 'CHANGE_FIELD', name: 'id', value: data.id});
+            if (!isUpdate) {
+                // Expecting { id, loginPin } on create
+                if (data?.id) dispatch({ type: 'CHANGE_FIELD', name: 'id', value: data.id });
+                if (data?.loginPin) dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: data.loginPin });
                 setShowId(true);
                 setIsSaved(true);
+                setMessage({ text: 'Registration saved successfully.', type: 'success' });
+            } else {
+                // PUT returns { registration: {...} }
+                if (data?.registration) {
+                    Object.entries(data.registration).forEach(([k, v]: any) =>
+                        dispatch({ type: 'CHANGE_FIELD', name: k, value: v })
+                    );
+                }
+                setMessage({ text: 'Registration updated successfully.', type: 'success' });
             }
-
-            setMessage({text: 'Registration saved successfully.', type: 'success'});
         } catch (err: any) {
             const server = err?.data;
             if (server && Array.isArray(server.missing) && server.missing.length > 0) {
@@ -236,7 +249,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
                 document.getElementById(server.missing[0])?.focus();
             }
             console.error('Registration error:', err);
-            setMessage({text: INTERNAL_ERROR_MSG, type: 'error'});
+            setMessage({ text: INTERNAL_ERROR_MSG, type: 'error' });
         } finally {
             setSubmitting(false);
         }
