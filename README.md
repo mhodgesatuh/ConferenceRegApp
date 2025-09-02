@@ -96,7 +96,22 @@ These macOS tools are installed via [Homebrew](https://brew.sh/). If Homebrew
 is not yet installed:
 
 ```bash
+# Download
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Update
+brew update
+# Node
+brew install node
+# Verify installation
+node -v
+npm -v
+```
+
+If you already had Node.js installed with Homebrew and upgraded it, you may 
+need to relink:
+
+```bash
+brew link --overwrite node
 ```
 
 Install the project development tools

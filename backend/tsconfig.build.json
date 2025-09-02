@@ -1,12 +1,15 @@
 {
     "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+    },
     "include": ["src/**/*"],
     "exclude": [
         "node_modules",
         "dist",
         "tests",
-        "../drizzle.config.ts",
-        "../vitest.config.ts",
-        "../vite.config.ts"
+        "./drizzle.config.ts",
+        "./vitest.config.ts",
+        "./vite.config.ts"
     ]
 }

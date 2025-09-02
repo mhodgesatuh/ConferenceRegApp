@@ -5,6 +5,14 @@ worker_processes auto;
 events { worker_connections 1024; }
 
 http {
+  log_format main_ext '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent '
+                      '"$http_referer" "$http_user_agent" '
+                      'up=$upstream_status proto=$scheme host=$host';
+  access_log /var/log/nginx/access.log main_ext;
+
+  client_max_body_size 1m;
+
   # Upstreams
   upstream conference_backend {
     server conference-backend:8080;
@@ -43,6 +51,13 @@ http {
 
     # API — PRESERVE /api prefix (matches your logs)
     location /api/ {
+      if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type,x-csrf-token" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        return 204;
+      }
       proxy_pass http://conference_backend;   # no trailing slash -> keep /api
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
     }

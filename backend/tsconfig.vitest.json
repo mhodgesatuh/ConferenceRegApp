@@ -1,11 +1,36 @@
 {
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        "types": ["vitest/globals", "node"]
+        // Make tests fast & side effect free
+        "noEmit": true,
+
+        // Tighten target/libs for Node backend tests
+        "target": "ES2022",
+        "lib": ["ES2022"],
+
+        // Match backend runtime to avoid CJS/ESM surprises
+        "module": "CommonJS",
+        "moduleResolution": "node",
+
+        // Paths/aliases for IDE + Vitest (Vitest uses tsconfig for path mapping)
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+
+        // Useful for Vitest + Node types in test files
+        "types": ["node", "vitest/globals"],
+
+        // Sensible defaults
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true
     },
     "include": [
-        "src/**/*",
-        "tests/**/*",
+        "src/**/*.ts",
+        "tests/**/*.ts",
         "vitest.config.ts"
     ],
     "exclude": [

@@ -2,7 +2,7 @@
 
 import { NextFunction, Request, Response, Router } from "express";
 import { log, sendError } from "@/utils/logger";
-import { createSession } from "@/utils/auth";
+import { createSession, requireAuth } from "@/utils/auth";
 import { isDuplicateKey } from "@/utils/dbErrors";
 import { logDbError } from "@/utils/dbErrorLogger";
 import { requirePin } from "@/middleware/requirePin";
@@ -68,17 +68,17 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 
 function ownerOnly(req: Request, res: Response, next: NextFunction) {
     const regId = Number(req.params.id);
-    const auth = (req as any).registrationAuth as { registrationId?: number } | undefined;
-    const authId = Number(auth?.registrationId);
-    if (!auth || Number.isNaN(authId) || authId !== regId) {
+    const authId = Number((req as any).registrationId);  // <- changed
+    if (!authId || Number.isNaN(authId) || authId !== regId) {
         sendError(res, 403, "Unauthorized", { id: regId });
         return;
     }
     next();
 }
 
+
 /* POST / */
-router.post("/", verifyCsrf, async (req, res): Promise<void> => {    if (req.body?.id) {
+router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
     }
@@ -157,7 +157,7 @@ router.post("/", verifyCsrf, async (req, res): Promise<void> => {    if (req.bod
 });
 
 /* PUT /:id — update existing registration */
-router.put("/:id", requirePin, ownerOnly, verifyCsrf, async (req, res): Promise<void> => {    const id = Number(req.params.id);
+router.put("/:id", requireAuth, ownerOnly, verifyCsrf, async (req, res): Promise<void> => {    const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
