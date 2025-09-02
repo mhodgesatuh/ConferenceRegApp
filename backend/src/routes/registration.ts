@@ -6,6 +6,7 @@ import { createSession } from "@/utils/auth";
 import { isDuplicateKey } from "@/utils/dbErrors";
 import { logDbError } from "@/utils/dbErrorLogger";
 import { requirePin } from "@/middleware/requirePin";
+import { verifyCsrf } from "@/middleware/verifyCsrf";
 import {
     generatePin,
     hasInvalidPhones,
@@ -77,8 +78,7 @@ function ownerOnly(req: Request, res: Response, next: NextFunction) {
 }
 
 /* POST / */
-router.post("/", async (req, res): Promise<void> => {
-    if (req.body?.id) {
+router.post("/", verifyCsrf, async (req, res): Promise<void> => {    if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
     }
@@ -157,8 +157,7 @@ router.post("/", async (req, res): Promise<void> => {
 });
 
 /* PUT /:id — update existing registration */
-router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
-    const id = Number(req.params.id);
+router.put("/:id", requirePin, ownerOnly, verifyCsrf, async (req, res): Promise<void> => {    const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
@@ -270,10 +269,11 @@ router.put("/:id", requirePin, ownerOnly, async (req, res): Promise<void> => {
     }
 });
 
-/* POST /login */
+/* POST /login (no CSRF on first login) */
 router.post("/login", async (req, res): Promise<void> => {
-    const email = String(req.body?.email ?? "").trim().toLowerCase();
+
     const pin = String(req.body?.pin ?? "").trim();
+    const email = String(req.body?.email ?? "").trim().toLowerCase();
 
     if (!email || !pin) {
         log.warn("Login failed: missing credentials", {
@@ -303,10 +303,7 @@ router.post("/login", async (req, res): Promise<void> => {
         });
         const csrf = createSession(res, record.registrations.id);
         res.json({
-            registration: {
-                ...record.registrations,
-                loginPin: record.credentials.loginPin,
-            },
+            registration: record.registrations, // do not return loginPin,
             csrf,
         });
     } catch (err) {

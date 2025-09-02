@@ -1,9 +1,8 @@
 // frontend/src/features/registration/RegistrationForm.tsx
-//
 
 import React, {useEffect, useMemo, useReducer, useState} from 'react';
 import {Link} from 'react-router-dom';
-import {ArrowLeft} from 'lucide-react';
+import {ArrowLeft, Eye, EyeOff, Copy} from 'lucide-react';
 
 import {FormField} from '@/data/registrationFormData';
 import {formReducer, initialFormState} from './formReducer';
@@ -12,9 +11,11 @@ import {generatePin} from '@/features/registration/utils';
 import {Button} from '@/components/ui/button';
 import {Message} from '@/components/ui/message';
 import AppLayout from '@/components/layout/AppLayout';
+import {Input} from '@/components/ui/input';
 
 import {useMissingFields} from '@/hooks/useMissingFields';
 import {FieldRenderer} from './FieldFactory';
+import {apiFetch} from '@/lib/api';
 
 import {
     findMissingRequiredFields,
@@ -28,7 +29,7 @@ import {
 } from './formRules';
 
 const PAGE_TITLE = 'Conference Registration';
-const INTERNAL_ERROR_MSG = "Oh snap! Something went wrong. Please contact PCATT, or try again later.";
+const INTERNAL_ERROR_MSG = 'Oh snap! Something went wrong. Please contact us, or try again later.';
 
 type MessageType = '' | 'success' | 'error';
 
@@ -45,13 +46,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         {...initialFormState(fields), ...(initialData || {})}
     );
 
+    const [submitting, setSubmitting] = useState(false);
+
     // UI flags
     const [showId, setShowId] = useState(Boolean(initialData?.id));
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
-    const [message, setMessage] = useState<{ text: string; type: MessageType }>({
-        text: '',
-        type: '',
-    });
+    const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
+
+    // PIN UI
+    const [pinRevealed, setPinRevealed] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -69,7 +73,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         [state.proxyName, state.proxyPhone, state.proxyEmail]
     );
 
-    const visibleFields = useMemo(
+    /* Only the fields marked visible are rendered. */
+    const fieldsForRender = useMemo(
         () =>
             getVisibleFields({
                 fields,
@@ -81,15 +86,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         [fields, state, hasUpdatePrivilege, isSaved, showId]
     );
 
-    // Proxy-related fields are filtered in formRules when editing
-    const fieldsForRender = visibleFields;
-
-    // Effects
+    // --- Effects ---------------------------------------------------------------
 
     // Generate a PIN if missing (first render / new form)
     useEffect(() => {
-        if (typeof state.loginPin === 'string' && state.loginPin === '') {
-            dispatch({type: 'CHANGE_FIELD', name: 'loginPin', value: generatePin(8)});
+        if (!state.loginPin || String(state.loginPin).trim() === '') {
+            const pin = generatePin(8);
+            dispatch({type: 'CHANGE_FIELD', name: 'loginPin', value: pin});
+            setPinRevealed(false);
         }
     }, [state.loginPin]);
 
@@ -100,9 +104,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         }
     }, [proxyDataPresent, state.hasProxy]);
 
-    // Handlers
+    // --- Handlers --------------------------------------------------------------
 
     const validateField = (name: string, value: unknown): string => {
+        // No format error for PIN here; user can see/copy/edit it if needed
+        if (name === 'loginPin') return '';
+
         const field = fields.find((f) => f.name === name);
         if (!field) return '';
         const str = String(value);
@@ -156,7 +163,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         dispatch({type: 'CHANGE_FIELD', name, value: checked});
     };
 
-    // Submit
+    // Copy PIN to clipboard
+    const handleCopyPin = async () => {
+        try {
+            await navigator.clipboard.writeText(String(state.loginPin || ''));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch {
+            setCopied(false);
+        }
+    };
+
+    // --- Submit ---------------------------------------------------------------
 
     const validateAll = (): string[] => {
         const newErrors: Record<string, string> = {};
@@ -170,6 +188,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (submitting) return;
+        setMessage({text: '', type: ''});
 
         const invalid = validateAll();
         if (invalid.length > 0) {
@@ -189,64 +210,43 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
             return;
         }
 
+        // Build payload: include loginPin so the backend stores EXACTLY what the user saw
+        const payload = (({id, ...rest}) => rest)(state);
+        setSubmitting(true);
+
         try {
-            // Exclude read-only fields from payload if desired
-            const {loginPin: _pin, id: _id, ...payload} = state;
+            const data = await apiFetch(
+                '/api/registrations',
+                {method: 'POST', body: JSON.stringify(payload)},
+                csrfToken
+            );
 
-            const res = await fetch('/api/registrations', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-csrf-token': csrfToken || '',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (res.ok) {
-                const data = await res.json().catch(() => ({} as any));
-                if (data.id) {
-                    dispatch({type: 'CHANGE_FIELD', name: 'id', value: data.id});
-                    setShowId(true);
-                    setIsSaved(true);
-                }
-                if (data.loginPin) {
-                    dispatch({type: 'CHANGE_FIELD', name: 'loginPin', value: data.loginPin});
-                }
-                setMessage({text: 'Registration saved successfully.', type: 'success'});
-            } else {
-                const ct = res.headers.get('content-type') ?? '';
-                let data: any = undefined;
-                let msg = '';
-
-                if (ct.includes('application/json')) {
-                    data = await res.json().catch(() => undefined);
-                    const dev = import.meta.env.MODE !== 'production';
-                    msg =
-                        (dev && (data?.cause || data?.error)) ||
-                        data?.error || `(${res.status})`;
-                } else {
-                    msg = (await res.text().catch(() => '')) || `(${res.status})`;
-                }
-
-                if (data && Array.isArray(data.missing) && data.missing.length > 0) {
-                    markMissing(data.missing as string[]);
-                    document.getElementById(data.missing[0])?.focus();
-                }
-
-                console.error('Registration error: ', msg);
-                setMessage({text: INTERNAL_ERROR_MSG, type: 'error'});
+            // Expecting { id } on success
+            if (data?.id) {
+                dispatch({type: 'CHANGE_FIELD', name: 'id', value: data.id});
+                setShowId(true);
+                setIsSaved(true);
             }
-        } catch (err) {
-            console.error('Registration error: ', err);
+
+            setMessage({text: 'Registration saved successfully.', type: 'success'});
+        } catch (err: any) {
+            const server = err?.data;
+            if (server && Array.isArray(server.missing) && server.missing.length > 0) {
+                markMissing(server.missing as string[]);
+                document.getElementById(server.missing[0])?.focus();
+            }
+            console.error('Registration error:', err);
             setMessage({text: INTERNAL_ERROR_MSG, type: 'error'});
+        } finally {
+            setSubmitting(false);
         }
     };
 
     const isError = message.type === 'error';
     const errorFor = (f: FormField) => errors[f.name];
 
-    // Render
+    // --- Render ---------------------------------------------------------------
+
     return (
         <AppLayout>
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -267,6 +267,55 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
                     if (field.type === 'section') {
                         hr = <hr className="my-4"/>;
                     }
+
+                    // Special-case render for the PIN field, but still inside the abstracted loop
+                    if (field.type === 'pin') {
+                        return (
+                            <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
+                                {hr}
+                                <div className="space-y-1">
+                                    <label htmlFor="loginPin" className="text-sm font-medium">
+                                        {field.label}{field.required ? <sup className="text-red-500">*</sup> : null}
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="loginPin"
+                                            name="loginPin"
+                                            type={pinRevealed ? 'text' : 'password'}
+                                            value={String(state.loginPin || '')}
+                                            onChange={handleInputChange}
+                                            readOnly={false} // allow user edits if they prefer a different PIN
+                                            autoComplete="off"
+                                            className="font-mono"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => setPinRevealed(v => !v)}
+                                            aria-pressed={pinRevealed}
+                                            title={pinRevealed ? 'Hide PIN' : 'Reveal PIN'}
+                                        >
+                                            {pinRevealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleCopyPin}
+                                            disabled={!state.loginPin}
+                                            title={copied ? 'Copied!' : 'Copy PIN to clipboard'}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Keep this PIN somewhere safe. You’ll need it to update your registration.
+                                    </p>
+                                </div>
+                            </React.Fragment>
+                        );
+                    }
+
+                    // Default render for all other field types
                     return (
                         <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
                             {hr}
@@ -284,7 +333,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
 
                 <hr className="my-4"/>
                 <div className="flex items-center gap-2">
-                    <Button type="submit">{isSaved ? 'Update Registration' : 'Register'}</Button>
+                    <Button type="submit" disabled={submitting}>
+                        {submitting
+                            ? (isSaved ? 'Updating…' : 'Registering…')
+                            : (isSaved ? 'Update Registration' : 'Register')}
+                    </Button>
                     {message.text && <Message text={message.text} isError={isError}/>}
                 </div>
             </form>

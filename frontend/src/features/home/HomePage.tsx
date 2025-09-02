@@ -1,47 +1,60 @@
 // frontend/src/features/home/HomePage.tsx
-//
 
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {Input} from '@/components/ui/input';
-import {Button} from '@/components/ui/button';
-import {Label} from '@/components/ui/label';
-import {Checkbox} from '@/components/ui/checkbox-wrapper';
-import {Message} from '@/components/ui/message';
-import {isValidEmail} from '../registration/formRules';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox-wrapper';
+import { Message } from '@/components/ui/message';
+import { isValidEmail } from '../registration/formRules';
+import { apiFetch } from '@/lib/api';
+
+type LoginOk = { registration: any; csrf: string };
+type LoginErr = { error?: string };
 
 interface HomePageProps {
-    onSuccess: (data: {registration: any; csrf: string}) => void;
+    onSuccess: (data: { registration: any; csrf: string }) => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
+const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [pin, setPin] = useState('');
     const [requestsRegUpdate, setRequestsRegUpdate] = useState(false);
     const [emailPinChecked, setEmailPinChecked] = useState(false);
     const [pinMessage, setPinMessage] = useState<{ text: string; isError: boolean } | null>(null);
     const [emailError, setEmailError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitting) return;
+        setSubmitting(true);
         try {
-            const res = await fetch('/api/registrations/login', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, pin }),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                onSuccess(data);
-                navigate('/register', {state: {registration: data.registration, csrf: data.csrf}});
-            } else {
-                alert('Invalid login');
-            }
-        } catch (err) {
-            console.error('Login failed', err);
-            alert('Login failed');
+            // No CSRF yet; this is the initial login which returns { registration, csrf }
+            const data = (await apiFetch(
+                '/api/registrations/login',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ email, pin }),
+                }
+            )) as LoginOk | LoginErr;
+
+            // apiFetch throws on !ok, so if we're here it's ok. Still narrow type:
+            const { registration, csrf } = data as LoginOk;
+
+            onSuccess({ registration, csrf });
+            navigate('/register', { state: { registration, csrf } });
+        } catch (err: any) {
+            // apiFetch attaches status & data when possible
+            const msg =
+                (err?.data?.error as string) ||
+                (typeof err?.message === 'string' ? err.message : 'Invalid login');
+            // keep UX minimal here; replace with toast if desired
+            alert(msg);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -60,39 +73,39 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
             setPinMessage(null);
             return;
         }
+        if (!isValidEmail(email) || pin.trim() !== '') {
+            // guard against accidental clicks
+            setEmailPinChecked(false);
+            return;
+        }
 
         try {
-            const params = new URLSearchParams({email});
-            const res = await fetch(
-                `/api/registrations/lost-pin?${params.toString()}`,
-                { credentials: 'include' }
-            );
+            const params = new URLSearchParams({ email });
+            // Lost PIN request occurs pre-login (no CSRF). We expect JSON { sent: true } on success.
+            const res = await fetch(`/api/registrations/lost-pin?${params.toString()}`, {
+                credentials: 'include',
+            });
+
             let data: any = {};
             try {
-                data = await res.json();
+                if ((res.headers.get('content-type') || '').includes('application/json')) {
+                    data = await res.json();
+                }
             } catch {
                 /* ignore parse errors */
             }
 
             if (!res.ok || !data.sent) {
-                const errorText = res.status === 404
-                    ? 'Unknown email address'
-                    : (data.error ?? 'Please contact PCATT');
-                setPinMessage({
-                    text: errorText,
-                    isError: true,
-                });
+                const errorText = res.status === 404 ? 'Unknown email address' : (data.error ?? 'Please contact us');
+                setPinMessage({ text: errorText, isError: true });
                 setEmailPinChecked(false);
                 return;
             }
 
-            setPinMessage({text: 'Sent as requested', isError: false});
+            setPinMessage({ text: 'Sent as requested', isError: false });
         } catch (err) {
             console.error('Lost pin request failed', err);
-            setPinMessage({
-                text: 'Please contact PCATT',
-                isError: true,
-            });
+            setPinMessage({ text: 'Please contact us', isError: true });
             setEmailPinChecked(false);
         }
     };
@@ -111,13 +124,12 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
         }
     }, [pin]);
 
-    const canSubmit = isValidEmail(email) && pin.trim() !== '';
+    const canSubmit = isValidEmail(email) && pin.trim() !== '' && !submitting;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-
             <div className="flex justify-center">
-                <img src="/conference_intro.png" alt="PCATT Logo" className="w-full"/>
+                <img src="/conference_intro.png" alt="Conference Logo" className="w-full" />
             </div>
 
             {/* Primary action - only show when update is NOT selected */}
@@ -129,7 +141,6 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                 </div>
             )}
 
-            {/* Wrapper-based checkbox */}
             <Checkbox
                 id="update-prev-reg"
                 label="Update previous registration"
@@ -137,10 +148,9 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                 onCheckedChange={(val) => setRequestsRegUpdate(Boolean(val))}
             />
 
-            {/* Conditional update section */}
             {requestsRegUpdate && (
                 <div id="update-section" className="space-y-4">
-                    <hr className="my-4"/>
+                    <hr className="my-4" />
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="email">
                             Email<sup className="text-red-500">*</sup>
@@ -157,6 +167,7 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         />
                         {emailError && <Message id="email-error" text={emailError} isError />}
                     </div>
+
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="pin">
                             Pin<sup className="text-red-500">*</sup>
@@ -171,9 +182,13 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                             autoComplete="one-time-code"
                         />
                     </div>
+
                     <div className="flex gap-2">
-                        <Button type="submit" disabled={!canSubmit}>Submit</Button>
+                        <Button type="submit" disabled={!canSubmit}>
+                            {submitting ? 'Submitting…' : 'Submit'}
+                        </Button>
                     </div>
+
                     <Checkbox
                         id="email-pin"
                         label="Please email my pin."
@@ -181,14 +196,12 @@ const HomePage: React.FC<HomePageProps> = ({onSuccess}) => {
                         onCheckedChange={handleEmailPin}
                         disableUnless={isValidEmail(email) && pin.trim() === ''}
                     />
-                    {pinMessage && (
-                        <Message text={pinMessage.text} isError={pinMessage.isError} />
-                    )}
+
+                    {pinMessage && <Message text={pinMessage.text} isError={pinMessage.isError} />}
                 </div>
             )}
         </form>
     );
-
 };
 
 export default HomePage;
