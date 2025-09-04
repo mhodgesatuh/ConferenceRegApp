@@ -1,12 +1,12 @@
 // backend/src/routes/registration.ts
 
 import { NextFunction, Request, Response, Router } from "express";
+import rateLimit from "express-rate-limit";
+import csrf from "csurf";
 import { log, sendError } from "@/utils/logger";
 import { createSession, requireAuth } from "@/utils/auth";
 import { isDuplicateKey } from "@/utils/dbErrors";
 import { logDbError } from "@/utils/dbErrorLogger";
-import { requirePin } from "@/middleware/requirePin";
-import { verifyCsrf } from "@/middleware/verifyCsrf";
 import {
     generatePin,
     hasInvalidPhones,
@@ -50,6 +50,18 @@ interface CreateRegistrationBody {
 }
 
 const router = Router();
+const csrfProtection = csrf({ cookie: true });
+const csrfLogin = csrf({ cookie: true, ignoreMethods: ["POST"] });
+const loginLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const email = (req.body?.email ?? "").toString().trim().toLowerCase();
+        return `${email}|${req.ip}`;
+    },
+});
 
 const SAVE_REGISTRATION_ERROR = "Failed to save registration";
 const REGISTRATION_NOT_FOUND = "Registration not found";
@@ -157,7 +169,7 @@ router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
 });
 
 /* PUT /:id (auth + CSRF; write) */
-router.put("/:id", requireAuth, verifyCsrf, ownerOnly, async (req, res): Promise<void> => {    const id = Number(req.params.id);
+router.put("/:id", requireAuth, csrfProtection, ownerOnly, async (req, res): Promise<void> => {    const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
@@ -270,7 +282,7 @@ router.put("/:id", requireAuth, verifyCsrf, ownerOnly, async (req, res): Promise
 });
 
 /* POST /login (public) -> sets cookie, returns csrf */
-router.post("/login", async (req, res): Promise<void> => {
+router.post("/login", loginLimiter, csrfLogin, async (req, res): Promise<void> => {
 
     const pin = String(req.body?.pin ?? "").trim();
     const email = String(req.body?.email ?? "").trim().toLowerCase();
@@ -301,7 +313,8 @@ router.post("/login", async (req, res): Promise<void> => {
             email,
             registrationId: record.registrations.id,
         });
-        const csrf = createSession(res, record.registrations.id);
+        createSession(res, record.registrations.id);
+        const csrf = req.csrfToken();
         res.json({
             registration: record.registrations, // do not return loginPin,
             csrf,

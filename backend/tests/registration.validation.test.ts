@@ -20,10 +20,6 @@ vi.mock('@/routes/registration.service', () => ({
     updateRegistration: (...args: any[]) => mocks.updateRegistration(...args),
 }));
 
-vi.mock('@/middleware/requirePin', () => ({
-    requirePin: (_req: any, _res: any, next: any) => next(),
-}));
-
 import router from '@/routes/registration';
 
 describe('registration validation', () => {

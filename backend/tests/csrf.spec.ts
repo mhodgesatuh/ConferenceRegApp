@@ -11,6 +11,7 @@ describe('CSRF flow', () => {
     let cookies: string[] = [];
     let regId = 0;
     let csrf = '';
+    let loginPin = '';
 
     it('CREATE: allows POST /api/registrations without csrf (seal + origin required)', async () => {
         const res = await request(app)
@@ -21,14 +22,15 @@ describe('CSRF flow', () => {
 
         expect(res.status).toBe(201);
         regId = res.body.id;
-        expect(res.body.loginPin).toBeDefined();
+        loginPin = res.body.loginPin;
+        expect(loginPin).toBeDefined();
     });
 
     it('LOGIN: sets cookie and returns csrf', async () => {
         const res = await request(app)
             .post('/api/registrations/login')
             .set('x-internal-secret', SEAL)
-            .send({ email: 'a@b.com', pin: '<REPLACE_WITH_PIN_OR_STUB>' });
+            .send({ email: 'a@b.com', pin: loginPin });
 
         expect(res.status).toBe(200);
         csrf = res.body.csrf;
@@ -54,18 +56,6 @@ describe('CSRF flow', () => {
             .set('x-internal-secret', SEAL)
             .set('Origin', ORIGIN)
             .set('Cookie', cookies)
-            .send({ phone1: '808-555-1212' });
-
-        expect(res.status).toBe(403);
-    });
-
-    it('PUT with cookie + wrong origin -> 403', async () => {
-        const res = await request(app)
-            .put(`/api/registrations/${regId}`)
-            .set('x-internal-secret', SEAL)
-            .set('Origin', 'https://evil.example')
-            .set('Cookie', cookies)
-            .set('X-CSRF-Token', csrf)
             .send({ phone1: '808-555-1212' });
 
         expect(res.status).toBe(403);

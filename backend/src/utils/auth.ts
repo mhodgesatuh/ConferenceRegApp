@@ -5,7 +5,6 @@ import crypto from "crypto";
 import cookie from "cookie";
 
 interface Session {
-  csrf: string;
   registrationId: number;
 }
 
@@ -33,15 +32,13 @@ export const requireProxySeal: RequestHandler = (req, res, next) => {
 
 export function createSession(res: Response, registrationId: number) {
   const sid = crypto.randomBytes(16).toString("hex");
-  const csrf = crypto.randomBytes(16).toString("hex");
-  SESSIONS.set(sid, { csrf, registrationId });
+  SESSIONS.set(sid, { registrationId });
   res.cookie("sessionid", sid, {
     httpOnly: true,
     secure: true,
     sameSite: "strict",
     path: "/",
   });
-  return csrf;
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -54,6 +51,5 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     }
     // Expose to downstream
     (req as any).registrationId = sess.registrationId;
-    (req as any).csrf = sess.csrf;
     next();
 }

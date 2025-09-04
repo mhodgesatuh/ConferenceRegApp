@@ -8,6 +8,7 @@ import https from "https";
 import helmet from "helmet";
 import compression from "compression";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import registrationRoutes from "./routes/registration";
 import {log, requestLogger, errorLogger} from "@/utils/logger";
 import {requireProxySeal} from "@/utils/auth";
@@ -23,6 +24,7 @@ const keyPath  = process.env.HTTPS_KEY  || "/certs/localhost-key.pem";
 app.set("trust proxy", 1); // if behind a proxy now or later
 app.use(express.json());
 app.use(compression());
+app.use(cookieParser());
 const uiOrigin = process.env.UI_ORIGIN;
 app.use(cors(uiOrigin ? {
     origin: uiOrigin,
