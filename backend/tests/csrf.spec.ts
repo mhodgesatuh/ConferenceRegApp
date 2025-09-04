@@ -1,8 +1,8 @@
-//  backend/src/__tests__/csrf.spec.ts
+// backend/tests/csrf.spec.ts
 
 import request from 'supertest';
-import { describe, it, expect, beforeAll } from 'vitest';
-import app from '../app-or-server-export'; // export your Express app from index/server
+import { describe, it, expect } from 'vitest';
+import app from '@/app';
 
 const ORIGIN = process.env.UI_ORIGIN || 'https://localhost:8080';
 const SEAL = process.env.INTERNAL_SECRET || 'test-secret';
