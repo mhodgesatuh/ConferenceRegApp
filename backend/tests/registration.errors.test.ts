@@ -18,10 +18,6 @@ vi.mock('@/routes/registration.service', () => ({
     updateRegistration: vi.fn(),
 }));
 
-vi.mock('@/middleware/requirePin', () => ({
-    requirePin: (_req: any, _res: any, next: any) => next(),
-}));
-
 vi.mock('@/utils/email', () => ({
     sendEmail: vi.fn(),
 }));
