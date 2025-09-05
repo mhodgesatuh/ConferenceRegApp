@@ -50,8 +50,15 @@ interface CreateRegistrationBody {
 }
 
 const router = Router();
-const csrfProtection = csrf({ cookie: true });
-const csrfLogin = csrf({ cookie: true, ignoreMethods: ["POST"] });
+
+const csrfCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+};
+
+const csrfProtection = csrf({ cookie: csrfCookieOptions });
+const csrfLogin = csrf({ cookie: csrfCookieOptions, ignoreMethods: ["POST"] });
 const loginLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 10,
