@@ -3,7 +3,6 @@
 import fs from "fs";
 import http from "http";
 import https from "https";
-import path from "path";
 import app from "./app";
 import { log } from "@/utils/logger";
 

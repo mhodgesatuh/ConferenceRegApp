@@ -1,13 +1,12 @@
 // backend/src/app.ts
 
 import express from "express";
-import path from "path";
 import helmet from "helmet";
 import compression from "compression";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import registrationRoutes from "./routes/registration";
-import { log, requestLogger, errorLogger } from "@/utils/logger";
+import { requestLogger, errorLogger } from "@/utils/logger";
 import { requireProxySeal } from "@/utils/auth";
 
 const app = express();

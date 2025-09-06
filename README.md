@@ -30,6 +30,8 @@
 This README presents the technical overview for the developer. See the docs
 folder for application information.
 
+See the docs folder for application documentation.
+
 ## Technologies Used in This Project
 
 - Docker & Docker Compose – Containerization and orchestration 
@@ -174,6 +176,7 @@ npm install -D @types/compression
 npm i module-alias
 npm i -D tsconfig-paths
 npm i -D vitest @types/node supertest
+npm i -D @types/csurf
 ```
 
 ### Frontend (React, Vite)

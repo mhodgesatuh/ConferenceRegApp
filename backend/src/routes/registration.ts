@@ -1,6 +1,6 @@
 // backend/src/routes/registration.ts
 
-import { NextFunction, Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router, type CookieOptions } from "express";
 import rateLimit from "express-rate-limit";
 import csrf from "csurf";
 import { log, sendError } from "@/utils/logger";
@@ -51,17 +51,19 @@ interface CreateRegistrationBody {
 
 const router = Router();
 
-const csrfCookieOptions = {
+/** Typed cookie options for csurf */
+const csrfCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    sameSite: "strict",
+    maxAge: 60 * 60 * 1000, // 1h; match your session lifetime if possible
 };
 
 const csrfProtection = csrf({ cookie: csrfCookieOptions });
 const csrfLogin = csrf({ cookie: csrfCookieOptions, ignoreMethods: ["POST"] });
 const loginLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 10,
+    limit: 10,
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
@@ -87,7 +89,7 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 
 function ownerOnly(req: Request, res: Response, next: NextFunction) {
     const regId = Number(req.params.id);
-    const authId = Number((req as any).registrationId);  // <- changed
+    const authId = Number(req.registrationId);
     if (!authId || Number.isNaN(authId) || authId !== regId) {
         sendError(res, 403, "Unauthorized", { id: regId });
         return;
@@ -97,7 +99,7 @@ function ownerOnly(req: Request, res: Response, next: NextFunction) {
 
 
 /* POST / (public create; CSRF-exempt) */
-router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
+router.post("/", async (req: Request, res: Response): Promise<void> => {    if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
     }
@@ -176,7 +178,7 @@ router.post("/", async (req, res): Promise<void> => {    if (req.body?.id) {
 });
 
 /* PUT /:id (auth + CSRF; write) */
-router.put("/:id", requireAuth, csrfProtection, ownerOnly, async (req, res): Promise<void> => {    const id = Number(req.params.id);
+router.put("/:id", requireAuth, csrfProtection, ownerOnly, async (req: Request, res: Response): Promise<void> => {    const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         sendError(res, 400, "Invalid ID", { raw: req.params.id });
         return;
@@ -289,7 +291,7 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly, async (req, res): Pro
 });
 
 /* POST /login (public) -> sets cookie, returns csrf */
-router.post("/login", loginLimiter, csrfLogin, async (req, res): Promise<void> => {
+router.post("/login", loginLimiter, csrfLogin, async (req: Request, res: Response): Promise<void> => {
 
     const pin = String(req.body?.pin ?? "").trim();
     const email = String(req.body?.email ?? "").trim().toLowerCase();
@@ -337,7 +339,7 @@ router.post("/login", loginLimiter, csrfLogin, async (req, res): Promise<void> =
 });
 
 /* GET /lost-pin?email=addr */
-router.get("/lost-pin", async (req, res): Promise<void> => {
+router.get("/lost-pin", async (req: Request, res: Response): Promise<void> => {
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
     if (!email) {
         sendError(res, 400, "Email required");
@@ -361,7 +363,7 @@ router.get("/lost-pin", async (req, res): Promise<void> => {
 });
 
 /* GET /:id (auth; no CSRF for read) */
-router.get<{ id: string }, any>("/:id", requireAuth, ownerOnly, async (req, res): Promise<void> => {
+router.get<{ id: string }, any>("/:id", requireAuth, ownerOnly, async (req: Request, res: Response): Promise<void> => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
         log.warn("Fetch by id: invalid id", {
@@ -403,7 +405,7 @@ router.get<{ id: string }, any>("/:id", requireAuth, ownerOnly, async (req, res)
 });
 
 // --- Router-level 404 (must be last) ---
-router.all("*", (req, res) => {
+router.all("*", (req: Request, res: Response) => {
     const ROUTE_NOT_FOUND = "Internal error: route not found";
     log.warn(ROUTE_NOT_FOUND, { method: req.method, path: req.originalUrl });
     sendError(res, 404, req.method === "POST" ? ROUTE_NOT_FOUND : "Not found", {

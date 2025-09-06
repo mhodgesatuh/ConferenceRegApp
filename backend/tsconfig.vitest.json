@@ -1,18 +1,21 @@
 {
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        // Make tests fast & side effect free
+        // test-only: compile but don't emit
         "noEmit": true,
 
-        // Tighten target/libs for Node backend tests
+        // Node backend tests
         "target": "ES2022",
         "lib": ["ES2022"],
 
-        // Match backend runtime to avoid CJS/ESM surprises
+        // CJS runtime for backend tests
         "module": "CommonJS",
         "moduleResolution": "node",
 
-        // Paths/aliases for IDE + Vitest (Vitest uses tsconfig for path mapping)
+        // Allow src/ and tests/ side-by-side
+        "rootDir": ".",
+
+        // Path aliases for IDE + Vitest
         "baseUrl": ".",
         "paths": {
             "@/*": ["src/*"]
