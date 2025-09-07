@@ -198,11 +198,12 @@ the project.
 - Ensure `ConferenceRegApp/frontend` is the current working directory.
 
 ```bash
-npx shadcn@latest
-npx shadcn@latest init
-npx shadcn@latest add checkbox
-npx shadcn@latest add input
-npx shadcn@latest add button
+npx shadcn-ui@latest
+npx shadcn-ui@latest init
+npx shadcn-ui@latest add checkbox
+npx shadcn-ui@latest add input
+npx shadcn-ui@latest add button
+npx shadcn-ui@latest add tooltip
 ```
 
 ---

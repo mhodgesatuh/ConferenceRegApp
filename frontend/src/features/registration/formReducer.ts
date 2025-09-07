@@ -7,7 +7,7 @@
 
 import {FormField} from '@/data/registrationFormData';
 
-export type FormValue = string | boolean | number;
+export type FormValue = string | boolean | number | null;
 export type FormState = Record<string, FormValue>;
 
 export const initialFormState = (fields: FormField[]): FormState =>

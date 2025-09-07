@@ -54,7 +54,7 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                     aria-describedby={errorId}
                     className={showErrorStyle ? 'bg-red-100' : undefined}
                 />
-                {hasError && <Message id={errorId} text={error!} isError/>}
+                {hasError && <Message id={errorId} text={error!} isError />}
             </>
         );
     }
@@ -95,7 +95,7 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                             aria-label="Copy PIN"
                             title="copy"
                         >
-                            <Copy className="h-4 w-4"/>
+                            <Copy className="h-4 w-4" />
                         </button>
                         <button
                             type="button"
@@ -104,11 +104,11 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                             aria-label={pinVisible ? 'Hide PIN' : 'Show PIN'}
                             title={pinVisible ? 'hide' : 'show'}
                         >
-                            {pinVisible ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                            {pinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
                 </div>
-                {hasError && <Message id={errorId} text={error!} isError/>}
+                {hasError && <Message id={errorId} text={error!} isError />}
             </div>
         );
     }
@@ -122,6 +122,10 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
     const errorId = hasError ? `${field.name}-error` : undefined;
     const showErrorStyle = isFieldMissing || hasError;
 
+    // Null-safe value: keep inputs controlled without passing null/undefined
+    const raw = state[field.name];
+    const safeValue = typeof raw === 'number' ? raw : (raw ?? '');
+
     return (
         <div key={field.name} className="flex flex-col gap-1">
             <Label htmlFor={field.name}>
@@ -132,7 +136,7 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                 id={field.name}
                 name={field.name}
                 type={inputType}
-                value={state[field.name] as string | number}
+                value={safeValue}
                 onChange={onInputChange}
                 readOnly={isReadOnly}
                 required={field.required}
@@ -141,7 +145,7 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                 aria-describedby={errorId}
                 className={showErrorStyle ? 'bg-red-100' : undefined}
             />
-            {hasError && <Message id={errorId} text={error!} isError/>}
+            {hasError && <Message id={errorId} text={error!} isError />}
         </div>
     );
 }

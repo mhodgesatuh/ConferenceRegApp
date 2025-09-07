@@ -33,6 +33,28 @@ const INTERNAL_ERROR_MSG = 'Oh snap! Something went wrong. Please contact us, or
 
 type MessageType = '' | 'success' | 'error';
 
+const asTrimmedString = (v: unknown) => (v == null ? "" : String(v).trim());
+
+const normalizeForSubmit = (src: Record<string, any>) => {
+    const out: Record<string, any> = {};
+
+    for (const [k, v] of Object.entries(src)) {
+        if (typeof v === "string") {
+            const t = v.trim();
+            out[k] = t === "" ? null : t;     // "" -> null for optional fields
+        } else {
+            out[k] = v;
+        }
+    }
+
+    // If proxy is off, hard-null all proxy fields
+    if (!out.hasProxy) {
+        for (const f of PROXY_FIELDS_SET) out[f] = null;
+    }
+
+    return out;
+};
+
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
@@ -108,20 +130,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     // --- Handlers --------------------------------------------------------------
 
     const validateField = (name: string, value: unknown): string => {
-        // No format error for PIN here; user can see/copy/edit it if needed
-        if (name === 'loginPin') return '';
+        if (name === "loginPin") return "";
 
         const field = fields.find((f) => f.name === name);
-        if (!field) return '';
-        const str = String(value);
-        if (field.type === 'email') {
-            return str.trim() && !isValidEmail(str) ? 'Invalid email address' : '';
+        if (!field) return "";
+
+        const str = asTrimmedString(value);
+        // empty = no format error
+        if (!str) return "";
+
+        if (field.type === "email") {
+            return !isValidEmail(str) ? "Invalid email address" : "";
         }
-        if (field.type === 'phone') {
-            return str.trim() && !isValidPhone(str) ? 'Invalid phone number' : '';
+        if (field.type === "phone") {
+            return !isValidPhone(str) ? "Invalid phone number" : "";
         }
-        return '';
+        return "";
     };
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
@@ -150,10 +176,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         }
 
         // Clear proxy fields if proxy turned off
-        if (name === 'hasProxy' && !checked) {
+        if (name === "hasProxy" && !checked) {
             PROXY_FIELDS_SET.forEach((field) => {
                 clearMissing(field);
-                dispatch({ type: 'CHANGE_FIELD', name: field, value: '' });
+                dispatch({ type: "CHANGE_FIELD", name: field, value: null });
                 setErrors((prev) => {
                     const { [field]: _removed, ...rest } = prev;
                     return rest;
@@ -189,6 +215,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (submitting) return;
         setMessage({ text: '', type: '' });
 
@@ -218,7 +245,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
             // Build payload; never send id; on CREATE, also avoid sending any client PIN
             const { id, loginPin, ...rest } = state as any;
-            const payload = isUpdate ? rest : rest;
+
+            // Normalize for both create & update so backend gets nulls, not ""
+            const payload = normalizeForSubmit(rest);
 
             const data = await apiFetch(
                 url,

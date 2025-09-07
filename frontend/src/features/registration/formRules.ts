@@ -54,6 +54,7 @@ export function canSeeField(
             (field.type === 'section' && field.name === 'section-proxy'))
     )
         return false;
+
     if (!isSaved && CANCEL_FIELDS_SET.has(field.name)) return false;
     if (!state.hasProxy && PROXY_FIELDS_SET.has(field.name)) return false;
     if (field.scope === 'admin' && !hasUpdatePrivilege) return false;
