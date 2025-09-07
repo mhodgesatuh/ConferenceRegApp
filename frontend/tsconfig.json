@@ -19,7 +19,12 @@
         "noEmit": true,
 
         "baseUrl": ".",
-        "paths": { "@/*": ["src/*"] },
+        "paths": {
+            "@/*": ["src/*"],
+            "@/components/*": ["src/components/*"],
+            "@/lib/*": ["src/lib/*"],
+            "@/hooks/*": ["src/hooks/*"]
+        },
 
         "types": ["vite/client", "vitest/globals"]  // drop "node" here
     },

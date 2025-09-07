@@ -1,21 +1,28 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, {useEffect, useMemo, useReducer, useState} from 'react';
-import {Link} from 'react-router-dom';
-import {ArrowLeft, Copy, Eye, EyeOff} from 'lucide-react';
+import React, { useEffect, useMemo, useReducer, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Copy, Eye, EyeOff } from "lucide-react";
 
-import {FormField} from '@/data/registrationFormData';
-import {formReducer, initialFormState} from './formReducer';
-import {generatePin} from '@/features/registration/utils';
+import { FormField } from "@/data/registrationFormData";
+import { formReducer, initialFormState } from "./formReducer";
+import { generatePin } from "@/features/registration/utils";
 
-import {Button} from '@/components/ui/button';
-import {Message} from '@/components/ui/message';
-import AppLayout from '@/components/layout/AppLayout';
-import {Input} from '@/components/ui/input';
+import {
+    Button,
+    Input,
+    Message,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui";
 
-import {useMissingFields} from '@/hooks/useMissingFields';
-import {FieldRenderer} from './FieldFactory';
-import {apiFetch} from '@/lib/api';
+import AppLayout from "@/components/layout/AppLayout";
+import { useMissingFields } from "@/hooks/useMissingFields";
+import { FieldRenderer } from "./FieldFactory";
+import { apiFetch } from "@/lib/api";
+
 
 import {
     findMissingRequiredFields,
@@ -341,15 +348,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                                         >
                                             {pinRevealed ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={handleCopyPin}
-                                            disabled={!state.loginPin}
-                                            title={copied ? 'Copied!' : 'Copy PIN to clipboard'}
-                                        >
-                                            <Copy className="h-4 w-4"/>
-                                        </Button>
+                                        <TooltipProvider>
+                                            <Tooltip open={copied}>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        onClick={handleCopyPin}
+                                                        disabled={!state.loginPin}
+                                                        aria-label="Copy PIN to clipboard"
+                                                    >
+                                                        <Copy className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" align="center" className="px-2 py-1 text-xs">
+                                                    Copied
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         Keep this PIN somewhere safe. You’ll need it to update your registration.

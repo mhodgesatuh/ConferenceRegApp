@@ -3,7 +3,6 @@
 // Features:
 // - Change background color for success and error messages.
 // - Allow message to be dismissed.
-//
 
 import * as React from 'react';
 import {X} from 'lucide-react';
