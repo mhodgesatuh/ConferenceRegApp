@@ -101,5 +101,37 @@ describe('registration validation', () => {
         });
         expect(mocks.updateRegistration).not.toHaveBeenCalled();
     });
+
+    test('update allows optional fields to be omitted', async () => {
+        const app = express();
+        app.use(express.json());
+        app.use((req, _res, next) => {
+            (req as any).registrationAuth = { registrationId: 1 };
+            next();
+        });
+        app.use('/', router);
+
+        mocks.updateRegistration.mockResolvedValue({ rowsAffected: 1 });
+        mocks.getRegistrationWithPinById.mockResolvedValue([
+            {
+                registrations: {
+                    id: 1,
+                    email: 'user@example.com',
+                    lastName: 'X',
+                    question1: 'a',
+                    question2: 'b',
+                    firstName: 'John',
+                },
+                credentials: { loginPin: '12345678' },
+            },
+        ]);
+
+        const res = await request(app)
+            .put('/1')
+            .send({ firstName: 'John' });
+
+        expect(res.status).toBe(200);
+        expect(mocks.updateRegistration).toHaveBeenCalledWith(1, { firstName: 'John' });
+    });
 });
 

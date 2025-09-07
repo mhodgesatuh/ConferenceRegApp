@@ -13,6 +13,7 @@ import {
     hasInvalidPhones,
     isValidEmail,
     missingRequiredFields,
+    REQUIRED_FIELDS,
     toNull,
     toTinyInt,
 } from "./registration.utils";
@@ -106,7 +107,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         return;
     }
 
-    const missing = missingRequiredFields(req.body);
+    const missing = missingRequiredFields(req.body, false, REQUIRED_FIELDS);
     if (missing.length) {
         sendError(res, 400, "Missing required information", { missing });
         return;
@@ -196,7 +197,7 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
             return;
         }
 
-        const missing = missingRequiredFields(req.body, true);
+        const missing = missingRequiredFields(req.body, true, REQUIRED_FIELDS);
         if (missing.length) {
             sendError(res, 400, "Missing required information", { missing });
             return;
