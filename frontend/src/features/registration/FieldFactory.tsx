@@ -20,6 +20,7 @@ type Props = {
 
 export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInputChange, error }: Props) {
     const [pinVisible, setPinVisible] = React.useState(false);
+    const [copied, setCopied] = React.useState(false);
 
     if (field.type === 'section') {
         return <Section key={`section-${field.label}`}>{field.label}</Section>;
@@ -61,7 +62,11 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
 
     if (field.type === 'pin') {
         const pinValue = String(state[field.name] ?? '');
-        const copyPin = () => navigator.clipboard.writeText(pinValue);
+        const copyPin = async () => {
+            await navigator.clipboard.writeText(pinValue);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1000);
+        };
 
         const hasError = Boolean(error);
         const isFieldMissing = isMissing(field.name);
@@ -88,15 +93,25 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                         className={`${showErrorStyle ? 'bg-red-100' : ''} pr-16`}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
-                        <button
-                            type="button"
-                            onClick={copyPin}
-                            className="p-1 text-muted-foreground hover:text-foreground"
-                            aria-label="Copy PIN"
-                            title="copy"
-                        >
-                            <Copy className="h-4 w-4"/>
-                        </button>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={copyPin}
+                                className="p-1 text-muted-foreground hover:text-foreground"
+                                aria-label="Copy PIN"
+                                title={copied ? 'copied' : 'copy'}
+                            >
+                                <Copy className="h-4 w-4"/>
+                            </button>
+                            {copied && (
+                                <span
+                                    role="tooltip"
+                                    className="absolute -top-6 right-0 rounded bg-foreground px-1 text-xs text-background"
+                                >
+                                    copied
+                                </span>
+                            )}
+                        </div>
                         <button
                             type="button"
                             onClick={() => setPinVisible((v) => !v)}
