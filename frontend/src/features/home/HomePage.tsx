@@ -8,13 +8,12 @@ import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Message} from '@/components/ui/message';
 import {isValidEmail} from '../registration/formRules';
-import {apiFetch} from '@/lib/api';
+import {apiFetch, saveCsrf} from '@/lib/api';
 
 type LoginOk = { registration: any; csrf: string; csrfHeader?: string };
-type LoginErr = { error?: string };
 
 interface HomePageProps {
-    onSuccess: (data: { registration: any; csrf: string; csrfHeader?: string }) => void; // <—
+    onSuccess: (data: { registration: any }) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
@@ -31,27 +30,25 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
         e.preventDefault();
         if (submitting) return;
         setSubmitting(true);
-        try {
-            // No CSRF yet; this is the initial login which returns { registration, csrf }
-            const data = (await apiFetch(
-                '/api/registrations/login',
-                {
-                    method: 'POST',
-                    body: JSON.stringify({ email, pin }),
-                }
-            )) as LoginOk | LoginErr;
 
-            // apiFetch throws on !ok, so if we're here it's ok. Still narrow type:
+        try {
+            const data = await apiFetch("/api/registrations/login", {
+                method: "POST",
+                body: JSON.stringify({ email, pin }),
+            });
+
             const { registration, csrf, csrfHeader } = data as LoginOk;
 
-            onSuccess({ registration, csrf, csrfHeader });
-            navigate('/register', { state: { registration, csrf, csrfHeader } });
+            // Persist CSRF for all subsequent modifying requests
+            saveCsrf(csrf, csrfHeader || "x-csrf-token");
+
+            // Only pass registration forward
+            onSuccess({ registration }); // if you still need this callback elsewhere
+            navigate("/register", { state: { registration } });
         } catch (err: any) {
-            // apiFetch attaches status & data when possible
             const msg =
                 (err?.data?.error as string) ||
-                (typeof err?.message === 'string' ? err.message : 'Invalid login');
-            // keep UX minimal here; replace with toast if desired
+                (typeof err?.message === "string" ? err.message : "Invalid login");
             alert(msg);
         } finally {
             setSubmitting(false);

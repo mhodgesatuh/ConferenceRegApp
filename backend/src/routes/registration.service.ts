@@ -35,7 +35,6 @@ export async function createRegistration(values: any, loginPin: string) {
     });
 }
 
-
 export type LostPinResult =
     | { ok: true }
     | { ok: false; code: "not_found_registration" | "not_found_credential" };

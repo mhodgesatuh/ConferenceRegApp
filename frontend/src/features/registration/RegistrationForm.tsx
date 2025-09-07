@@ -1,27 +1,17 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useEffect, useMemo, useReducer, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Copy, Eye, EyeOff } from "lucide-react";
+import React, {useEffect, useMemo, useReducer, useState} from "react";
+import {Link} from "react-router-dom";
+import {ArrowLeft, Copy, Eye, EyeOff} from "lucide-react";
 
-import { FormField } from "@/data/registrationFormData";
-import { formReducer, initialFormState } from "./formReducer";
-import { generatePin } from "@/features/registration/utils";
+import {FormField} from "@/data/registrationFormData";
+import {formReducer, initialFormState} from "./formReducer";
+import {generatePin} from "@/features/registration/utils";
 
-import {
-    Button,
-    Input,
-    Message,
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui";
-
-import AppLayout from "@/components/layout/AppLayout";
-import { useMissingFields } from "@/hooks/useMissingFields";
-import { FieldRenderer } from "./FieldFactory";
-import { apiFetch } from "@/lib/api";
+import {Button, Input, Message, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,} from "@/components/ui";
+import {useMissingFields} from "@/hooks/useMissingFields";
+import {FieldRenderer} from "./FieldFactory";
+import {apiFetch} from "@/lib/api";
 
 
 import {
@@ -65,11 +55,9 @@ const normalizeForSubmit = (src: Record<string, any>) => {
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
-    csrfToken?: string;
-    csrfHeader?: string;
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData, csrfToken, csrfHeader }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData }) => {
     // Reducer-backed form state
     const [state, dispatch] = useReducer(
         formReducer,
@@ -155,10 +143,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
         return "";
     };
 
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, type, value, valueAsNumber } = e.target;
-        const parsed = type === 'number' ? (isNaN(valueAsNumber) ? 0 : valueAsNumber) : value;
+        const parsed = type === 'number' ? (isNaN(valueAsNumber) ? '' : valueAsNumber) : value;
         clearMissing(name);
         dispatch({ type: 'CHANGE_FIELD', name, value: parsed });
         const error = validateField(name, parsed);
@@ -256,13 +243,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
             // Normalize for both create & update so backend gets nulls, not ""
             const payload = normalizeForSubmit(rest);
 
-            const data = await apiFetch(
-                url,
-                { method, body: JSON.stringify(payload) },
-                // only send CSRF on authenticated updates
-                isUpdate ? csrfToken : undefined,
-                csrfHeader || "x-csrf-token"
-            );
+            const data = await apiFetch(url, {
+                method,
+                body: JSON.stringify(payload),
+            });
 
             if (!isUpdate) {
                 // Expecting { id, loginPin } on create
@@ -299,110 +283,108 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
     // --- Render ---------------------------------------------------------------
 
     return (
-        <AppLayout>
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                <header className="pb-2 mb-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                        <Link to="/home" className="flex items-center gap-1 text-primary hover:underline">
-                            <ArrowLeft className="h-4 w-4"/>
-                            Home
-                        </Link>
-                        <h1 className="text-xl sm:text-2xl font-semibold text-center w-full">
-                            {PAGE_TITLE}
-                        </h1>
-                    </div>
-                </header>
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <header className="pb-2 mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                    <Link to="/home" className="flex items-center gap-1 text-primary hover:underline">
+                        <ArrowLeft className="h-4 w-4"/>
+                        Home
+                    </Link>
+                    <h1 className="text-xl sm:text-2xl font-semibold text-center w-full">
+                        {PAGE_TITLE}
+                    </h1>
+                </div>
+            </header>
 
-                {fieldsForRender.map((field) => {
-                    let hr = null;
-                    if (field.type === 'section') {
-                        hr = <hr className="my-4"/>;
-                    }
+            {fieldsForRender.map((field) => {
+                let hr = null;
+                if (field.type === 'section') {
+                    hr = <hr className="my-4"/>;
+                }
 
-                    // Special-case render for the PIN field, but still inside the abstracted loop
-                    if (field.type === 'pin') {
-                        return (
-                            <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
-                                {hr}
-                                <div className="space-y-1">
-                                    <label htmlFor="loginPin" className="text-sm font-medium">
-                                        {field.label}{field.required ? <sup className="text-red-500">*</sup> : null}
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="loginPin"
-                                            name="loginPin"
-                                            type={pinRevealed ? 'text' : 'password'}
-                                            value={String(state.loginPin || '')}
-                                            onChange={handleInputChange}
-                                            readOnly={false} // allow user edits if they prefer a different PIN
-                                            autoComplete="off"
-                                            className="font-mono"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => setPinRevealed(v => !v)}
-                                            aria-pressed={pinRevealed}
-                                            title={pinRevealed ? 'Hide PIN' : 'Reveal PIN'}
-                                        >
-                                            {pinRevealed ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                        </Button>
-                                        <TooltipProvider>
-                                            <Tooltip open={copied}>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        onClick={handleCopyPin}
-                                                        disabled={!state.loginPin}
-                                                        aria-label="Copy PIN to clipboard"
-                                                    >
-                                                        <Copy className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" align="center" className="px-2 py-1 text-xs">
-                                                    Copied
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Keep this PIN somewhere safe. You’ll need it to update your registration.
-                                    </p>
-                                </div>
-                            </React.Fragment>
-                        );
-                    }
-
-                    // Default render for all other field types
+                // Special-case render for the PIN field, but still inside the abstracted loop
+                if (field.type === 'pin') {
                     return (
                         <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
                             {hr}
-                            <FieldRenderer
-                                field={field}
-                                state={state}
-                                isMissing={isMissing}
-                                onCheckboxChange={handleCheckboxChange}
-                                onInputChange={handleInputChange}
-                                error={errorFor(field)}
-                            />
+                            <div className="space-y-1">
+                                <label htmlFor="loginPin" className="text-sm font-medium">
+                                    {field.label}{field.required ? <sup className="text-red-500">*</sup> : null}
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id="loginPin"
+                                        name="loginPin"
+                                        type={pinRevealed ? 'text' : 'password'}
+                                        value={String(state.loginPin || '')}
+                                        onChange={handleInputChange}
+                                        readOnly={false} // allow user edits if they prefer a different PIN
+                                        autoComplete="off"
+                                        className="font-mono"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => setPinRevealed(v => !v)}
+                                        aria-pressed={pinRevealed}
+                                        title={pinRevealed ? 'Hide PIN' : 'Reveal PIN'}
+                                    >
+                                        {pinRevealed ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                                    </Button>
+                                    <TooltipProvider>
+                                        <Tooltip open={copied}>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    onClick={handleCopyPin}
+                                                    disabled={!state.loginPin}
+                                                    aria-label="Copy PIN to clipboard"
+                                                >
+                                                    <Copy className="h-4 w-4"/>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" align="center" className="px-2 py-1 text-xs">
+                                                Copied
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Keep this PIN somewhere safe. You’ll need it to update your registration.
+                                </p>
+                            </div>
                         </React.Fragment>
                     );
-                })}
+                }
 
-                <hr className="my-4"/>
-                <div className="flex items-center gap-2">
-                    <Button type="submit" disabled={submitting}>
-                        {submitting
-                            ? (isSaved ? 'Updating…' : 'Registering…')
-                            : (isSaved ? 'Update Registration' : 'Register')}
-                    </Button>
-                    {message.text && <Message text={message.text} isError={isError}/>}
-                </div>
-            </form>
-        </AppLayout>
+                // Default render for all other field types
+                return (
+                    <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
+                        {hr}
+                        <FieldRenderer
+                            field={field}
+                            state={state}
+                            isMissing={isMissing}
+                            onCheckboxChange={handleCheckboxChange}
+                            onInputChange={handleInputChange}
+                            error={errorFor(field)}
+                        />
+                    </React.Fragment>
+                );
+            })}
+
+            <hr className="my-4"/>
+            <div className="flex items-center gap-2">
+                <Button type="submit" disabled={submitting}>
+                    {submitting
+                        ? (isSaved ? 'Updating…' : 'Registering…')
+                        : (isSaved ? 'Update Registration' : 'Register')}
+                </Button>
+                {message.text && <Message text={message.text} isError={isError}/>}
+            </div>
+        </form>
     );
 };
 
