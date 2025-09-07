@@ -44,7 +44,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'loginPin',
-        label: 'Login Pin',
+        label: 'Login PIN',
         type: 'pin',
         required: true,
         scope: 'registration',
