@@ -2,7 +2,7 @@
 
 import React, {useEffect, useMemo, useReducer, useState} from 'react';
 import {Link} from 'react-router-dom';
-import {ArrowLeft, Eye, EyeOff, Copy} from 'lucide-react';
+import {ArrowLeft, Copy, Eye, EyeOff} from 'lucide-react';
 
 import {FormField} from '@/data/registrationFormData';
 import {formReducer, initialFormState} from './formReducer';
@@ -37,13 +37,14 @@ type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
     csrfToken?: string;
+    csrfHeader?: string;
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData, csrfToken}) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData, csrfToken, csrfHeader }) => {
     // Reducer-backed form state
     const [state, dispatch] = useReducer(
         formReducer,
-        {...initialFormState(fields), ...(initialData || {})}
+        { ...initialFormState(fields), ...(initialData || {}) }
     );
 
     const [submitting, setSubmitting] = useState(false);
@@ -51,7 +52,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
     // UI flags
     const [showId, setShowId] = useState(Boolean(initialData?.id));
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
-    const [message, setMessage] = useState<{ text: string; type: MessageType }>({text: '', type: ''});
+    const [message, setMessage] = useState<{ text: string; type: MessageType }>({ text: '', type: '' });
 
     // PIN UI
     const [pinRevealed, setPinRevealed] = useState(false);
@@ -60,7 +61,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Missing-field helper
-    const {markMissing, clearMissing, isMissing} = useMissingFields();
+    const { markMissing, clearMissing, isMissing } = useMissingFields();
 
     // Derived facts
     const hasUpdatePrivilege = useMemo(
@@ -92,7 +93,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
     useEffect(() => {
         if (!state.loginPin || String(state.loginPin).trim() === '') {
             const pin = generatePin(8);
-            dispatch({type: 'CHANGE_FIELD', name: 'loginPin', value: pin});
+            dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: pin });
             setPinRevealed(false);
         }
     }, [state.loginPin]);
@@ -100,7 +101,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
     // Enforce proxy consistency: if proxy data exists, hasProxy must be true
     useEffect(() => {
         if (proxyDataPresent && !state.hasProxy) {
-            dispatch({type: 'CHANGE_FIELD', name: 'hasProxy', value: true});
+            dispatch({ type: 'CHANGE_FIELD', name: 'hasProxy', value: true });
         }
     }, [proxyDataPresent, state.hasProxy]);
 
@@ -123,14 +124,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, type, value, valueAsNumber} = e.target;
+        const { name, type, value, valueAsNumber } = e.target;
         const parsed = type === 'number' ? (isNaN(valueAsNumber) ? 0 : valueAsNumber) : value;
         clearMissing(name);
-        dispatch({type: 'CHANGE_FIELD', name, value: parsed});
+        dispatch({ type: 'CHANGE_FIELD', name, value: parsed });
         const error = validateField(name, parsed);
         setErrors((prev) => {
-            const {[name]: _removed, ...rest} = prev;
-            return error ? {...rest, [name]: error} : rest;
+            const { [name]: _removed, ...rest } = prev;
+            return error ? { ...rest, [name]: error } : rest;
         });
     };
 
@@ -152,15 +153,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
         if (name === 'hasProxy' && !checked) {
             PROXY_FIELDS_SET.forEach((field) => {
                 clearMissing(field);
-                dispatch({type: 'CHANGE_FIELD', name: field, value: ''});
+                dispatch({ type: 'CHANGE_FIELD', name: field, value: '' });
                 setErrors((prev) => {
-                    const {[field]: _removed, ...rest} = prev;
+                    const { [field]: _removed, ...rest } = prev;
                     return rest;
                 });
             });
         }
 
-        dispatch({type: 'CHANGE_FIELD', name, value: checked});
+        dispatch({ type: 'CHANGE_FIELD', name, value: checked });
     };
 
     // Copy PIN to clipboard
@@ -217,13 +218,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
 
             // Build payload; never send id; on CREATE, also avoid sending any client PIN
             const { id, loginPin, ...rest } = state as any;
-            const payload = isUpdate ? { ...rest } : { ...rest, loginPin: undefined };
+            const payload = isUpdate ? rest : rest;
 
             const data = await apiFetch(
                 url,
                 { method, body: JSON.stringify(payload) },
                 // only send CSRF on authenticated updates
-                isUpdate ? csrfToken : undefined
+                isUpdate ? csrfToken : undefined,
+                csrfHeader || "x-csrf-token"
             );
 
             if (!isUpdate) {
@@ -308,7 +310,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
                                             aria-pressed={pinRevealed}
                                             title={pinRevealed ? 'Hide PIN' : 'Reveal PIN'}
                                         >
-                                            {pinRevealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            {pinRevealed ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                                         </Button>
                                         <Button
                                             type="button"
@@ -317,7 +319,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({fields, initialData,
                                             disabled={!state.loginPin}
                                             title={copied ? 'Copied!' : 'Copy PIN to clipboard'}
                                         >
-                                            <Copy className="h-4 w-4" />
+                                            <Copy className="h-4 w-4"/>
                                         </Button>
                                     </div>
                                     <p className="text-xs text-muted-foreground">

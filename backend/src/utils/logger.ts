@@ -1,10 +1,9 @@
 // backend/src/utils/logger.ts
-//
 
-import { Logger } from "tslog";
+import {Logger} from "tslog";
 import fs from "fs";
 import path from "path";
-import type { NextFunction, Request, Response } from "express";
+import type {NextFunction, Request, Response} from "express";
 
 /** --- paths & config --- */
 // Always put logs in the shared top-level logs/ directory
@@ -64,7 +63,11 @@ log.attachTransport((raw: unknown) => {
         .map((k) => {
             const a = o[k];
             if (typeof a === "string") return a;
-            try { return JSON.stringify(a); } catch { return String(a); }
+            try {
+                return JSON.stringify(a);
+            } catch {
+                return String(a);
+            }
         })
         .join(" ");
 

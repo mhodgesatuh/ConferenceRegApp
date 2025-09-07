@@ -17,7 +17,7 @@
 //    required      Optional, set to true if needed
 //    scope         The scope determines when it will get displayed
 //    priv          Flag a field as being a privileged role
-//
+
 export interface FormField {
     name: string;
     label: string;

@@ -1,9 +1,8 @@
 // frontend/src/hooks/useMissingFields.ts
 //
 // Hook for managing missing required fields in a form.
-//
 
-import { useState } from 'react';
+import {useState} from 'react';
 
 export function useMissingFields() {
 

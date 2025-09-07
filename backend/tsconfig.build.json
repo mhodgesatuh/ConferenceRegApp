@@ -1,7 +1,15 @@
 {
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+        "composite": true,
+        "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
+        "sourceMap": true,
+        "inlineSources": true,
+        "incremental": true
+
+        // Optional if you publish types:
+        // "declaration": true,
+        // "declarationMap": true
     },
     "include": ["src/**/*"],
     "exclude": [
@@ -9,7 +17,6 @@
         "dist",
         "tests",
         "./drizzle.config.ts",
-        "./vitest.config.ts",
-        "./vite.config.ts"
+        "./vitest.config.ts"
     ]
 }

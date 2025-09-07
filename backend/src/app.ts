@@ -6,8 +6,8 @@ import compression from "compression";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import registrationRoutes from "./routes/registration";
-import { requestLogger, errorLogger } from "@/utils/logger";
-import { requireProxySeal } from "@/utils/auth";
+import {errorLogger, requestLogger} from "@/utils/logger";
+import {requireProxySeal} from "@/utils/auth";
 
 const app = express();
 
@@ -21,7 +21,7 @@ const uiOrigin = process.env.UI_ORIGIN;
 app.use(cors(uiOrigin ? {
     origin: uiOrigin,
     credentials: true,
-    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ['Content-Type', 'x-csrf-token', 'X-CSRF-Token'],
 } : { origin: false }));
 

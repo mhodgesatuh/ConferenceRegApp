@@ -1,5 +1,4 @@
 // frontend/src/features/registration/utils.ts
-//
 
 // Generate a random Pin for a new registration user.
 export function generatePin(length: number): string {

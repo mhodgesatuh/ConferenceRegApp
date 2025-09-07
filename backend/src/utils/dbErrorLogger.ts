@@ -1,6 +1,6 @@
 // backend/src/utils/dbErrorLogger.ts
 
-import { dbErrorDetails } from "./dbErrors";
+import {dbErrorDetails} from "./dbErrors";
 
 /**
  * Log a database-related error with standardized fields.

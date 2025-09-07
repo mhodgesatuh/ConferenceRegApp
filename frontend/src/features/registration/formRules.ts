@@ -1,5 +1,4 @@
 // frontend/src/features/registration/formRules.ts
-//
 
 import {FormField} from '@/data/registrationFormData';
 
@@ -45,7 +44,7 @@ export function canSeeField(
     field: FormField,
     ctx: { state: Record<string, any>; hasUpdatePrivilege: boolean; isSaved: boolean; showId: boolean }
 ): boolean {
-    const {state, hasUpdatePrivilege, isSaved, showId} = ctx;
+    const { state, hasUpdatePrivilege, isSaved, showId } = ctx;
 
     if (!showId && field.name === 'id') return false;
     if (
@@ -72,7 +71,7 @@ export function getVisibleFields(params: {
     isSaved: boolean;
     showId: boolean;
 }): FormField[] {
-    const {fields, ...ctx} = params;
+    const { fields, ...ctx } = params;
     return fields.filter((f) => canSeeField(f, ctx));
 }
 

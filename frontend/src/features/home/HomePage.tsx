@@ -1,20 +1,20 @@
 // frontend/src/features/home/HomePage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox-wrapper';
-import { Message } from '@/components/ui/message';
-import { isValidEmail } from '../registration/formRules';
-import { apiFetch } from '@/lib/api';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
+import {Label} from '@/components/ui/label';
+import {Checkbox} from '@/components/ui/checkbox-wrapper';
+import {Message} from '@/components/ui/message';
+import {isValidEmail} from '../registration/formRules';
+import {apiFetch} from '@/lib/api';
 
-type LoginOk = { registration: any; csrf: string };
+type LoginOk = { registration: any; csrf: string; csrfHeader?: string };
 type LoginErr = { error?: string };
 
 interface HomePageProps {
-    onSuccess: (data: { registration: any; csrf: string }) => void;
+    onSuccess: (data: { registration: any; csrf: string; csrfHeader?: string }) => void; // <—
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
@@ -42,10 +42,10 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
             )) as LoginOk | LoginErr;
 
             // apiFetch throws on !ok, so if we're here it's ok. Still narrow type:
-            const { registration, csrf } = data as LoginOk;
+            const { registration, csrf, csrfHeader } = data as LoginOk;
 
-            onSuccess({ registration, csrf });
-            navigate('/register', { state: { registration, csrf } });
+            onSuccess({ registration, csrf, csrfHeader });
+            navigate('/register', { state: { registration, csrf, csrfHeader } });
         } catch (err: any) {
             // apiFetch attaches status & data when possible
             const msg =
@@ -129,7 +129,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-center">
-                <img src="/conference_intro.png" alt="Conference Logo" className="w-full" />
+                <img src="/conference_intro.png" alt="Conference Logo" className="w-full"/>
             </div>
 
             {/* Primary action - only show when update is NOT selected */}
@@ -150,7 +150,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
 
             {requestsRegUpdate && (
                 <div id="update-section" className="space-y-4">
-                    <hr className="my-4" />
+                    <hr className="my-4"/>
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="email">
                             Email<sup className="text-red-500">*</sup>
@@ -165,7 +165,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                             aria-invalid={Boolean(emailError)}
                             aria-describedby={emailError ? 'email-error' : undefined}
                         />
-                        {emailError && <Message id="email-error" text={emailError} isError />}
+                        {emailError && <Message id="email-error" text={emailError} isError/>}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -197,7 +197,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                         disableUnless={isValidEmail(email) && pin.trim() === ''}
                     />
 
-                    {pinMessage && <Message text={pinMessage.text} isError={pinMessage.isError} />}
+                    {pinMessage && <Message text={pinMessage.text} isError={pinMessage.isError}/>}
                 </div>
             )}
         </form>

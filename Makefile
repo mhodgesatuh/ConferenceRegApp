@@ -12,6 +12,9 @@ SERVICE_DB := conference-db
 DEBUG_PORT := 9229
 DEBUG_VITEST_PORT := 9230
 
+# Frontend npm runner
+FRONTEND_NPM := cd $(FRONTEND_DIR) && npm
+
 # Profile selection: default to dev unless ENV_PROFILE=prod
 PROFILE := $(if $(filter $(ENV_PROFILE),prod),prod,dev)
 
@@ -27,6 +30,9 @@ ECHO_PROFILE := @echo "ENV_PROFILE=$(PROFILE)  ENV_FILE=$(ENV_FILE)"
 SET_BACKEND_ENV := set -a && . $(CURDIR)/$(ENV_FILE) && set +a && cd $(BACKEND_DIR) &&
 
 RUN_IN_BACKEND = $(COMPOSE) run --rm $(SERVICE_BACKEND) sh -lc
+
+# Database volume (override if your compose file uses a different name)
+VOLUME_DB ?= mariadb_data
 
 ##–––––– Logs ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
@@ -86,7 +92,7 @@ backend-shell: ## Open a shell in the backend container (current profile)
 ensure-drizzle-deps:
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && \
+	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
 	  npm ci && \
 	  npm ls drizzle-kit >/dev/null 2>&1 || npm install --no-fund --no-audit -D drizzle-kit@latest tsx@latest; \
 	  npm ls drizzle-orm >/dev/null 2>&1 || npm install --no-fund --no-audit drizzle-orm@latest'
@@ -94,23 +100,22 @@ ensure-drizzle-deps:
 generate: ensure-drizzle-deps ## Diff schema locally → write SQL + journal
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && \
-	  ./node_modules/.bin/drizzle-kit generate && \
+	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
+	  $(DRIZZLE) generate && \
 	  echo " - migration files written to backend/drizzle/migrations/"'
 
 schema: ensure-drizzle-deps ## Incrementally apply only new migrations
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && \
-	  ./node_modules/.bin/drizzle-kit migrate'
+	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
+	  $(DRIZZLE) migrate'
 
 baseline: ensure-drizzle-deps ## Snapshot current schema into “init” migration
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
-	@$(RUN_IN_BACKEND) 'cd /app/backend && \
-	  ./node_modules/.bin/drizzle-kit generate --name init && \
+	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
+	  $(DRIZZLE) generate --name init && \
 	  echo " - baseline migration written to backend/drizzle/migrations/"'
-
 
 drop-tables: ## Drop all existing tables in the database
 	$(ECHO_PROFILE)
@@ -126,8 +131,8 @@ reset-db: ## Completely remove and recreate the database (current profile/env)
 	$(ECHO_PROFILE)
 	@echo " - removing containers and volumes…"
 	$(COMPOSE) down --volumes --remove-orphans || true
-	@echo " - force-removing mariadb_data volume (if present)…"
-	-@docker volume rm mariadb_data >/dev/null 2>&1 || true
+	@echo " - force-removing $(VOLUME_DB) volume (if present)…"
+	-@docker volume rm $(VOLUME_DB) >/dev/null 2>&1 || true
 	@echo " - recreating fresh database from $(ENV_FILE)…"
 	$(COMPOSE) up -d $(SERVICE_DB)
 	@echo " - database reset complete. next step: make schema"
@@ -155,29 +160,34 @@ studio-check: ## Verify certs & hosts entry for Drizzle Studio
 
 studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert)
 	$(ECHO_PROFILE)
-	@echo " - generating mkcert certificates for local.drizzle.studio…"
-	@if ! command -v mkcert >/dev/null 2>&1; then \
+	@set -e; \
+	echo " - generating mkcert certificates for local.drizzle.studio…"; \
+	if ! command -v mkcert >/dev/null 2>&1; then \
 	  echo "Error: mkcert is not installed. Install via 'brew install mkcert nss' and run 'mkcert -install'."; \
 	  exit 1; \
-	fi
-	@mkcert local.drizzle.studio
-	@mkdir -p $(BACKEND_DIR)/certs
-	@mv local.drizzle.studio*.pem $(BACKEND_DIR)/certs
-	@echo " - certificates created and moved to $(BACKEND_DIR)/certs"
+	fi; \
+	mkcert local.drizzle.studio; \
+	mkdir -p $(BACKEND_DIR)/certs; \
+	mv local.drizzle.studio*.pem $(BACKEND_DIR)/certs; \
+	echo " - certificates created and moved to $(BACKEND_DIR)/certs"
 
 # Run Drizzle Studio inside the backend container on HTTP
 studio: ## Launch Drizzle Studio
 	$(ECHO_PROFILE)
 	@echo " - starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=127.0.0.1 (use Firefox)"
 	@$(COMPOSE) run --rm -p 127.0.0.1:3337:3337 $(SERVICE_BACKEND) sh -lc '\
+	  set -e; \
 	  cd /app/backend && \
-	  npm ci && \
-	  npx drizzle-kit studio --host=0.0.0.0 --port=3337 \
+	  $(DRIZZLE) studio --host=0.0.0.0 --port=3337 \
 	'
 
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
-build: ## Build Docker images (current profile/env)
+build: ## Build Docker images (current profile/env) — uses cache
+	$(ECHO_PROFILE)
+	$(COMPOSE) build
+
+build-nocache: ## Build Docker images without cache (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) build --no-cache
 
@@ -224,17 +234,53 @@ update-schema: ## Generate new migrations and apply them (current profile/env)
 	$(MAKE) generate
 	$(MAKE) schema
 
-debug: ## Run backend in Node debug mode (publish $(DEBUG_PORT))
+##–––––– Frontend (local) ––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+frontend-install: ## Install frontend deps (npm ci in ./frontend)
 	$(ECHO_PROFILE)
-	@echo " - starting backend with Node inspector on localhost:$(DEBUG_PORT)…"
-	@echo "   (use IntelliJ Attach to Node.js/Chrome → host=localhost, port=$(DEBUG_PORT))"
-	@$(COMPOSE) run --rm --service-ports \
-	  -p 127.0.0.1:$(DEBUG_PORT):$(DEBUG_PORT) \
-	  $(SERVICE_BACKEND) sh -lc '\
-	    cd /app/backend && \
-	    npm ci && \
-	    npm run start:debug \
-	  '
+	@echo " - installing frontend dependencies…"
+	@$(FRONTEND_NPM) ci
+
+frontend-dev: ## Start Vite dev server (./frontend)
+	$(ECHO_PROFILE)
+	@echo " - starting frontend dev server…"
+	@$(FRONTEND_NPM) run dev
+
+frontend-build: ## Type-check (app + node) then build frontend
+	$(ECHO_PROFILE)
+	@echo " - typechecking frontend (app)…"
+	@$(FRONTEND_NPM) run typecheck
+	@echo " - typechecking frontend (node/tooling)…"
+	@$(FRONTEND_NPM) run typecheck:node
+	@echo " - building frontend…"
+	@$(FRONTEND_NPM) run build
+
+frontend-preview: ## Preview built frontend locally
+	$(ECHO_PROFILE)
+	@echo " - previewing frontend build…"
+	@$(FRONTEND_NPM) run preview
+
+frontend-test: ## Run frontend unit tests once
+	$(ECHO_PROFILE)
+	@echo " - running frontend tests…"
+	@$(FRONTEND_NPM) run test
+
+frontend-test-watch: ## Run frontend unit tests in watch mode
+	$(ECHO_PROFILE)
+	@echo " - running frontend tests (watch)…"
+	@$(FRONTEND_NPM) run test:watch
+
+frontend-typecheck: ## Type-check app (browser)
+	$(ECHO_PROFILE)
+	@$(FRONTEND_NPM) run typecheck
+
+frontend-typecheck-node: ## Type-check node/tooling (vite/vitest/drizzle configs)
+	$(ECHO_PROFILE)
+	@$(FRONTEND_NPM) run typecheck:node
+
+frontend-typecheck-all: ## Type-check app + node/tooling
+	$(ECHO_PROFILE)
+	@$(FRONTEND_NPM) run typecheck:all
 
 # ------ Debugging ------------------------------------------------------------
 
@@ -245,6 +291,7 @@ debug: ## Run backend in Node debug mode (publish $(DEBUG_PORT))
 	@$(COMPOSE) run --rm --service-ports \
 	  -p 127.0.0.1:$(DEBUG_PORT):$(DEBUG_PORT) \
 	  $(SERVICE_BACKEND) sh -lc '\
+	    set -e; \
 	    cd /app/backend && \
 	    npm run start:debug \
 	  '
@@ -256,6 +303,7 @@ test-debug: ## Run Vitest in debug mode (publish $(DEBUG_VITEST_PORT))
 	@$(COMPOSE) run --rm --service-ports \
 	  -p 127.0.0.1:$(DEBUG_VITEST_PORT):$(DEBUG_VITEST_PORT) \
 	  $(SERVICE_BACKEND) sh -lc '\
+	    set -e; \
 	    cd /app/backend && \
 	    npm run test:debug \
 	  '
@@ -300,8 +348,11 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 # Prevent conflicts with any files named the same as your targets.
 # -----------------------------------------------------------------------------
 
-.PHONY: build clean commit-migration deploy down drop-tables generate \
+.PHONY: build build-nocache clean commit-migration deploy down drop-tables generate \
         help init init-backend backend-shell restart reset-db schema \
         studio studio-cert studio-check tail-logs update-schema up \
         rebuild logs prod-build prod-up prod-down prod-deploy \
+        frontend-install frontend-dev frontend-build frontend-preview \
+        frontend-test frontend-test-watch frontend-typecheck \
+        frontend-typecheck-node frontend-typecheck-all \
         debug test-debug

@@ -1,11 +1,11 @@
 // backend/src/utils/auth.ts
 
-import { Request, Response, RequestHandler, NextFunction } from "express";
+import {NextFunction, Request, RequestHandler, Response} from "express";
 import crypto from "crypto";
 import cookie from "cookie";
 
 interface Session {
-  registrationId: number;
+    registrationId: number;
 }
 
 const SESSIONS = new Map<string, Session>();
@@ -31,14 +31,14 @@ export const requireProxySeal: RequestHandler = (req, res, next) => {
 };
 
 export function createSession(res: Response, registrationId: number) {
-  const sid = crypto.randomBytes(16).toString("hex");
-  SESSIONS.set(sid, { registrationId });
-  res.cookie("sessionid", sid, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    path: "/",
-  });
+    const sid = crypto.randomBytes(16).toString("hex");
+    SESSIONS.set(sid, { registrationId });
+    res.cookie("sessionid", sid, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        path: "/",
+    });
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {

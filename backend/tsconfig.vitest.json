@@ -1,7 +1,7 @@
 {
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        // test-only: compile but don't emit
+        "composite": true,
         "noEmit": true,
 
         // Node backend tests
@@ -17,11 +17,9 @@
 
         // Path aliases for IDE + Vitest
         "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"]
-        },
+        "paths": { "@/*": ["src/*"] },
 
-        // Useful for Vitest + Node types in test files
+        // Vitest + Node types in test files ONLY
         "types": ["node", "vitest/globals"],
 
         // Sensible defaults
@@ -31,13 +29,6 @@
         "skipLibCheck": true,
         "strict": true
     },
-    "include": [
-        "src/**/*.ts",
-        "tests/**/*.ts",
-        "vitest.config.ts"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+    "include": ["src", "tests", "vitest.config.ts"],
+    "exclude": ["node_modules", "dist"]
 }

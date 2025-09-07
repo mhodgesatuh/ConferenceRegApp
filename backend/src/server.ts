@@ -4,13 +4,13 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 import app from "./app";
-import { log } from "@/utils/logger";
+import {log} from "@/utils/logger";
 
 const host = process.env.BIND_HOST || "0.0.0.0";
 const port = Number(process.env.BACKEND_PORT || 8080);
 const httpsEnabled = process.env.HTTPS === "true";
 const certPath = process.env.HTTPS_CERT || "/certs/localhost.pem";
-const keyPath  = process.env.HTTPS_KEY  || "/certs/localhost-key.pem";
+const keyPath = process.env.HTTPS_KEY || "/certs/localhost-key.pem";
 
 const server = httpsEnabled
     ? https.createServer({ key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }, app)

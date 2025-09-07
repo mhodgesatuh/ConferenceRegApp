@@ -3,8 +3,8 @@
 import {db} from "@/db/client";
 import {credentials, registrations} from "@/db/schema";
 import {and, eq} from "drizzle-orm";
-import { sql } from "drizzle-orm/sql";
-import { sendEmail } from "@/utils/email";
+import {sql} from "drizzle-orm/sql";
+import {sendEmail} from "@/utils/email";
 
 export async function createRegistration(values: any, loginPin: string) {
     return db.transaction<{ id: number }>(async (tx) => {

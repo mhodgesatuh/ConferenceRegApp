@@ -1,5 +1,4 @@
 // drizzle.config.tx
-//
 
 import 'dotenv/config';
 import type {Config} from 'drizzle-kit';

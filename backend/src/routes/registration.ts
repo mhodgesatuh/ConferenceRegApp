@@ -1,25 +1,26 @@
 // backend/src/routes/registration.ts
 
-import { NextFunction, Request, Response, Router, type CookieOptions } from "express";
+import {type CookieOptions, NextFunction, Request, Response, Router} from "express";
 import rateLimit from "express-rate-limit";
 import csrf from "csurf";
-import { log, sendError } from "@/utils/logger";
-import { createSession, requireAuth } from "@/utils/auth";
-import { isDuplicateKey } from "@/utils/dbErrors";
-import { logDbError } from "@/utils/dbErrorLogger";
+import {CSRF_HEADER} from "@/constants/security";
+import {log, sendError} from "@/utils/logger";
+import {createSession, requireAuth} from "@/utils/auth";
+import {isDuplicateKey} from "@/utils/dbErrors";
+import {logDbError} from "@/utils/dbErrorLogger";
 import {
     generatePin,
     hasInvalidPhones,
+    isValidEmail,
     missingRequiredFields,
     toNull,
     toTinyInt,
-    isValidEmail,
 } from "./registration.utils";
 import {
     createRegistration,
-    sendLostPinEmail,
     getRegistrationWithPinById,
     getRegistrationWithPinByLogin,
+    sendLostPinEmail,
     updateRegistration,
 } from "./registration.service";
 
@@ -66,7 +67,7 @@ const loginLimiter = rateLimit({
     limit: 10,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => {
+    keyGenerator: (req: Request) => {
         const email = (req.body?.email ?? "").toString().trim().toLowerCase();
         return `${email}|${req.ip}`;
     },
@@ -99,7 +100,8 @@ function ownerOnly(req: Request, res: Response, next: NextFunction) {
 
 
 /* POST / (public create; CSRF-exempt) */
-router.post("/", async (req: Request, res: Response): Promise<void> => {    if (req.body?.id) {
+router.post("/", async (req: Request, res: Response): Promise<void> => {
+    if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
     }
@@ -178,165 +180,169 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {    if (
 });
 
 /* PUT /:id (auth + CSRF; write) */
-router.put("/:id", requireAuth, csrfProtection, ownerOnly, async (req: Request, res: Response): Promise<void> => {    const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
-        sendError(res, 400, "Invalid ID", { raw: req.params.id });
-        return;
-    }
-
-    if (hasInvalidPhones(req.body)) {
-        sendError(res, 400, "Invalid phone number(s)", {
-            phone1: req.body.phone1,
-            phone2: req.body.phone2,
-        });
-        return;
-    }
-
-    const missing = missingRequiredFields(req.body, true);
-    if (missing.length) {
-        sendError(res, 400, "Missing required information", { missing });
-        return;
-    }
-
-    // Coerce & validate email only if provided for partial updates
-    const email: string | undefined = req.body.email
-        ? String(req.body.email).trim().toLowerCase()
-        : undefined;
-    if (email !== undefined && !isValidEmail(email)) {
-        sendError(res, 400, "Invalid email address", { email });
-        return;
-    }
-
-    try {
-        const updateValues = {
-            email, // only set if provided
-            phone1: req.body.phone1 !== undefined ? toNull(req.body.phone1) : undefined,
-            phone2: req.body.phone2 !== undefined ? toNull(req.body.phone2) : undefined,
-            firstName: req.body.firstName !== undefined ? toNull(req.body.firstName) : undefined,
-            lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined, // do not lowercase
-            namePrefix: req.body.namePrefix !== undefined ? toNull(req.body.namePrefix) : undefined,
-            nameSuffix: req.body.nameSuffix !== undefined ? toNull(req.body.nameSuffix) : undefined,
-            hasProxy: req.body.hasProxy !== undefined ? toTinyInt(req.body.hasProxy) : undefined,
-            proxyName: req.body.proxyName !== undefined ? toNull(req.body.proxyName) : undefined,
-            proxyPhone: req.body.proxyPhone !== undefined ? toNull(req.body.proxyPhone) : undefined,
-            proxyEmail:
-                req.body.proxyEmail !== undefined
-                    ? toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null)
-                    : undefined,
-            cancelledAttendance:
-                req.body.cancelledAttendance !== undefined ? toTinyInt(req.body.cancelledAttendance) : undefined,
-            cancellationReason:
-                req.body.cancellationReason !== undefined ? toNull(req.body.cancellationReason) : undefined,
-            day1Attendee: req.body.day1Attendee !== undefined ? toTinyInt(req.body.day1Attendee) : undefined,
-            day2Attendee: req.body.day2Attendee !== undefined ? toTinyInt(req.body.day2Attendee) : undefined,
-            question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
-            question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
-            // Don't force isAttendee=true on update; preserve/allow explicit changes
-            isAttendee: req.body.isAttendee !== undefined ? toTinyInt(req.body.isAttendee) : undefined,
-            isCancelled: req.body.isCancelled !== undefined ? toTinyInt(req.body.isCancelled) : undefined,
-            isMonitor: req.body.isMonitor !== undefined ? toTinyInt(req.body.isMonitor) : undefined,
-            isOrganizer: req.body.isOrganizer !== undefined ? toTinyInt(req.body.isOrganizer) : undefined,
-            isPresenter: req.body.isPresenter !== undefined ? toTinyInt(req.body.isPresenter) : undefined,
-            isSponsor: req.body.isSponsor !== undefined ? toTinyInt(req.body.isSponsor) : undefined,
-        } as const;
-
-        // Remove undefined keys so we only update what was provided
-        const clean: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(updateValues)) {
-            if (v !== undefined) clean[k] = v;
-        }
-
-        if (Object.keys(clean).length === 0) {
-            sendError(res, 400, "No fields to update");
+router.put("/:id", requireAuth, csrfProtection, ownerOnly,
+    async (req: Request, res: Response): Promise<void> => {
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) {
+            sendError(res, 400, "Invalid ID", { raw: req.params.id });
             return;
         }
 
-        const { rowsAffected } = await updateRegistration(id, clean);
-        if (!rowsAffected) {
-            sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+        if (hasInvalidPhones(req.body)) {
+            sendError(res, 400, "Invalid phone number(s)", {
+                phone1: req.body.phone1,
+                phone2: req.body.phone2,
+            });
             return;
         }
 
-        // Return the updated record (including loginPin for convenience)
-        const [record] = await getRegistrationWithPinById(id);
-
-        if (!record?.registrations) {
-            sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+        const missing = missingRequiredFields(req.body, true);
+        if (missing.length) {
+            sendError(res, 400, "Missing required information", { missing });
             return;
         }
 
-        log.info("Registration updated", {
-            email: record.registrations.email,
-            registrationId: id,
-        });
-
-        res.json({
-            registration: {
-                ...record.registrations,
-                loginPin: record.credentials.loginPin,
-            },
-        });
-    } catch (err) {
-        if (isDuplicateKey(err)) {
-            sendError(res, 409, "Registration already exists", { email });
+        // Coerce & validate email only if provided for partial updates
+        const email: string | undefined = req.body.email
+            ? String(req.body.email).trim().toLowerCase()
+            : undefined;
+        if (email !== undefined && !isValidEmail(email)) {
+            sendError(res, 400, "Invalid email address", { email });
             return;
         }
-        logDbError(log, err, {
-            message: SAVE_REGISTRATION_ERROR,
-            email,
-            body: redact(req.body),
-        });
-        sendError(res, 500, SAVE_REGISTRATION_ERROR);
-    }
-});
+
+        try {
+            const updateValues = {
+                email, // only set if provided
+                phone1: req.body.phone1 !== undefined ? toNull(req.body.phone1) : undefined,
+                phone2: req.body.phone2 !== undefined ? toNull(req.body.phone2) : undefined,
+                firstName: req.body.firstName !== undefined ? toNull(req.body.firstName) : undefined,
+                lastName: req.body.lastName !== undefined ? String(req.body.lastName).trim() : undefined, // do not lowercase
+                namePrefix: req.body.namePrefix !== undefined ? toNull(req.body.namePrefix) : undefined,
+                nameSuffix: req.body.nameSuffix !== undefined ? toNull(req.body.nameSuffix) : undefined,
+                hasProxy: req.body.hasProxy !== undefined ? toTinyInt(req.body.hasProxy) : undefined,
+                proxyName: req.body.proxyName !== undefined ? toNull(req.body.proxyName) : undefined,
+                proxyPhone: req.body.proxyPhone !== undefined ? toNull(req.body.proxyPhone) : undefined,
+                proxyEmail:
+                    req.body.proxyEmail !== undefined
+                        ? toNull(req.body.proxyEmail ? String(req.body.proxyEmail).toLowerCase() : null)
+                        : undefined,
+                cancelledAttendance:
+                    req.body.cancelledAttendance !== undefined ? toTinyInt(req.body.cancelledAttendance) : undefined,
+                cancellationReason:
+                    req.body.cancellationReason !== undefined ? toNull(req.body.cancellationReason) : undefined,
+                day1Attendee: req.body.day1Attendee !== undefined ? toTinyInt(req.body.day1Attendee) : undefined,
+                day2Attendee: req.body.day2Attendee !== undefined ? toTinyInt(req.body.day2Attendee) : undefined,
+                question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
+                question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
+                // Don't force isAttendee=true on update; preserve/allow explicit changes
+                isAttendee: req.body.isAttendee !== undefined ? toTinyInt(req.body.isAttendee) : undefined,
+                isCancelled: req.body.isCancelled !== undefined ? toTinyInt(req.body.isCancelled) : undefined,
+                isMonitor: req.body.isMonitor !== undefined ? toTinyInt(req.body.isMonitor) : undefined,
+                isOrganizer: req.body.isOrganizer !== undefined ? toTinyInt(req.body.isOrganizer) : undefined,
+                isPresenter: req.body.isPresenter !== undefined ? toTinyInt(req.body.isPresenter) : undefined,
+                isSponsor: req.body.isSponsor !== undefined ? toTinyInt(req.body.isSponsor) : undefined,
+            } as const;
+
+            // Remove undefined keys so we only update what was provided
+            const clean: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(updateValues)) {
+                if (v !== undefined) clean[k] = v;
+            }
+
+            if (Object.keys(clean).length === 0) {
+                sendError(res, 400, "No fields to update");
+                return;
+            }
+
+            const { rowsAffected } = await updateRegistration(id, clean);
+            if (!rowsAffected) {
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+                return;
+            }
+
+            // Return the updated record (including loginPin for convenience)
+            const [record] = await getRegistrationWithPinById(id);
+
+            if (!record?.registrations) {
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+                return;
+            }
+
+            log.info("Registration updated", {
+                email: record.registrations.email,
+                registrationId: id,
+            });
+
+            res.json({
+                registration: {
+                    ...record.registrations,
+                    loginPin: record.credentials.loginPin,
+                },
+            });
+        } catch (err) {
+            if (isDuplicateKey(err)) {
+                sendError(res, 409, "Registration already exists", { email });
+                return;
+            }
+            logDbError(log, err, {
+                message: SAVE_REGISTRATION_ERROR,
+                email,
+                body: redact(req.body),
+            });
+            sendError(res, 500, SAVE_REGISTRATION_ERROR);
+        }
+    });
 
 /* POST /login (public) -> sets cookie, returns csrf */
-router.post("/login", loginLimiter, csrfLogin, async (req: Request, res: Response): Promise<void> => {
+router.post("/login", loginLimiter, csrfLogin,
+    async (req: Request, res: Response): Promise<void> => {
 
-    const pin = String(req.body?.pin ?? "").trim();
-    const email = String(req.body?.email ?? "").trim().toLowerCase();
+        const pin = String(req.body?.pin ?? "").trim();
+        const email = String(req.body?.email ?? "").trim().toLowerCase();
 
-    if (!email || !pin) {
-        log.warn("Login failed: missing credentials", {
-            email,
-            emailProvided: !!email,
-            pinProvided: !!pin,
-        });
-        sendError(res, 400, "Missing credentials", {
-            emailProvided: !!email,
-            pinProvided: !!pin,
-        });
-        return;
-    }
-
-    try {
-        const [record] = await getRegistrationWithPinByLogin(email, pin);
-
-        if (!record?.registrations) {
-            log.warn("Registration lookup: not found", { email });
-            sendError(res, 404, REGISTRATION_NOT_FOUND, { email });
+        if (!email || !pin) {
+            log.warn("Login failed: missing credentials", {
+                email,
+                emailProvided: !!email,
+                pinProvided: !!pin,
+            });
+            sendError(res, 400, "Missing credentials", {
+                emailProvided: !!email,
+                pinProvided: !!pin,
+            });
             return;
         }
 
-        log.info("Login successful", {
-            email,
-            registrationId: record.registrations.id,
-        });
-        createSession(res, record.registrations.id);
-        const csrf = req.csrfToken();
-        res.json({
-            registration: record.registrations, // do not return loginPin,
-            csrf,
-        });
-    } catch (err) {
-        logDbError(log, err, {
-            message: FAILED_TO_FETCH_REGISTRATION,
-            email,
-            body: redact(req.body),
-        });
-        sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
-    }
-});
+        try {
+            const [record] = await getRegistrationWithPinByLogin(email, pin);
+
+            if (!record?.registrations) {
+                log.warn("Registration lookup: not found", { email });
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { email });
+                return;
+            }
+
+            log.info("Login successful", {
+                email,
+                registrationId: record.registrations.id,
+            });
+            createSession(res, record.registrations.id);
+            const csrf = req.csrfToken();
+            res.json({
+                registration: record.registrations, // do not return loginPin,
+                csrf,                               // token value
+                csrfHeader: CSRF_HEADER,            // header name to send it in
+            });
+        } catch (err) {
+            logDbError(log, err, {
+                message: FAILED_TO_FETCH_REGISTRATION,
+                email,
+                body: redact(req.body),
+            });
+            sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
+        }
+    });
 
 /* GET /lost-pin?email=addr */
 router.get("/lost-pin", async (req: Request, res: Response): Promise<void> => {
@@ -350,8 +356,7 @@ router.get("/lost-pin", async (req: Request, res: Response): Promise<void> => {
         const result = await sendLostPinEmail(email);
         if (!result.ok) {
             const payload = { email };
-            const msg = result.code === "not_found_registration" ? CONTACT_US : CONTACT_US;
-            sendError(res, 404, msg, payload);
+            sendError(res, 404, CONTACT_US, payload);
             return;
         }
         log.info("Sending PIN", { email });
@@ -363,46 +368,47 @@ router.get("/lost-pin", async (req: Request, res: Response): Promise<void> => {
 });
 
 /* GET /:id (auth; no CSRF for read) */
-router.get<{ id: string }, any>("/:id", requireAuth, ownerOnly, async (req: Request, res: Response): Promise<void> => {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
-        log.warn("Fetch by id: invalid id", {
-            email: undefined,
-            rawId: req.params.id,
-        });
-        sendError(res, 400, "Invalid ID", { raw: req.params.id });
-        return;
-    }
-
-    try {
-        const [record] = await getRegistrationWithPinById(id);
-
-        if (!record?.registrations) {
-            log.warn(REGISTRATION_NOT_FOUND, { email: undefined, registrationId: id });
-            sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+router.get<{ id: string }>("/:id", requireAuth, ownerOnly,
+    async (req: Request, res: Response): Promise<void> => {
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) {
+            log.warn("Fetch by id: invalid id", {
+                email: undefined,
+                rawId: req.params.id,
+            });
+            sendError(res, 400, "Invalid ID", { raw: req.params.id });
             return;
         }
 
-        log.info("Registration found", {
-            email: record.registrations.email,
-            registrationId: id,
-        });
-        res.json({
-            registration: {
-                ...record.registrations,
-                loginPin: record.credentials.loginPin,
-            },
-        });
-    } catch (err) {
-        logDbError(log, err, {
-            message: FAILED_TO_FETCH_REGISTRATION,
-            email: undefined,
-            registrationId: id,
-        });
-        // Do not expose internal error details to the client
-        sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
-    }
-});
+        try {
+            const [record] = await getRegistrationWithPinById(id);
+
+            if (!record?.registrations) {
+                log.warn(REGISTRATION_NOT_FOUND, { email: undefined, registrationId: id });
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+                return;
+            }
+
+            log.info("Registration found", {
+                email: record.registrations.email,
+                registrationId: id,
+            });
+            res.json({
+                registration: {
+                    ...record.registrations,
+                    loginPin: record.credentials.loginPin,
+                },
+            });
+        } catch (err) {
+            logDbError(log, err, {
+                message: FAILED_TO_FETCH_REGISTRATION,
+                email: undefined,
+                registrationId: id,
+            });
+            // Do not expose internal error details to the client
+            sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
+        }
+    });
 
 // --- Router-level 404 (must be last) ---
 router.all("*", (req: Request, res: Response) => {

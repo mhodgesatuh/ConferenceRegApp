@@ -1,4 +1,7 @@
+// backend/src/utils/dbErrors.ts
+
 type AnyErr = Record<string, unknown> | undefined | null;
+
 
 function unwrap(err: AnyErr): Record<string, unknown> | undefined {
     const e = err && typeof err === "object" ? err : undefined;

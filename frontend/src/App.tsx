@@ -23,7 +23,10 @@ const App = () => {
             <AppLayout>
                 <Routes>
                     <Route path="/" element={<Navigate to="/home" replace/>}/>
-                    <Route path="/home" element={<HomePage onSuccess={({registration, csrf}) => { setRegistration(registration); setCsrf(csrf); }}/>} />
+                    <Route path="/home" element={<HomePage onSuccess={({ registration, csrf }) => {
+                        setRegistration(registration);
+                        setCsrf(csrf);
+                    }}/>}/>
                     <Route path="/register" element={<RegistrationRoute/>}/>
                 </Routes>
             </AppLayout>

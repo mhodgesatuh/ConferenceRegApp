@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite';
+// frontend/vite.config.ts
+
+import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import * as fs from 'fs';
@@ -12,26 +14,26 @@ export default defineConfig(({ command }) => {
     const httpsOptions =
         fs.existsSync(keyPath) && fs.existsSync(certPath)
             ? {
-                  key: fs.readFileSync(keyPath),
-                  cert: fs.readFileSync(certPath),
-              }
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath),
+            }
             : undefined;
 
     return {
         plugins: [react(), tsconfigPaths()],
         server: isDev
             ? {
-                  host: true,
-                  port: 3000,
-                  https: httpsOptions,
-                  proxy: {
-                      '/api': {
-                          target: 'https://conference-backend:5000',
-                          changeOrigin: true,
-                          secure: false,
-                      },
-                  },
-              }
+                host: true,
+                port: 3000,
+                https: httpsOptions,
+                proxy: {
+                    '/api': {
+                        target: 'https://conference-backend:5000',
+                        changeOrigin: true,
+                        secure: false,
+                    },
+                },
+            }
             : undefined,
         build: {
             outDir: 'dist',

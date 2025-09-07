@@ -1,4 +1,4 @@
-# nginx.conf.template
+# (root) nginx.conf.template
 
 worker_processes auto;
 

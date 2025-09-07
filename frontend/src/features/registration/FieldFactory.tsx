@@ -1,5 +1,4 @@
 // frontend/src/features/registration/FieldFactory.tsx
-//
 
 import React from 'react';
 import {FormField} from '@/data/registrationFormData';
@@ -19,7 +18,7 @@ type Props = {
     error?: string;
 };
 
-export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInputChange, error}: Props) {
+export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInputChange, error }: Props) {
     const [pinVisible, setPinVisible] = React.useState(false);
 
     if (field.type === 'section') {
@@ -55,7 +54,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                     aria-describedby={errorId}
                     className={showErrorStyle ? 'bg-red-100' : undefined}
                 />
-                {hasError && <Message id={errorId} text={error!} isError />}
+                {hasError && <Message id={errorId} text={error!} isError/>}
             </>
         );
     }
@@ -96,7 +95,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                             aria-label="Copy PIN"
                             title="copy"
                         >
-                            <Copy className="h-4 w-4" />
+                            <Copy className="h-4 w-4"/>
                         </button>
                         <button
                             type="button"
@@ -105,11 +104,11 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                             aria-label={pinVisible ? 'Hide PIN' : 'Show PIN'}
                             title={pinVisible ? 'hide' : 'show'}
                         >
-                            {pinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {pinVisible ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                         </button>
                     </div>
                 </div>
-                {hasError && <Message id={errorId} text={error!} isError />}
+                {hasError && <Message id={errorId} text={error!} isError/>}
             </div>
         );
     }
@@ -142,7 +141,7 @@ export function FieldRenderer({field, state, isMissing, onCheckboxChange, onInpu
                 aria-describedby={errorId}
                 className={showErrorStyle ? 'bg-red-100' : undefined}
             />
-            {hasError && <Message id={errorId} text={error!} isError />}
+            {hasError && <Message id={errorId} text={error!} isError/>}
         </div>
     );
 }
