@@ -2,6 +2,8 @@
 
 import RegistrationPage from './features/registration/RegistrationPage';
 import HomePage from './features/home/HomePage';
+import AdministrationPage from './features/administration/AdministrationPage';
+import ListRegistrationsPage from './features/administration/ListRegistrationsPage';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 
@@ -23,6 +25,8 @@ const App = () => {
                         }
                     />
                     <Route path="/register" element={<RegistrationPage />} />
+                    <Route path="/administration" element={<AdministrationPage />} />
+                    <Route path="/registrations/list" element={<ListRegistrationsPage />} />
                 </Routes>
             </AppLayout>
         </BrowserRouter>

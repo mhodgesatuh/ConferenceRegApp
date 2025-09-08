@@ -44,7 +44,11 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
 
             // Only pass registration forward
             onSuccess({ registration }); // if you still need this callback elsewhere
-            navigate("/register", { state: { registration } });
+            if (registration.isOrganizer) {
+                navigate("/administration", { state: { registration } });
+            } else {
+                navigate("/register", { state: { registration } });
+            }
         } catch (err: any) {
             const msg =
                 (err?.data?.error as string) ||

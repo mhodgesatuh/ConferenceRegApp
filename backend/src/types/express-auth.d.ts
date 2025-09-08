@@ -5,5 +5,6 @@ import "express";
 declare module "express-serve-static-core" {
     interface Request {
         registrationId?: number;
+        isOrganizer?: boolean;
     }
 }

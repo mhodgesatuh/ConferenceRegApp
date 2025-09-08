@@ -6,6 +6,7 @@ import cookie from "cookie";
 
 interface Session {
     registrationId: number;
+    isOrganizer: boolean;
 }
 
 const SESSIONS = new Map<string, Session>();
@@ -30,9 +31,9 @@ export const requireProxySeal: RequestHandler = (req, res, next) => {
     next();
 };
 
-export function createSession(res: Response, registrationId: number) {
+export function createSession(res: Response, registrationId: number, isOrganizer = false) {
     const sid = crypto.randomBytes(16).toString("hex");
-    SESSIONS.set(sid, { registrationId });
+    SESSIONS.set(sid, { registrationId, isOrganizer });
     res.cookie("sessionid", sid, {
         httpOnly: true,
         secure: true,
@@ -51,5 +52,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     }
     // Expose to downstream
     (req as any).registrationId = sess.registrationId;
+    (req as any).isOrganizer = !!sess.isOrganizer;
     next();
 }
