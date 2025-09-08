@@ -91,3 +91,7 @@ export async function getCredentialByRegId(registrationId: number) {
     return db.select().from(credentials).where(eq(credentials.registrationId, registrationId))
         .limit(1);
 }
+
+export async function getAllRegistrations() {
+    return db.select().from(registrations);
+}

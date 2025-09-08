@@ -19,6 +19,7 @@ import {
 } from "./registration.utils";
 import {
     createRegistration,
+    getAllRegistrations,
     getRegistrationWithPinById,
     getRegistrationWithPinByLogin,
     sendLostPinEmail,
@@ -92,8 +93,17 @@ function redact(body: Partial<CreateRegistrationBody> | undefined) {
 function ownerOnly(req: Request, res: Response, next: NextFunction) {
     const regId = Number(req.params.id);
     const authId = Number(req.registrationId);
-    if (!authId || Number.isNaN(authId) || authId !== regId) {
+    const isOrg = Boolean((req as any).isOrganizer);
+    if (!authId || Number.isNaN(authId) || (authId !== regId && !isOrg)) {
         sendError(res, 403, "Unauthorized", { id: regId });
+        return;
+    }
+    next();
+}
+
+function organizerOnly(req: Request, res: Response, next: NextFunction) {
+    if (!(req as any).isOrganizer) {
+        sendError(res, 403, "Unauthorized");
         return;
     }
     next();
@@ -292,7 +302,18 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
             });
             sendError(res, 500, SAVE_REGISTRATION_ERROR);
         }
-    });
+});
+
+/* GET / (auth, organizer only) - list registrations */
+router.get("/", requireAuth, organizerOnly, async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const rows = await getAllRegistrations();
+        res.json({ registrations: rows });
+    } catch (err) {
+        logDbError(log, err, { message: FAILED_TO_FETCH_REGISTRATION });
+        sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
+    }
+});
 
 /* POST /login (public) -> sets cookie, returns csrf */
 router.post("/login", loginLimiter, csrfLogin,
@@ -327,7 +348,7 @@ router.post("/login", loginLimiter, csrfLogin,
                 email,
                 registrationId: record.registrations.id,
             });
-            createSession(res, record.registrations.id);
+            createSession(res, record.registrations.id, !!record.registrations.isOrganizer);
             const csrf = req.csrfToken();
             res.json({
                 registration: record.registrations, // do not return loginPin,
