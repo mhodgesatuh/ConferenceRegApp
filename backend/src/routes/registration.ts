@@ -256,23 +256,22 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                 return;
             }
 
+            // Perform the update
             const { rowsAffected } = await updateRegistration(id, clean);
-            if (!rowsAffected) {
-                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
-                return;
-            }
 
-            // Return the updated record (including loginPin for convenience)
+            // Always fetch after attempting the update — 0 rowsAffected may mean "unchanged"
             const [record] = await getRegistrationWithPinById(id);
 
             if (!record?.registrations) {
-                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+                // truly not found
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { id, rowsAffected });
                 return;
             }
 
+            // success: even if no fields changed, return the current record
             log.info("Registration updated", {
-                email: record.registrations.email,
                 registrationId: id,
+                rowsAffected: rowsAffected ?? 0,
             });
 
             res.json({

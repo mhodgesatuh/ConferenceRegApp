@@ -28,7 +28,7 @@ export default defineConfig(({ command }) => {
                 https: httpsOptions,
                 proxy: {
                     '/api': {
-                        target: 'https://conference-backend:5000',
+                        target: 'https://conference-backend:8080',
                         changeOrigin: true,
                         secure: false,
                     },

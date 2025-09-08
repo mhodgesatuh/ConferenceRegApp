@@ -49,4 +49,5 @@ app.use("/api/registrations", registrationRoutes);
 // 4) Error logging
 app.use(errorLogger());
 
-export default app;
+export default app;   // default export
+export { app };       // named export too

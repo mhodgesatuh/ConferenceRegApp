@@ -49,17 +49,24 @@ http {
       proxy_pass http://conference_ui/;  # trailing slash OK at root
     }
 
-    # API — PRESERVE /api prefix (matches your logs)
+    # API — PRESERVE /api prefix; backend over HTTP
     location /api/ {
+      # CORS on all responses
+      add_header Access-Control-Allow-Origin $http_origin always;
+      add_header Access-Control-Allow-Credentials "true" always;
+
+      # Preflight
       if ($request_method = OPTIONS) {
-        add_header Access-Control-Allow-Origin $http_origin always;
         add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Content-Type,x-csrf-token" always;
-        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
         return 204;
       }
-      proxy_pass http://conference_backend;   # no trailing slash -> keep /api
+
+      proxy_pass http://conference_backend;     # ⬅️ back to HTTP
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
+
+      proxy_set_header X-Forwarded-Port $server_port;
+      proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # If we ever want to STRIP /api, use this instead:
