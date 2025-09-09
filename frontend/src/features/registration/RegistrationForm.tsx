@@ -1,8 +1,8 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
 import React, {useEffect, useMemo, useReducer, useState} from "react";
-import {Link} from "react-router-dom";
-import {ArrowLeft, Copy, Eye, EyeOff} from "lucide-react";
+import {Copy, Eye, EyeOff} from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 
 import {FormField} from "@/data/registrationFormData";
 import {formReducer, initialFormState} from "./formReducer";
@@ -284,17 +284,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            <header className="pb-2 mb-1">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                    <Link to="/home" className="flex items-center gap-1 text-primary hover:underline">
-                        <ArrowLeft className="h-4 w-4"/>
-                        Home
-                    </Link>
-                    <h1 className="text-xl sm:text-2xl font-semibold text-center w-full">
-                        {PAGE_TITLE}
-                    </h1>
-                </div>
-            </header>
+            <PageHeader title={PAGE_TITLE} />
 
             {fieldsForRender.map((field) => {
                 let hr = null;
