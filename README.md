@@ -204,6 +204,9 @@ npx shadcn@latest add checkbox
 npx shadcn@latest add input
 npx shadcn@latest add button
 npx shadcn@latest add tooltip
+npx shadcn@latest add table
+npx shadcn@latest add select
+npx shadcn@latest add dropdown-menu
 ```
 
 ---

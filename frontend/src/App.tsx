@@ -2,7 +2,7 @@
 
 import RegistrationPage from './features/registration/RegistrationPage';
 import HomePage from './features/home/HomePage';
-import AdministrationPage from './features/organizer/AdministrationPage';
+import AdministrationPage from './features/administration/AdministrationPage';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 

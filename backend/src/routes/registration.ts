@@ -304,7 +304,7 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
         }
 });
 
-/* GET / (auth, organizer only) - list registrations */
+/* GET / (auth, administration only) - list registrations */
 router.get("/", requireAuth, organizerOnly, async (_req: Request, res: Response): Promise<void> => {
     try {
         const rows = await getAllRegistrations();
