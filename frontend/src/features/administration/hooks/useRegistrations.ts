@@ -2,14 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-
-export interface RegistrationRecord {
-    id: number;
-    [key: string]: any;
-}
+import type { Registration } from "../types";
 
 export function useRegistrations() {
-    const [data, setData] = useState<RegistrationRecord[]>([]);
+    const [data, setData] = useState<Registration[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -31,9 +27,7 @@ export function useRegistrations() {
         void load();
     }, [load]);
 
-    const reload = useCallback(() => {
-        return load();
-    }, [load]);
+    const reload = useCallback(() => load(), [load]);
 
     // convenience helpers
     const byId = useCallback(

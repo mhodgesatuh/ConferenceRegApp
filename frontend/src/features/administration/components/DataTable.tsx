@@ -1,5 +1,4 @@
 // src/features/administration/components/DataTable.tsx
-
 import React, { useState } from "react";
 import {
     ColumnDef,
@@ -46,8 +45,8 @@ import {
     Settings,
 } from "lucide-react";
 
-/** Toolbar state passed to renderToolbar */
-export type DataTableToolbarRenderState<T> = {
+/** Toolbar state passed to renderToolbar (no unused generic). */
+export type DataTableToolbarRenderState = {
     globalFilter: string;
     setGlobalFilter: (v: string) => void;
     selectedCount: number;
@@ -62,7 +61,7 @@ export type DataTableProps<T extends object> = {
     defaultPageSize?: number;
     filterKeys?: string[]; // fields used by global filter
     onRowClick?: (row: T) => void;
-    renderToolbar?: (state: DataTableToolbarRenderState<T>) => React.ReactNode;
+    renderToolbar?: (state: DataTableToolbarRenderState) => React.ReactNode;
 };
 
 export function DataTable<T extends object>(props: DataTableProps<T>) {
@@ -246,9 +245,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                     <span className="font-medium">
             {data.length ? table.getRowModel().rows[0]?.index + 1 : 0}-
                         {table.getRowModel().rows.length
-                            ? table.getRowModel().rows[
-                        table.getRowModel().rows.length - 1
-                            ]?.index + 1
+                            ? table.getRowModel().rows[table.getRowModel().rows.length - 1]?.index + 1
                             : 0}
           </span>{" "}
                     of <span className="font-medium">{data.length}</span>

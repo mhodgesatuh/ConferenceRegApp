@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import type { Registration } from "../types";
 
 export function useRegistrationById(id?: number | null) {
-    const [data, setData] = useState<any | null>(null);
+    const [data, setData] = useState<Registration | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 

@@ -1,29 +1,21 @@
 // frontend/src/features/administration/AdministrationPage.tsx
 
-import React, {useMemo, useState} from "react";
-import {useLocation} from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import PageHeader from "@/components/PageHeader";
-import {Button, Input} from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import RegistrationForm from "@/features/registration/RegistrationForm";
-import type {FormField} from "@/data/registrationFormData";
-import {registrationFormData} from "@/data/registrationFormData";
+import { registrationFormData } from "@/data/registrationFormData";
+import type { FormField } from "@/data/registrationFormData";
 
-import type {ColumnDef} from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 
-import {DataTable} from "./components/DataTable";
-import {buildFilterKeys, buildListColumnsFromForm} from "./table/columns";
-import {useRegistrations} from "./hooks/useRegistrations";
-import {useRegistrationById} from "./hooks/useRegistrationById";
-
-interface Registration {
-    id: number;
-    firstName?: string;
-    lastName?: string;
-    email: string;
-
-    [key: string]: any;
-}
+import { DataTable } from "./components/DataTable";
+import { buildFilterKeys, buildListColumnsFromForm } from "./table/columns";
+import { useRegistrations } from "./hooks/useRegistrations";
+import { useRegistrationById } from "./hooks/useRegistrationById";
+import type { Registration } from "./types";
 
 interface LocationState {
     registration?: any;
@@ -39,15 +31,11 @@ const AdministrationPage: React.FC = () => {
     const [selected, setSelected] = useState<Registration | undefined>();
 
     // Collection hook
-    const {
-        data: registrations,
-        isLoading,
-        error,
-    } = useRegistrations();
+    const { data: registrations, isLoading, error } = useRegistrations();
 
     // Fallback-by-id hook for Update tab (supports refresh)
-    const idFromState =
-        registration?.id ?? Number(sessionStorage.getItem("regId")) || null;
+    const storedId = Number(sessionStorage.getItem("regId") ?? "");
+    const idFromState = registration?.id ?? (Number.isNaN(storedId) ? null : storedId);
     const { data: fetchedById } = useRegistrationById(idFromState);
 
     // Initial data for Update tab prefers the row the user just selected,
@@ -100,7 +88,7 @@ const AdministrationPage: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            <PageHeader title="Administration"/>
+            <PageHeader title="Administration" />
 
             {/* Tabs */}
             <div className="flex border-b">
@@ -125,13 +113,10 @@ const AdministrationPage: React.FC = () => {
             {/* LIST TAB */}
             {activeTab === "list" && (
                 <div className="space-y-4">
-                    {/* Basic loading / error states */}
                     {isLoading && (
                         <div className="text-sm text-muted-foreground">Loading…</div>
                     )}
-                    {error && (
-                        <div className="text-sm text-red-600">Error: {error}</div>
-                    )}
+                    {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
                     <DataTable<Registration>
                         data={registrations}
