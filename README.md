@@ -40,12 +40,15 @@ See the docs folder for application documentation.
 - MariaDB – Relational database 
 - Nginx – Reverse proxy and static file serving
 - Node.js – Server-side runtime
-- React – Frontend UI library 
-- Tailwind CSS – Utility‑first CSS framework 
-- TanStack Query – Data fetching & state synchronization for React 
-- TypeScript – Static typing for both backend and frontend code 
-- Vite – Frontend build tool and dev server 
-- Vitest – Testing framework 
+- React – Frontend UI library
+- React Router – Client-side routing
+- Radix UI & shadcn/ui – Component library for accessible UI primitives
+- Tailwind CSS – Utility‑first CSS framework
+- TanStack Query – Data fetching & state synchronization for React
+- TanStack Table – Type-safe data tables for React
+- TypeScript – Static typing for both backend and frontend code
+- Vite – Frontend build tool and dev server
+- Vitest – Testing framework
 
 ## Requirements for macOS
 
