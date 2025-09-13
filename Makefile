@@ -344,6 +344,15 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 	    printf "  %-18s %s\n", target, desc; \
 	}' $(MAKEFILE_LIST)
 
+##–––––– NPM Supply Chain Mitigation –––––––––––––––––––––––––––––––––––––––
+
+clean-npm: ## Empty cache and update all npm packages for frontend and backend
+	$(ECHO_PROFILE)
+	@echo " - cleaning npm cache and reinstalling dependencies for backend..."
+	@$(RUN_IN_BACKEND) 'npm cache clean --force && rm -rf node_modules package-lock.json && npm install'
+	@echo " - cleaning npm cache and reinstalling dependencies for frontend..."
+	@cd $(FRONTEND_DIR) && npm cache clean --force && rm -rf node_modules package-lock.json && npm install
+
 # -----------------------------------------------------------------------------
 # Prevent conflicts with any files named the same as your targets.
 # -----------------------------------------------------------------------------
@@ -355,4 +364,4 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
         frontend-install frontend-dev frontend-build frontend-preview \
         frontend-test frontend-test-watch frontend-typecheck \
         frontend-typecheck-node frontend-typecheck-all \
-        debug test-debug
+        debug test-debug clean-npm
