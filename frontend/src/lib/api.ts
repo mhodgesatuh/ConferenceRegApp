@@ -57,6 +57,17 @@ export async function apiFetch(
         headers.set(headerToUse, tokenToSend);
     }
 
+    // Log the outgoing request details to aid debugging authentication issues
+    try {
+        console.debug("[apiFetch] request", {
+            path,
+            method,
+            headers: Object.fromEntries(headers.entries()),
+        });
+    } catch {
+        // ignore logging errors (e.g., Headers not iterable)
+    }
+
     const res = await fetch(path, {
         credentials: "include",
         ...opts,
