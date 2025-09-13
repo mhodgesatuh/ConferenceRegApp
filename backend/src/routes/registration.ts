@@ -193,10 +193,16 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 /* PUT /:id (auth + CSRF; write) */
 router.put("/:id", requireAuth, csrfProtection, ownerOnly,
     async (req: Request, res: Response): Promise<void> => {
+
         const id = Number(req.params.id);
         if (Number.isNaN(id)) {
             sendError(res, 400, "Invalid ID", { raw: req.params.id });
             return;
+        }
+
+        // Never accept client-provided PIN on update
+        if (req.body && 'loginPin' in req.body) {
+            delete (req.body as any).loginPin;
         }
 
         if (hasInvalidPhones(req.body)) {

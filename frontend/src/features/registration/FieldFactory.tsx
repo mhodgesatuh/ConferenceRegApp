@@ -81,7 +81,10 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                 name={field.name}
                 type={inputType}
                 value={safeValue}
-                onChange={onInputChange}
+                onChange={(e) => {
+                    if (isReadOnly) return;
+                    onInputChange(e);
+                }}
                 readOnly={isReadOnly}
                 required={field.required}
                 aria-required={field.required}

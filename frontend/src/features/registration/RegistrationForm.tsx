@@ -320,8 +320,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                                         name="loginPin"
                                         type={pinRevealed ? 'text' : 'password'}
                                         value={String(state.loginPin || '')}
-                                        onChange={handleInputChange}
-                                        readOnly={false} // allow user edits if they prefer a different PIN
+                                        readOnly
+                                        aria-readonly
                                         autoComplete="off"
                                         className="font-mono"
                                     />

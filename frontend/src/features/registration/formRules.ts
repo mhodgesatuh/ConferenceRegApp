@@ -77,9 +77,10 @@ export function getVisibleFields(params: {
 }
 
 /**
- * Required-ness rule for a single field
+ * Required-ness rule for a single field. Unsure PIN is never required.
  */
 export function isFieldRequired(field: FormField, state: Record<string, any>): boolean {
+    if (field.name === 'loginPin') return false;
     const isProxyField = PROXY_FIELDS_SET.has(field.name);
     return Boolean(field.required) || (isProxyField && Boolean(state.hasProxy));
 }

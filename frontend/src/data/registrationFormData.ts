@@ -25,6 +25,7 @@ export interface FormField {
     required?: boolean;
     scope: 'admin' | 'registration';
     priv?: 'update';
+    readOnly?: boolean;
 }
 
 // Export a typed constant for each form element type.
@@ -46,7 +47,7 @@ export const registrationFormData: FormField[] = [
         name: 'loginPin',
         label: 'Login PIN',
         type: 'pin',
-        required: true,
+        readOnly: true,
         scope: 'registration',
     },
     {
