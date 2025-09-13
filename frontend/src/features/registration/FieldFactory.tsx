@@ -1,4 +1,20 @@
 // frontend/src/features/registration/FieldFactory.tsx
+//
+// React field renderer for the registration form.
+// - Accepts a FormField definition, current state, and handlers for checkbox/input changes.
+// - Renders three kinds of UI:
+//   - section: displays a Section header component.
+//   - checkbox: renders a Checkbox with disabled logic for hasProxy when proxy fields already contain text.
+//   - text-like inputs (text, email, phone, number): renders a labeled Input.
+// - Error + missing handling:
+//   - Computes hasError and isFieldMissing; applies red highlight class when either is true.
+//   - Associates an aria-describedby with an inline <Message> when an error exists.
+// - Accessibility & semantics:
+//   - Sets aria-required, aria-invalid, and proper htmlFor/id wiring for labels and controls.
+//   - For the id field, forces read-only behavior and prevents onChange updates.
+// - Value safety:
+//   - Ensures controlled inputs by converting undefined/null to empty string and preserving numbers as-is.
+//
 
 import React from 'react';
 import {FormField} from '@/data/registrationFormData';

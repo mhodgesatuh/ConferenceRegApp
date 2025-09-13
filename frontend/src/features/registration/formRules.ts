@@ -1,4 +1,21 @@
 // frontend/src/features/registration/formRules.ts
+//
+// Rules and helpers for form validation, visibility, and required-ness.
+// - Field groups: PROXY_FIELDS_SET and CANCEL_FIELDS_SET define related field names.
+// - isValidEmail / isValidPhone: lightweight format checks for email/phone inputs.
+// - userHasUpdatePrivilege: UI-level privilege flag based on presence of any field with priv: 'update' in initial data.
+// - hasAnyProxyData: detects if any proxy fields contain non-empty text.
+// - canSeeField: visibility logic per field and context:
+//   - Hide id until showId is true.
+//   - After save (isSaved), hide proxy toggle/fields and the proxy section.
+//   - Before save (!isSaved), hide cancellation-related fields.
+//   - If hasProxy is false, hide all proxy fields.
+//   - Hide admin-scoped fields unless the user has update privilege.
+// - getVisibleFields: filters the full field list using canSeeField.
+// - isFieldRequired: loginPin is never required; proxy fields become required when hasProxy is true; otherwise use each field’s required flag.
+// - getRequiredFieldNames: builds the current required-field set and enforces the paired rule: at least one of Day 1 / Day 2 must be selected.
+// - findMissingRequiredFields: returns names of required fields that are effectively empty (handles strings, numbers, booleans, null/undefined).
+//
 
 import {FormField} from '@/data/registrationFormData';
 

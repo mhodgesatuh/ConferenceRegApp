@@ -1,4 +1,29 @@
 // backend/src/routes/registration.ts
+//
+// Express router for registration-related API endpoints.
+// - Configures CSRF using cookie-based secrets (csrfProtection, csrfLogin) with strict, httpOnly cookie options.
+// - Sets rate limiters for login, create, and lost-pin endpoints to mitigate abuse.
+// - Defines helpers and guards:
+//   - redact(...) removes sensitive fields (e.g., PIN) from logs.
+//   - ownerOnly ensures only the registration owner (or organizer) can access/modify a record.
+//   - organizerOnly restricts certain routes to organizer role.
+// - POST / (public create; CSRF-exempt):
+//   - Validates input (required fields, email/phones), generates an 8-digit PIN, inserts the registration.
+//   - Immediately creates a session (createSession) so the client can prime CSRF next.
+//   - Returns { id, loginPin } with 201 Created.
+// - PUT /:id (write):
+//   - Protected by requireAuth, csrfProtection, and ownerOnly.
+//   - Sanitizes disallowed fields (removes client-provided loginPin), validates, applies partial update.
+//   - Fetches and returns the current record (includes loginPin).
+//   - GET / (list): Admin-only listing protected by requireAuth + organizerOnly.
+// - POST /login (public):
+//   - Rate-limited; verifies email+PIN, creates a session, returns { registration, csrf, csrfHeader }.
+//   - Uses csrfLogin to allow POST while still issuing a CSRF token afterward.
+// - GET /lost-pin (public): Rate-limited endpoint to trigger a PIN recovery email; returns { sent: true } on success.
+// - GET /:id (read): Protected by requireAuth + ownerOnly; returns the registration (includes loginPin).
+// - GET /csrf (auth): Returns a fresh CSRF token and the header name to use, bound to the current session.
+// - Catch-all 404: Warns and returns appropriate 404 for unknown routes under this router.
+//
 
 import {type CookieOptions, NextFunction, Request, Response, Router} from "express";
 import rateLimit from "express-rate-limit";
@@ -74,6 +99,12 @@ const loginLimiter = rateLimit({
         return `${email}|${req.ip}`;
     },
 });
+const createLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false
+});
+const lostPinLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false
+});
 
 const SAVE_REGISTRATION_ERROR = "Failed to save registration";
 const REGISTRATION_NOT_FOUND = "Registration not found";
@@ -111,7 +142,7 @@ function organizerOnly(req: Request, res: Response, next: NextFunction) {
 
 
 /* POST / (public create; CSRF-exempt) */
-router.post("/", async (req: Request, res: Response): Promise<void> => {
+router.post("/", createLimiter, async (req: Request, res: Response): Promise<void> => {
     if (req.body?.id) {
         sendError(res, 405, "Use PUT /:id to update an existing registration");
         return;
@@ -376,7 +407,7 @@ router.post("/login", loginLimiter, csrfLogin,
     });
 
 /* GET /lost-pin?email=addr */
-router.get("/lost-pin", async (req: Request, res: Response): Promise<void> => {
+router.get("/lost-pin", lostPinLimiter, async (req: Request, res: Response): Promise<void> => {
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : undefined;
     if (!email) {
         sendError(res, 400, "Email required");

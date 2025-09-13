@@ -1,4 +1,13 @@
 // frontend/src/features/administration/hooks/useRegistrations.ts
+//
+// Custom React hook for fetching admin registrations.
+// - Manages local state: data (Registration[]), isLoading, and error.
+// - load(): async fetch of /api/registrations via apiFetch; updates data/error and toggles loading.
+// - useEffect(): calls load() on mount (and when its reference changes).
+// - reload(): stable callback to manually re-run load().
+// - byId(id): convenience finder that returns a registration matching the numeric id from in-memory data.
+//   - Returns a memoized object { data, setData, isLoading, error, reload, byId } to minimize re-renders.
+//
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
