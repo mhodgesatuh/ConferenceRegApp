@@ -58,6 +58,7 @@ type RegistrationFormProps = {
 };
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData }) => {
+
     // Reducer-backed form state
     const [state, dispatch] = useReducer(
         formReducer,

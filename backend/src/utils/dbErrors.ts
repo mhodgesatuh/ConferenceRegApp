@@ -2,7 +2,6 @@
 
 type AnyErr = Record<string, unknown> | undefined | null;
 
-
 function unwrap(err: AnyErr): Record<string, unknown> | undefined {
     const e = err && typeof err === "object" ? err : undefined;
     return e && typeof (e as any).cause === "object" ? ((e as any).cause as Record<string, unknown>) : e;
