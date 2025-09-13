@@ -106,6 +106,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     // --- Effects ---------------------------------------------------------------
 
+    useEffect(() => {
+        const base = initialFormState(fields);
+        dispatch({ type: "RESET", initialState: { ...base, ...(initialData || {}) } });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData, fields]);
+
+    useEffect(() => {
+        const hasId = Boolean(initialData?.id);
+        setShowId(hasId);
+        setIsSaved(hasId);
+    }, [initialData?.id]);
+
     // Generate a PIN if missing (first render / new form)
     useEffect(() => {
         if (!state.loginPin || String(state.loginPin).trim() === '') {

@@ -17,8 +17,7 @@ const App = () => {
                         element={
                             <HomePage
                                 onSuccess={({ registration }) => {
-                                    // optional: keep this if you also store regId for refresh elsewhere
-                                    sessionStorage.setItem('regId', String(registration?.id ?? ''));
+                                    try { sessionStorage.setItem('regId', String(registration?.id ?? '')); } catch {}
                                 }}
                             />
                         }
