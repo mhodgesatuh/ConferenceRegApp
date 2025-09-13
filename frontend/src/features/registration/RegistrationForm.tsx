@@ -11,7 +11,7 @@ import {generatePin} from "@/features/registration/utils";
 import {Button, Input, Message, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,} from "@/components/ui";
 import {useMissingFields} from "@/hooks/useMissingFields";
 import {FieldRenderer} from "./FieldFactory";
-import {apiFetch} from "@/lib/api";
+import {apiFetch, primeCsrf} from "@/lib/api";
 
 
 import {
@@ -267,6 +267,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
                 if (data?.loginPin) dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: data.loginPin });
                 setShowId(true);
                 setIsSaved(true);
+
+                // 👇 Prime CSRF so the very next PUT succeeds
+                try {
+                    await primeCsrf();
+                } catch (e) {
+                    console.warn("CSRF prime failed after create:", e);
+                }
+
                 setMessage({ text: 'Registration saved successfully.', type: 'success' });
             } else {
                 // PUT returns { registration: {...} }
@@ -297,7 +305,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            <PageHeader title={PAGE_TITLE} />
+            <PageHeader title={PAGE_TITLE}/>
 
             {fieldsForRender.map((field) => {
                 let hr = null;

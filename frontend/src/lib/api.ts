@@ -23,6 +23,13 @@ function readCsrf() {
     };
 }
 
+export async function primeCsrf(): Promise<void> {
+    const r = await fetch("/api/registrations/csrf", { credentials: "include" });
+    if (!r.ok) throw new Error(`Failed to fetch CSRF: ${r.status}`);
+    const { csrf, csrfHeader } = await r.json();
+    saveCsrf(csrf, csrfHeader ?? "x-csrf-token");
+}
+
 /**
  * apiFetch
  * - Always sends cookies (credentials: 'include')

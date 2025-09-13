@@ -174,7 +174,11 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         );
 
         log.info("Registration created", { email, registrationId: id });
+
+        // Establish a session and immediately fetch a CSRF token
+        createSession(res, id, /* isOrganizer */ false);
         res.status(201).json({ id, loginPin });
+
     } catch (err) {
         if (isDuplicateKey(err)) {
             sendError(res, 409, "Registration already exists", { email });
@@ -436,6 +440,15 @@ router.get<{ id: string }>("/:id", requireAuth, ownerOnly,
             sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
         }
     });
+
+/* GET /csrf (auth) -> issue a CSRF token bound to the current session */
+router.get("/csrf", requireAuth, csrfProtection, (req: Request, res: Response) => {
+    res.json({
+        csrf: req.csrfToken(),   // token value
+        csrfHeader: CSRF_HEADER, // header name your client should use
+    });
+});
+
 
 // --- Router-level 404 (must be last) ---
 router.all("*", (req: Request, res: Response) => {
