@@ -94,14 +94,14 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             columnVisibility,
             pagination,
             globalFilter,
-            columnFilters, // ✅ enable column filter state
+            columnFilters,
         },
         onSortingChange: setSorting,
         onRowSelectionChange: setRowSelection,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
         onGlobalFilterChange: setGlobalFilter,
-        onColumnFiltersChange: setColumnFilters, // ✅
+        onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -138,7 +138,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                             key={c.id}
                             className="capitalize"
                             checked={c.getIsVisible()}
-                            onCheckedChange={(v) => c.toggleVisibility(!!v)}
+                            onCheckedChange={(v) => c.toggleVisibility(v)}
                         >
                             {c.id}
                         </DropdownMenuCheckboxItem>

@@ -14,7 +14,6 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
     // compare by LOWERCASE
     const SENSITIVE_LOWER = new Set([
         "password",
-        "confirmpassword",
         "pin",
         "loginpin",
         "token",
