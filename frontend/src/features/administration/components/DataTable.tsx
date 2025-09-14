@@ -86,7 +86,21 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     // table state
     const [sorting, setSorting] = useState<SortingState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+        const initial: VisibilityState = {};
+        const collect = (cols: ColumnDef<T, any>[] | undefined) => {
+            cols?.forEach((col) => {
+                const id = (col as any).id ?? (col as any).accessorKey;
+                const meta = (col as any).meta as { clickedByDefault?: boolean } | undefined;
+                if (id && meta?.clickedByDefault === false) {
+                    initial[id as string] = false;
+                }
+                if ((col as any).columns) collect((col as any).columns);
+            });
+        };
+        collect(columns);
+        return initial;
+    });
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
         pageSize: defaultPageSize,
