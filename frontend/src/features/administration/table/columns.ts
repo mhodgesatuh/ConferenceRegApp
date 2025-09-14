@@ -50,7 +50,7 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
                     return v == null ? "" : String(v);
                 },
                 meta: {
-                    clickedByDefault: f.clickedByDefault !== false,
+                    clickedByDefault: f.clickedByDefault === true,
                 },
             } as ColumnDef<T>;
         });

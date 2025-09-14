@@ -92,7 +92,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             cols?.forEach((col) => {
                 const id = (col as any).id ?? (col as any).accessorKey;
                 const meta = (col as any).meta as { clickedByDefault?: boolean } | undefined;
-                if (id && meta?.clickedByDefault === false) {
+                if (id && meta?.clickedByDefault !== true) {
                     initial[id as string] = false;
                 }
                 if ((col as any).columns) collect((col as any).columns);
