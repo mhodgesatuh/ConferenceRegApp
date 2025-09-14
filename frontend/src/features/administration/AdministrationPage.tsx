@@ -217,6 +217,8 @@ const AdministrationPage: React.FC = () => {
                 <RegistrationForm
                     fields={registrationFormData}
                     initialData={initialDataForUpdate}
+                    forceAdmin
+                    showHeader={false}
                 />
             )}
         </div>

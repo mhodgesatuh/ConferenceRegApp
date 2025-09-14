@@ -1,6 +1,7 @@
 // frontend/src/App.tsx
 
 import RegistrationPage from './features/registration/RegistrationPage';
+import AdminRegistrationPage from './features/registration/AdminRegistrationPage';
 import HomePage from './features/home/HomePage';
 import AdministrationPage from './features/administration/AdministrationPage';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
@@ -24,6 +25,7 @@ const App = () => {
                     />
                     <Route path="/register" element={<RegistrationPage />} />
                     <Route path="/organizer" element={<AdministrationPage />} />
+                    <Route path="/admin/registrations/:id" element={<AdminRegistrationPage />} />
                 </Routes>
             </AppLayout>
         </BrowserRouter>
