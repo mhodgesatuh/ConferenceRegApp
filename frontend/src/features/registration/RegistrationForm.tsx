@@ -55,9 +55,16 @@ const normalizeForSubmit = (src: Record<string, any>) => {
 type RegistrationFormProps = {
     fields: FormField[];
     initialData?: Record<string, any>;
+    forceAdmin?: boolean;
+    showHeader?: boolean;
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({
+    fields,
+    initialData,
+    forceAdmin = false,
+    showHeader = true,
+}) => {
 
     // Reducer-backed form state
     const [state, dispatch] = useReducer(
@@ -83,8 +90,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     // Derived facts
     const hasUpdatePrivilege = useMemo(
-        () => userHasUpdatePrivilege(fields, initialData),
-        [fields, initialData]
+        () => forceAdmin || userHasUpdatePrivilege(fields, initialData),
+        [fields, initialData, forceAdmin]
     );
 
     const proxyDataPresent = useMemo(
@@ -305,7 +312,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ fields, initialData
 
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            <PageHeader title={PAGE_TITLE}/>
+            {showHeader && <PageHeader title={PAGE_TITLE} />}
 
             {fieldsForRender.map((field) => {
                 let hr = null;
