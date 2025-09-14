@@ -32,19 +32,14 @@ const AdministrationPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<"list" | "update">("list");
     const [selected, setSelected] = useState<Registration | undefined>();
 
-    // Collection hook
     const { data: registrations, isLoading, error } = useRegistrations();
 
-    // Fallback-by-id hook for Update tab (supports refresh)
     const storedId = Number(sessionStorage.getItem("regId") ?? "");
     const idFromState = registration?.id ?? (Number.isNaN(storedId) ? null : storedId);
     const { data: fetchedById } = useRegistrationById(idFromState);
 
-    // Initial data for Update tab prefers the row the user just selected,
-    // then the fetched-by-id fallback, then any registration passed via router state.
     const initialDataForUpdate = selected ?? fetchedById ?? registration;
 
-    // Build base columns from schema
     const dynamicColsBase = useMemo(
         () =>
             buildListColumnsFromForm<Registration>(
@@ -53,7 +48,6 @@ const AdministrationPage: React.FC = () => {
         []
     );
 
-    // Discover boolean (checkbox) fields we want filter toggles for (reacts to schema changes)
     const booleanFieldNames = useMemo(
         () =>
             (registrationFormData as FormField[])
@@ -62,13 +56,11 @@ const AdministrationPage: React.FC = () => {
         [registrationFormData]
     );
 
-    // FilterFn for boolean columns: when filter value is true, only show true rows
     const boolFilterFn: FilterFn<Registration> = (row, id, value) => {
-        if (value === undefined) return true; // filter OFF
-        return Boolean(row.getValue(id));     // filter ON => must be true
+        if (value === undefined) return true;
+        return Boolean(row.getValue(id));
     };
 
-    // Attach filterFn to relevant boolean columns
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
         return dynamicColsBase.map((col) => {
             const key = getAccessorKey(col);
@@ -83,7 +75,6 @@ const AdministrationPage: React.FC = () => {
         });
     }, [dynamicColsBase, booleanFieldNames]);
 
-    // Leading edit icon column
     const editIconCol: ColumnDef<Registration> = useMemo(
         () => ({
             id: "edit",
@@ -120,7 +111,6 @@ const AdministrationPage: React.FC = () => {
 
     const filterKeys = useMemo(() => buildFilterKeys(dynamicCols), [dynamicCols]);
 
-    // Debounced search input component (avoid calling hooks inside renderToolbar directly)
     const DebouncedSearch: React.FC<{
         value: string;
         onChange: (v: string) => void;
@@ -143,23 +133,19 @@ const AdministrationPage: React.FC = () => {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="page-card space-y-4">
             <PageHeader title="Administration" />
 
             {/* Tabs */}
-            <div className="flex border-b">
+            <div className="admin-tabs">
                 <button
-                    className={`px-4 py-2 -mb-px border-b-2 ${
-                        activeTab === "list" ? "border-primary" : "border-transparent"
-                    }`}
+                    className={`admin-tab ${activeTab === "list" ? "admin-tab--active" : ""}`}
                     onClick={() => setActiveTab("list")}
                 >
                     List Registrations
                 </button>
                 <button
-                    className={`px-4 py-2 -mb-px border-b-2 ${
-                        activeTab === "update" ? "border-primary" : "border-transparent"
-                    }`}
+                    className={`admin-tab ${activeTab === "update" ? "admin-tab--active" : ""}`}
                     onClick={() => setActiveTab("update")}
                 >
                     Update Registration
@@ -172,53 +158,56 @@ const AdministrationPage: React.FC = () => {
                     {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
                     {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-                    {/* Full-bleed horizontally scrollable table */}
-                    <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen overflow-x-auto">
-                        <DataTable<Registration>
-                            data={registrations}
-                            columns={columns}
-                            defaultPageSize={DEFAULT_PAGE_SIZE}
-                            filterKeys={filterKeys}
-                            onRowClick={(reg) => setSelected(reg)}
-                            persistKey="admin.registrations.v1"
-                            renderToolbar={(state) => (
-                                <div className="flex flex-col gap-2 w-full px-4">
-                                    {/* Boolean filter bar (reads/writes TanStack columnFilters directly) */}
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                        <span className="font-medium">Filters:</span>
-                                        {booleanFieldNames.map((name) => {
-                                            const enabled = state.table.getColumn(name)?.getFilterValue() === true;
-                                            return (
-                                                <Button
-                                                    key={name}
-                                                    type="button"
-                                                    variant={enabled ? "default" : "outline"}
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const col = state.table.getColumn(name);
-                                                        if (col) col.setFilterValue(enabled ? undefined : true);
-                                                    }}
-                                                    className="whitespace-nowrap"
-                                                >
-                                                    {camelToTitle(name)}
-                                                </Button>
-                                            );
-                                        })}
-                                    </div>
+                    {/* Nearly full-width table (98% of the page) */}
+                    <div className="bleed-98">
+                        <div className="admin-table-frame">
+                            <DataTable<Registration>
+                                data={registrations}
+                                columns={columns}
+                                defaultPageSize={DEFAULT_PAGE_SIZE}
+                                filterKeys={filterKeys}
+                                onRowClick={(reg) => setSelected(reg)}
+                                persistKey="admin.registrations.v1"
+                                renderToolbar={(state) => (
+                                    <div className="admin-toolbar">
+                                        {/* Filters row */}
+                                        <div className="admin-toolbar-row">
+                                            <span className="font-medium">Filters:</span>
+                                            {booleanFieldNames.map((name) => {
+                                                const enabled =
+                                                    state.table.getColumn(name)?.getFilterValue() === true;
+                                                return (
+                                                    <Button
+                                                        key={name}
+                                                        type="button"
+                                                        variant={enabled ? "default" : "outline"}
+                                                        size="sm"
+                                                        className="admin-filter-pill"
+                                                        onClick={() => {
+                                                            const col = state.table.getColumn(name);
+                                                            if (col)
+                                                                col.setFilterValue(enabled ? undefined : true);
+                                                        }}
+                                                    >
+                                                        {camelToTitle(name)}
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
 
-                                    {/* Search + other controls (debounced search) */}
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <DebouncedSearch
-                                            value={state.globalFilter}
-                                            onChange={state.setGlobalFilter}
-                                        />
-                                        {state.renderColumnVisibilityToggle()}
-                                        {state.renderPageSizeSelect([10, 20, 50, 100])}
-                                        {/* No Reset button */}
+                                        {/* Search + controls row */}
+                                        <div className="admin-toolbar-row">
+                                            <DebouncedSearch
+                                                value={state.globalFilter}
+                                                onChange={state.setGlobalFilter}
+                                            />
+                                            {state.renderColumnVisibilityToggle()}
+                                            {state.renderPageSizeSelect([10, 20, 50, 100])}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        />
+                                )}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
