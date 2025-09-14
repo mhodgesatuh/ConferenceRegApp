@@ -185,6 +185,7 @@ const AdministrationPage: React.FC = () => {
                                 <div className="flex flex-col gap-2 w-full px-4">
                                     {/* Boolean filter bar (reads/writes TanStack columnFilters directly) */}
                                     <div className="flex flex-wrap gap-2 items-center">
+                                        <span className="font-medium">Filters:</span>
                                         {booleanFieldNames.map((name) => {
                                             const enabled = state.table.getColumn(name)?.getFilterValue() === true;
                                             return (

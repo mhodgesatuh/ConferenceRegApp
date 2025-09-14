@@ -238,18 +238,18 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             })}
 
             {/* Table */}
-            <div className="rounded-md border">
+            <div className="rounded-md border border-chart-4">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((hg) => (
-                            <TableRow key={hg.id}>
+                            <TableRow key={hg.id} className="bg-chart-4/40">
                                 {hg.headers.map((header) => {
                                     const canSort = header.column.getCanSort();
                                     const sorted = header.column.getIsSorted() as false | "asc" | "desc";
                                     return (
                                         <TableHead
                                             key={header.id}
-                                            className={canSort ? "cursor-pointer select-none" : ""}
+                                            className={(canSort ? "cursor-pointer select-none " : "") + "text-gray-900"}
                                             onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                                         >
                                             <div className="flex items-center gap-1">
@@ -270,7 +270,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
-                                    className="hover:bg-muted/40"
+                                    className="even:bg-chart-4/10 hover:bg-chart-4/20 data-[state=selected]:bg-chart-4/30"
                                     onClick={() => (props.onRowClick ? onRowClick?.(row.original) : undefined)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
