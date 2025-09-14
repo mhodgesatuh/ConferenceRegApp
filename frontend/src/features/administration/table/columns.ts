@@ -49,6 +49,9 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
                     const v = getValue<any>();
                     return v == null ? "" : String(v);
                 },
+                meta: {
+                    clickedByDefault: f.clickedByDefault !== false,
+                },
             } as ColumnDef<T>;
         });
 }
