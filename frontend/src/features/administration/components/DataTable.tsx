@@ -1,11 +1,7 @@
 // src/features/administration/components/DataTable.tsx
 
-import React, { useState, useEffect } from "react";
-import type {
-    Table as ReactTable,
-    ColumnDef,
-    ColumnFiltersState,
-} from "@tanstack/react-table";
+import React, {useEffect, useState} from "react";
+import type {ColumnDef, ColumnFiltersState, Table as ReactTable,} from "@tanstack/react-table";
 import {
     flexRender,
     getCoreRowModel,
@@ -15,40 +11,21 @@ import {
     PaginationState,
     RowSelectionState,
     SortingState,
-    VisibilityState,
     useReactTable,
+    VisibilityState,
 } from "@tanstack/react-table";
 
-import {
-    Table,
-    TableHeader,
-    TableRow,
-    TableHead,
-    TableBody,
-    TableCell,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
+import {Button} from "@/components/ui/button";
+import {Checkbox} from "@/components/ui/checkbox";
 import {
     DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
     DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
-import {
-    ChevronsLeft,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsRight,
-    Settings,
-} from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import {ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Settings,} from "lucide-react";
 
 /** Toolbar state passed to renderToolbar (generic + includes table). */
 export type DataTableToolbarRenderState<T extends object = any> = {
@@ -149,7 +126,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" /> Columns
+                    <Settings className="h-4 w-4"/> Columns
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
@@ -180,7 +157,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                 }
             >
                 <SelectTrigger className="w-[90px]">
-                    <SelectValue />
+                    <SelectValue/>
                 </SelectTrigger>
                 <SelectContent>
                     {options.map((n) => (
@@ -213,8 +190,11 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                 setPagination((p) => ({ ...p, pageSize: saved.pageSize, pageIndex: 0 }));
             }
             if (saved.globalFilter != null) setGlobalFilter(saved.globalFilter);
-            if (saved.columnVisibility) setColumnVisibility(saved.columnVisibility);
-            if (Array.isArray(saved.columnFilters)) setColumnFilters(saved.columnFilters);
+            if (saved.columnFilters) setColumnFilters(saved.columnFilters);
+            if (saved.columnVisibility && Object.keys(saved.columnVisibility).length > 0) {
+                // Merge so any new default-hidden columns remain hidden
+                setColumnVisibility((prev) => ({ ...prev, ...saved.columnVisibility }));
+            }
         } catch {
             // ignore
         }
@@ -329,7 +309,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanPreviousPage()}
                         aria-label="First page"
                     >
-                        <ChevronsLeft className="h-4 w-4" />
+                        <ChevronsLeft className="h-4 w-4"/>
                     </Button>
                     <Button
                         variant="outline"
@@ -338,7 +318,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanPreviousPage()}
                         aria-label="Previous page"
                     >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4"/>
                     </Button>
 
                     <span className="text-sm">
@@ -356,7 +336,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanNextPage()}
                         aria-label="Next page"
                     >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4"/>
                     </Button>
                     <Button
                         variant="outline"
@@ -365,7 +345,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanNextPage()}
                         aria-label="Last page"
                     >
-                        <ChevronsRight className="h-4 w-4" />
+                        <ChevronsRight className="h-4 w-4"/>
                     </Button>
                 </div>
             </div>

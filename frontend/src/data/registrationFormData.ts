@@ -17,6 +17,9 @@
 //    required      Optional, set to true if needed
 //    scope         The scope determines when it will get displayed
 //    priv          Flag a field as being a privileged role
+//    list
+//    clickedByDefault - Clicked by default on the Columns drop-down menu
+//
 
 export interface FormField {
     name: string;
@@ -37,7 +40,6 @@ export const registrationFormData: FormField[] = [
         label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
         type: 'section',
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'email',
@@ -53,14 +55,12 @@ export const registrationFormData: FormField[] = [
         type: 'pin',
         readOnly: true,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'section-info',
         label: 'Provide your (attendee) contact information.',
         type: 'section',
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'phone1',
@@ -100,7 +100,6 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'nameSuffix',
@@ -108,7 +107,6 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'day1Attendee',
@@ -132,7 +130,6 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'question2',
@@ -140,14 +137,12 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: true,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'section-cancel',
         label: 'If you need to cancel, please return to this form to let us know.',
         type: 'section',
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'cancelledAttendance',
@@ -163,7 +158,6 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'section-proxy',
@@ -171,7 +165,6 @@ export const registrationFormData: FormField[] = [
         type: 'section',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'hasProxy',
@@ -187,7 +180,6 @@ export const registrationFormData: FormField[] = [
         type: 'text',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'proxyPhone',
@@ -195,7 +187,6 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'proxyEmail',
@@ -203,21 +194,18 @@ export const registrationFormData: FormField[] = [
         type: 'email',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'section-roles',
         label: 'For internal use: indicate additional attendee roles.',
         type: 'section',
         scope: 'admin',
-        clickedByDefault: true,
     },
     {
         name: 'id',
         label: 'Registration Form ID',
         type: 'number',
         scope: 'admin',
-        clickedByDefault: true,
     },
     {
         name: 'isAttendee',
@@ -233,8 +221,8 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
-        clickedByDefault: true,
         priv: 'update',
+        clickedByDefault: true,
     },
     {
         name: 'isOrganizer',
@@ -242,8 +230,8 @@ export const registrationFormData: FormField[] = [
         type: 'checkbox',
         required: false,
         scope: 'admin',
-        clickedByDefault: true,
         priv: 'update',
+        clickedByDefault: true,
     },
     {
         name: 'isPresenter',
