@@ -203,6 +203,8 @@ const AdministrationPage: React.FC = () => {
                                             />
                                             {state.renderColumnVisibilityToggle()}
                                             {state.renderPageSizeSelect([10, 20, 50, 100])}
+                                            {state.renderExportButton("Export")}
+
                                         </div>
                                     </div>
                                 )}

@@ -36,6 +36,8 @@ export type DataTableToolbarRenderState<T extends object = any> = {
     renderColumnVisibilityToggle: () => React.ReactNode;
     renderPageSizeSelect: (options: number[]) => React.ReactNode;
     resetAll: () => void;
+    exportCSV: () => void;
+    renderExportButton: (label?: string) => React.ReactNode;
 };
 
 export type DataTableProps<T extends object> = {
@@ -138,7 +140,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                             key={c.id}
                             className="capitalize"
                             checked={c.getIsVisible()}
-                            onCheckedChange={(v) => c.toggleVisibility(v)}
+                            onCheckedChange={(v) => c.toggleVisibility(!!v)}
                         >
                             {c.id}
                         </DropdownMenuCheckboxItem>
@@ -178,6 +180,102 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         setRowSelection({});
         setPagination({ pageIndex: 0, pageSize: defaultPageSize });
     };
+
+    function humanizeHeader(key: string) {
+        const withSpaces = key
+            .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+            .replace(/[_\-]+/g, " ");
+        return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+    }
+
+    function escapeCSV(val: unknown): string {
+        if (val === null || val === undefined) return "";
+        const s = String(val);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    function getExportableLeafColumns() {
+        // Exclude technical/system fields from the toggle
+        const EXCLUDE = new Set(["id", "pin", "created_at", "updated_at"]);
+        return table.getAllLeafColumns().filter((col) => {
+            const key = (col.columnDef as any)?.accessorKey as string | undefined;
+            return !!key && !EXCLUDE.has(String(key).toLowerCase());
+        });
+    }
+
+    function exportCSV() {
+        // All rows from props.data (ignore pagination/filters), sorted by email
+        const allRows = [...data] as Array<Record<string, any>>;
+
+        const sorted = allRows.sort((a, b) => {
+            const A = (a?.email ?? "").toString();
+            const B = (b?.email ?? "").toString();
+            if (!A && !B) return 0;
+            if (!A) return 1;
+            if (!B) return -1;
+            return A.localeCompare(B, undefined, { sensitivity: "base" });
+        });
+
+        const leafCols = getExportableLeafColumns();
+
+        const headers = [
+            ...leafCols.map((col) => {
+                const key = (col.columnDef as any)?.accessorKey ?? col.id ?? "";
+                const h =
+                    typeof col.columnDef?.header === "string"
+                        ? (col.columnDef.header as string)
+                        : humanizeHeader(String(key));
+                return escapeCSV(h);
+            }),
+            escapeCSV("Created At"),
+            escapeCSV("Updated At"),
+        ];
+
+        const dataRows = sorted.map((row) => {
+            const baseCols = leafCols
+                .map((col) => {
+                    const key = (col.columnDef as any)?.accessorKey ?? col.id;
+                    const value = key ? (row as any)[key as string] : undefined;
+                    if (value instanceof Date) return escapeCSV(value.toISOString());
+                    if (typeof value === "boolean") return escapeCSV(value ? "true" : "false");
+                    if (typeof value === "object" && value !== null)
+                        return escapeCSV(JSON.stringify(value));
+                    return escapeCSV(value);
+                });
+
+            const createdAtRaw = (row as any)?.created_at ?? (row as any)?.createdAt;
+            const updatedAtRaw = (row as any)?.updated_at ?? (row as any)?.updatedAt;
+
+            const createdAt = createdAtRaw
+                ? escapeCSV(new Date(createdAtRaw).toISOString())
+                : "";
+            const updatedAt = updatedAtRaw
+                ? escapeCSV(new Date(updatedAtRaw).toISOString())
+                : "";
+
+
+            return [...baseCols, createdAt, updatedAt].join(",");
+        });
+
+        const csv = "\uFEFF" + [headers.join(","), ...dataRows].join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    const renderExportButton = (label = "Export") => (
+        <div className="ml-auto">
+            <button className="admin-export-btn" onClick={exportCSV}>
+                {label}
+            </button>
+        </div>
+    );
 
     // --- Optional persistence: restore on mount ---
     useEffect(() => {
@@ -229,6 +327,8 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                 renderColumnVisibilityToggle,
                 renderPageSizeSelect,
                 resetAll,
+                exportCSV,
+                renderExportButton,
             })}
 
             {/* Table */}
@@ -265,7 +365,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
                                     className="even:bg-chart-4/10 hover:bg-chart-4/20 data-[state=selected]:bg-chart-4/30"
-                                    onClick={() => (props.onRowClick ? onRowClick?.(row.original) : undefined)}
+                                    onClick={() => onRowClick?.(row.original)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
