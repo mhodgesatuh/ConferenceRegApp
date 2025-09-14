@@ -26,6 +26,7 @@ export interface FormField {
     scope: 'admin' | 'registration';
     priv?: 'update';
     readOnly?: boolean;
+    list?: boolean;
 }
 
 // Export a typed constant for each form element type.

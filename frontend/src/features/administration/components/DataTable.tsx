@@ -1,7 +1,12 @@
 // src/features/administration/components/DataTable.tsx
-import React, { useState } from "react";
-import {
+
+import React, { useState, useEffect } from "react";
+import type {
+    Table as ReactTable,
     ColumnDef,
+    ColumnFiltersState,
+} from "@tanstack/react-table";
+import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
@@ -45,8 +50,9 @@ import {
     Settings,
 } from "lucide-react";
 
-/** Toolbar state passed to renderToolbar (no unused generic). */
-export type DataTableToolbarRenderState = {
+/** Toolbar state passed to renderToolbar (generic + includes table). */
+export type DataTableToolbarRenderState<T extends object = any> = {
+    table: ReactTable<T>;
     globalFilter: string;
     setGlobalFilter: (v: string) => void;
     selectedCount: number;
@@ -59,9 +65,11 @@ export type DataTableProps<T extends object> = {
     data: T[];
     columns: ColumnDef<T, any>[];
     defaultPageSize?: number;
-    filterKeys?: string[]; // fields used by global filter
+    filterKeys?: string[];
     onRowClick?: (row: T) => void;
-    renderToolbar?: (state: DataTableToolbarRenderState) => React.ReactNode;
+    renderToolbar?: (state: DataTableToolbarRenderState<T>) => React.ReactNode;
+    /** Optional: persist UI state (page size, global filter, column visibility & filters) */
+    persistKey?: string;
 };
 
 export function DataTable<T extends object>(props: DataTableProps<T>) {
@@ -72,6 +80,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         filterKeys = [],
         onRowClick,
         renderToolbar,
+        persistKey,
     } = props;
 
     // table state
@@ -83,16 +92,25 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         pageSize: defaultPageSize,
     });
     const [globalFilter, setGlobalFilter] = useState("");
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, rowSelection, columnVisibility, pagination, globalFilter },
+        state: {
+            sorting,
+            rowSelection,
+            columnVisibility,
+            pagination,
+            globalFilter,
+            columnFilters, // ✅ enable column filter state
+        },
         onSortingChange: setSorting,
         onRowSelectionChange: setRowSelection,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
         onGlobalFilterChange: setGlobalFilter,
+        onColumnFiltersChange: setColumnFilters, // ✅
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -165,14 +183,52 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         table.resetSorting();
         table.resetGlobalFilter();
         table.resetColumnVisibility();
+        setColumnFilters([]);
         setRowSelection({});
         setPagination({ pageIndex: 0, pageSize: defaultPageSize });
     };
+
+    // --- Optional persistence: restore on mount ---
+    useEffect(() => {
+        if (!persistKey) return;
+        try {
+            const raw = localStorage.getItem(persistKey);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.pageSize) {
+                setPagination((p) => ({ ...p, pageSize: saved.pageSize, pageIndex: 0 }));
+            }
+            if (saved.globalFilter != null) setGlobalFilter(saved.globalFilter);
+            if (saved.columnVisibility) setColumnVisibility(saved.columnVisibility);
+            if (Array.isArray(saved.columnFilters)) setColumnFilters(saved.columnFilters);
+        } catch {
+            // ignore
+        }
+    }, [persistKey]);
+
+    // --- Optional persistence: save on state changes ---
+    useEffect(() => {
+        if (!persistKey) return;
+        try {
+            localStorage.setItem(
+                persistKey,
+                JSON.stringify({
+                    pageSize: pagination.pageSize,
+                    globalFilter,
+                    columnVisibility,
+                    columnFilters,
+                })
+            );
+        } catch {
+            // ignore
+        }
+    }, [persistKey, pagination.pageSize, globalFilter, columnVisibility, columnFilters]);
 
     return (
         <div className="space-y-3">
             {/* Toolbar */}
             {renderToolbar?.({
+                table,
                 globalFilter,
                 setGlobalFilter,
                 selectedCount,
@@ -215,7 +271,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
                                     className="hover:bg-muted/40"
-                                    onClick={() => onRowClick?.(row.original)}
+                                    onClick={() => (props.onRowClick ? onRowClick?.(row.original) : undefined)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
