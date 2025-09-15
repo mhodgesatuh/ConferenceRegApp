@@ -193,6 +193,7 @@ const AdministrationPage: React.FC = () => {
                                                     </Button>
                                                 );
                                             })}
+                                            <div className="ml-auto">{state.renderClearFiltersButton?.()}</div>
                                         </div>
 
                                         {/* Search + controls row */}

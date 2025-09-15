@@ -64,6 +64,10 @@ export function canSeeField(
     const { state, hasUpdatePrivilege, isSaved, showId } = ctx;
 
     if (!showId && field.name === 'id') return false;
+
+    // Never show PIN when editing an existing registration
+    if (isSaved && (field.type === 'pin' || field.name === 'loginPin')) return false;
+
     if (
         isSaved &&
         (field.name === 'hasProxy' ||

@@ -36,6 +36,8 @@ export type DataTableToolbarRenderState<T extends object = any> = {
     renderColumnVisibilityToggle: () => React.ReactNode;
     renderPageSizeSelect: (options: number[]) => React.ReactNode;
     resetAll: () => void;
+    clearFilters: () => void;
+    renderClearFiltersButton: (label?: string) => React.ReactNode;
     exportCSV: () => void;
     renderExportButton: (label?: string) => React.ReactNode;
 };
@@ -52,6 +54,7 @@ export type DataTableProps<T extends object> = {
 };
 
 export function DataTable<T extends object>(props: DataTableProps<T>) {
+
     const {
         data,
         columns,
@@ -62,6 +65,16 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         persistKey,
     } = props;
 
+    function isAlwaysVisible(col: any) {
+        const id = col?.id ?? col?.accessorKey;
+        const meta = col?.meta as { alwaysVisible?: boolean } | undefined;
+        return (
+            col?.enableHiding === false || // native guard
+            meta?.alwaysVisible === true || // optional meta flag
+            id === "edit" // explicit guarantee for the edit icon column
+        );
+    }
+
     // table state
     const [sorting, setSorting] = useState<SortingState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -71,7 +84,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             cols?.forEach((col) => {
                 const id = (col as any).id ?? (col as any).accessorKey;
                 const meta = (col as any).meta as { clickedByDefault?: boolean } | undefined;
-                if (id && meta?.clickedByDefault !== true) {
+                if (id && !isAlwaysVisible(col) && meta?.clickedByDefault !== true) {
                     initial[id as string] = false;
                 }
                 if ((col as any).columns) collect((col as any).columns);
@@ -140,7 +153,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                             key={c.id}
                             className="capitalize"
                             checked={c.getIsVisible()}
-                            onCheckedChange={(v) => c.toggleVisibility(!!v)}
+                            onCheckedChange={(checked) => c.toggleVisibility(Boolean(checked))}
                         >
                             {c.id}
                         </DropdownMenuCheckboxItem>
@@ -179,6 +192,13 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         setColumnFilters([]);
         setRowSelection({});
         setPagination({ pageIndex: 0, pageSize: defaultPageSize });
+    };
+
+    const clearFilters = () => {
+        table.resetGlobalFilter();
+        table.resetColumnFilters();
+        setGlobalFilter("");
+        setColumnFilters([]);
     };
 
     function humanizeHeader(key: string) {
@@ -269,12 +289,30 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         URL.revokeObjectURL(url);
     }
 
-    const renderExportButton = (label = "Export") => (
+    const renderExportButton = (label = "Export All") => (
         <div className="ml-auto">
-            <button className="admin-export-btn" onClick={exportCSV}>
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="admin-toolbar-btn admin-toolbar-btn--dark"
+                onClick={exportCSV}
+            >
                 {label}
-            </button>
+            </Button>
         </div>
+    );
+
+    const renderClearFiltersButton = (label = "Clear Filters") => (
+        <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="admin-toolbar-btn admin-toolbar-btn--dark"
+            onClick={clearFilters}
+        >
+            {label}
+        </Button>
     );
 
     // --- Optional persistence: restore on mount ---
@@ -290,8 +328,20 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             if (saved.globalFilter != null) setGlobalFilter(saved.globalFilter);
             if (saved.columnFilters) setColumnFilters(saved.columnFilters);
             if (saved.columnVisibility && Object.keys(saved.columnVisibility).length > 0) {
-                // Merge so any new default-hidden columns remain hidden
-                setColumnVisibility((prev) => ({ ...prev, ...saved.columnVisibility }));
+                setColumnVisibility((prev) => {
+                    const merged = { ...prev, ...saved.columnVisibility };
+                    // force always-visible columns ON
+                    const enforce = (cols: any[] | undefined) => {
+                        cols?.forEach((c) => {
+                            const id = (c as any).id ?? (c as any).accessorKey;
+                            if (!id) return;
+                            if (isAlwaysVisible(c)) merged[id] = true;
+                            if ((c as any).columns) enforce((c as any).columns);
+                        });
+                    };
+                    enforce(columns as any[]);
+                    return merged;
+                });
             }
         } catch {
             // ignore
@@ -327,6 +377,8 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                 renderColumnVisibilityToggle,
                 renderPageSizeSelect,
                 resetAll,
+                clearFilters,
+                renderClearFiltersButton,
                 exportCSV,
                 renderExportButton,
             })}

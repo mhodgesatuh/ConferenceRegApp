@@ -118,12 +118,25 @@ hr {
         @apply border-primary text-neutral-900;
     }
 
-    /* Toolbar rows */
-    .admin-toolbar {
-        @apply w-full space-y-2;
+    /* Table header & rows */
+    .admin-table-frame thead th {
+        @apply bg-amber-100/60 text-neutral-700 font-semibold border-b border-neutral-200;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
-    .admin-toolbar-row {
-        @apply flex flex-wrap gap-2 items-center;
+    .admin-table-frame th,
+    .admin-table-frame td {
+        @apply px-3 py-2;
+    }
+    .admin-table-frame tbody tr:nth-child(odd) {
+        @apply bg-white;
+    }
+    .admin-table-frame tbody tr:nth-child(even) {
+        @apply bg-neutral-50;
+    }
+    .admin-table-frame tbody tr:hover {
+        @apply bg-amber-50;
     }
 
     /* Full-bleed but leave 1vw gutters (98% total) */
@@ -168,12 +181,13 @@ hr {
     }
 }
 
-/* Export button style */
-.admin-export-btn {
-    @apply bg-amber-100 text-neutral-800 font-medium rounded-md px-4 py-2 border;
-    border-color: rgb(180 140 40); /* darker amber border */
-}
+/* ---- admin hover overrides (placed LAST) ---- */
+@layer utilities {
+    .admin-toolbar-btn:hover {
+        background-color: #fffbeb !important; /* amber-50 */
+    }
 
-.admin-export-btn:hover {
-    @apply bg-amber-200;
+    .admin-table-frame tbody tr:hover {
+        background-color: #fffbeb !important; /* amber-50 */
+    }
 }

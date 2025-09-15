@@ -8,6 +8,7 @@ DRIZZLE := npx drizzle-kit
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 SERVICE_BACKEND := conference-backend
+SERVICE_FRONTEND := conference-ui
 SERVICE_DB := conference-db
 DEBUG_PORT := 9229
 DEBUG_VITEST_PORT := 9230
@@ -217,6 +218,29 @@ clean: ## Stop and remove all containers, volumes, and images (current profile/e
 
 ##–––––– High-Level Composites –––––––––––––––––––––––––––––––––––––––––––––
 
+rebuild-ui: ## Rebuild frontend assets and redeploy container
+	@echo " - checking for optional typecheck scripts…"
+	@if [ -f $(FRONTEND_DIR)/package.json ] && node -e "p=require('./$(FRONTEND_DIR)/package.json');process.exit(p.scripts && p.scripts.typecheck ? 0 : 1)"; then \
+	  echo " - typechecking frontend (app)…"; \
+	  $(FRONTEND_NPM) run typecheck; \
+	else \
+	  echo " - skip: no 'typecheck' script"; \
+	fi
+	@if [ -f $(FRONTEND_DIR)/package.json ] && node -e "p=require('./$(FRONTEND_DIR)/package.json');process.exit(p.scripts && p.scripts['typecheck:node'] ? 0 : 1)"; then \
+	  echo " - typechecking frontend (node/tooling)…"; \
+	  $(FRONTEND_NPM) run typecheck:node; \
+	else \
+	  echo " - skip: no 'typecheck:node' script"; \
+	fi
+	@echo " - building frontend (host)…"
+	@$(FRONTEND_NPM) run build
+	@echo " - stopping frontend container…"
+	-@$(COMPOSE) stop $(SERVICE_FRONTEND) >/dev/null 2>&1 || true
+	@echo " - rebuilding frontend image…"
+	@$(COMPOSE) build --no-cache $(SERVICE_FRONTEND)
+	@echo " - starting frontend container…"
+	@$(COMPOSE) up -d $(SERVICE_FRONTEND)
+
 rebuild: ## Redeploy a new set of containers (current profile/env)
 	$(ECHO_PROFILE)
 	$(MAKE) down
@@ -346,8 +370,12 @@ help: ## Show available targets grouped by section (honors ENV_PROFILE=prod)
 
 ##–––––– NPM Supply Chain Mitigation –––––––––––––––––––––––––––––––––––––––
 
-clean-npm: ## Empty cache and update all npm packages for frontend and backend
+nuke-npm: ## Empty cache and update all npm packages for frontend and backend
 	$(ECHO_PROFILE)
+	@echo "Unless mitigating an npm supply-chain attack, nuking lockfiles and reinstalling is DANGEROUS."
+ifndef CI
+	@read -p "Press 'return' when ready or [Ctrl+C] to quit: "
+endif
 	@echo " - cleaning npm cache and reinstalling dependencies for backend..."
 	@$(RUN_IN_BACKEND) 'npm cache clean --force && rm -rf node_modules package-lock.json && npm install'
 	@echo " - cleaning npm cache and reinstalling dependencies for frontend..."
@@ -364,4 +392,4 @@ clean-npm: ## Empty cache and update all npm packages for frontend and backend
         frontend-install frontend-dev frontend-build frontend-preview \
         frontend-test frontend-test-watch frontend-typecheck \
         frontend-typecheck-node frontend-typecheck-all \
-        debug test-debug clean-npm
+        debug test-debug nuke-npm rebuild-frontend
