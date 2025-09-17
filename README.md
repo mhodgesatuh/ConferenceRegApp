@@ -176,7 +176,6 @@ Ensure `ConferenceRegApp/backend` is the current working directory.
 npm install
 npm install compression
 npm install -D @types/compression
-cd 
 npm i module-alias
 npm i -D tsconfig-paths
 npm i -D vitest @types/node supertest
