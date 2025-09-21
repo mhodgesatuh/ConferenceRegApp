@@ -15,3 +15,5 @@ backend/node_modules/
 
 /logs/
 /backend/certs/
+
+.env.prod
