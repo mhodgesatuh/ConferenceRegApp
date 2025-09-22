@@ -1,14 +1,12 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, {useEffect, useMemo, useReducer, useState} from "react";
-import {Copy, Eye, EyeOff} from "lucide-react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 
-import {FormField} from "@/data/registrationFormData";
-import {formReducer, initialFormState} from "./formReducer";
-import {generatePin} from "@/features/registration/utils";
+import { FormField } from "@/data/registrationFormData";
+import { formReducer, initialFormState } from "./formReducer";
 
-import {Button, Input, Message, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,} from "@/components/ui";
+import { Button, Message } from "@/components/ui";
 import {useMissingFields} from "@/hooks/useMissingFields";
 import {FieldRenderer} from "./FieldFactory";
 import {apiFetch, primeCsrf} from "@/lib/api";
@@ -79,10 +77,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
     const [message, setMessage] = useState<{ text: string; type: MessageType }>({ text: '', type: '' });
 
-    // PIN UI
-    const [pinRevealed, setPinRevealed] = useState(false);
-    const [copied, setCopied] = useState(false);
-
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Missing-field helper
@@ -119,11 +113,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         const base = initialFormState(fields);
         const merged = { ...base, ...(initialData || {}) };
 
-        // sanitize PIN when editing
-        if (initialData?.id && 'loginPin' in merged) {
-            merged.loginPin = '';
-        }
-
         dispatch({ type: "RESET", initialState: merged });
     }, [initialData, fields]);
 
@@ -133,17 +122,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         setShowId(hasId);
         setIsSaved(hasId);
     }, [initialData?.id]);
-
-    // Generate a PIN if missing (first render / new form)
-    useEffect(() => {
-        const isEditing = Boolean(initialData?.id);
-        if (isEditing) return; // skip on edit, avoids timing races
-        if (!state.loginPin || String(state.loginPin).trim() === '') {
-            const pin = generatePin(8);
-            dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: pin });
-            setPinRevealed(false);
-        }
-    }, [initialData?.id, state.loginPin]); // ← depend on initialData?.id instead of isSaved
 
     // Enforce proxy consistency: if proxy data exists, hasProxy must be true
     useEffect(() => {
@@ -155,8 +133,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     // --- Handlers --------------------------------------------------------------
 
     const validateField = (name: string, value: unknown): string => {
-        if (name === "loginPin") return "";
-
         const field = fields.find((f) => f.name === name);
         if (!field) return "";
 
@@ -214,17 +190,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         dispatch({ type: 'CHANGE_FIELD', name, value: checked });
     };
 
-    // Copy PIN to clipboard
-    const handleCopyPin = async () => {
-        try {
-            await navigator.clipboard.writeText(String(state.loginPin || ''));
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-        } catch {
-            setCopied(false);
-        }
-    };
-
     // --- Submit ---------------------------------------------------------------
 
     const validateAll = (): string[] => {
@@ -267,8 +232,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             const url = isUpdate ? `/api/registrations/${state.id}` : `/api/registrations`;
             const method: 'POST' | 'PUT' = isUpdate ? 'PUT' : 'POST';
 
-            // Build payload; never send id; on CREATE, also avoid sending any client PIN
-            const { id, loginPin, ...rest } = state as any;
+            // Build payload; never send id
+            const { id, ...rest } = state as any;
 
             // Normalize for both create & update so backend gets nulls, not ""
             const payload = normalizeForSubmit(rest);
@@ -279,9 +244,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             });
 
             if (!isUpdate) {
-                // Expecting { id, loginPin } on create
                 if (data?.id) dispatch({ type: 'CHANGE_FIELD', name: 'id', value: data.id });
-                if (data?.loginPin) dispatch({ type: 'CHANGE_FIELD', name: 'loginPin', value: data.loginPin });
                 setShowId(true);
                 setIsSaved(true);
 
@@ -322,104 +285,37 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
     // --- Render ---------------------------------------------------------------
     return (
-        <TooltipProvider>
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                {showHeader && <PageHeader title={PAGE_TITLE}/>}
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {showHeader && <PageHeader title={PAGE_TITLE} />}
 
-                {fieldsForRender.map((field) => {
-                    const hr = field.type === 'section' ? <hr className="my-4"/> : null;
+            {fieldsForRender.map((field) => {
+                const hr = field.type === 'section' ? <hr className="my-4" /> : null;
 
-                    // Special-case render for the PIN field
-                    if (field.type === 'pin') {
+                return (
+                    <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
+                        {hr}
+                        <FieldRenderer
+                            field={field}
+                            state={state}
+                            isMissing={isMissing}
+                            onCheckboxChange={handleCheckboxChange}
+                            onInputChange={handleInputChange}
+                            error={errorFor(field)}
+                        />
+                    </React.Fragment>
+                );
+            })}
 
-                        // Only show pin the first time, when it is created.
-                        const isEditing = Boolean(initialData?.id);
-                        if (isEditing) return null;
-
-                        return (
-                            <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
-                                {hr}
-                                <div className="space-y-1">
-                                    <label htmlFor="loginPin" className="text-sm font-medium">
-                                        {field.label}
-                                        {field.required ? <sup className="text-red-500">*</sup> : null}
-                                    </label>
-
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="loginPin"
-                                            name="loginPin"
-                                            type={pinRevealed ? 'text' : 'password'}
-                                            value={String(state.loginPin || '')}
-                                            readOnly
-                                            aria-readonly
-                                            autoComplete="off"
-                                            className="font-mono"
-                                        />
-
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => setPinRevealed((v) => !v)}
-                                            aria-pressed={pinRevealed}
-                                            title={pinRevealed ? 'Hide PIN' : 'Reveal PIN'}
-                                        >
-                                            {pinRevealed ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                        </Button>
-
-                                        <Tooltip open={copied}>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    onClick={handleCopyPin}
-                                                    disabled={!state.loginPin}
-                                                    aria-label="Copy PIN to clipboard"
-                                                >
-                                                    <Copy className="h-4 w-4"/>
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top" align="center" className="px-2 py-1 text-xs">
-                                                Copied
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </div>
-
-                                    <p className="text-xs text-muted-foreground">
-                                        Keep this PIN somewhere safe. You’ll need it to update your registration.
-                                    </p>
-                                </div>
-                            </React.Fragment>
-                        );
-                    }
-
-                    // Default render for all other field types
-                    return (
-                        <React.Fragment key={`${field.type}-${field.name}-${field.label}`}>
-                            {hr}
-                            <FieldRenderer
-                                field={field}
-                                state={state}
-                                isMissing={isMissing}
-                                onCheckboxChange={handleCheckboxChange}
-                                onInputChange={handleInputChange}
-                                error={errorFor(field)}
-                            />
-                        </React.Fragment>
-                    );
-                })}
-
-                <hr className="my-4"/>
-                <div className="flex items-center gap-2">
-                    <Button type="submit" disabled={submitting}>
-                        {submitting
-                            ? (isSaved ? 'Updating…' : 'Registering…')
-                            : (isSaved ? 'Update Registration' : 'Register')}
-                    </Button>
-                    {message.text && <Message text={message.text} isError={isError}/>}
-                </div>
-            </form>
-        </TooltipProvider>
+            <hr className="my-4" />
+            <div className="flex items-center gap-2">
+                <Button type="submit" disabled={submitting}>
+                    {submitting
+                        ? (isSaved ? 'Saving…' : 'Submitting…')
+                        : (isSaved ? 'Save Registration' : 'Submit Registration')}
+                </Button>
+                {message.text && <Message text={message.text} isError={isError} />}
+            </div>
+        </form>
     );
 }
 

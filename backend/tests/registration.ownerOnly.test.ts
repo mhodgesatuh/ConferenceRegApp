@@ -49,7 +49,7 @@ describe('ownerOnly registration id', () => {
         const res = await request(app).get('/1');
         expect(res.status).toBe(200);
         expect(res.body).toEqual({
-            registration: { email: 'user@example.com', loginPin: '12345678' },
+            registration: { email: 'user@example.com' },
         });
         expect(mocks.getRegistrationWithPinById).toHaveBeenCalledWith(1);
     });
