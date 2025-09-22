@@ -14,13 +14,13 @@
 // - PUT /:id (write):
 //   - Protected by requireAuth, csrfProtection, and ownerOnly.
 //   - Sanitizes disallowed fields (removes client-provided loginPin), validates, applies partial update.
-//   - Fetches and returns the current record (includes loginPin).
+//   - Fetches and returns the current record without exposing the login PIN.
 //   - GET / (list): Admin-only listing protected by requireAuth + organizerOnly.
 // - POST /login (public):
 //   - Rate-limited; verifies email+PIN, creates a session, returns { registration, csrf, csrfHeader }.
 //   - Uses csrfLogin to allow POST while still issuing a CSRF token afterward.
 // - GET /lost-pin (public): Rate-limited endpoint to trigger a PIN recovery email; returns { sent: true } on success.
-// - GET /:id (read): Protected by requireAuth + ownerOnly; returns the registration (includes loginPin).
+// - GET /:id (read): Protected by requireAuth + ownerOnly; returns the registration without the login PIN.
 // - GET /csrf (auth): Returns a fresh CSRF token and the header name to use, bound to the current session.
 // - Catch-all 404: Warns and returns appropriate 404 for unknown routes under this router.
 //
@@ -326,10 +326,7 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
             });
 
             res.json({
-                registration: {
-                    ...record.registrations,
-                    loginPin: record.credentials.loginPin,
-                },
+                registration: record.registrations,
             });
         } catch (err) {
             if (isDuplicateKey(err)) {
@@ -456,10 +453,7 @@ router.get<{ id: string }>("/:id", requireAuth, ownerOnly,
                 registrationId: id,
             });
             res.json({
-                registration: {
-                    ...record.registrations,
-                    loginPin: record.credentials.loginPin,
-                },
+                registration: record.registrations,
             });
         } catch (err) {
             logDbError(log, err, {

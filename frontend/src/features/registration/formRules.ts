@@ -12,7 +12,7 @@
 //   - If hasProxy is false, hide all proxy fields.
 //   - Hide admin-scoped fields unless the user has update privilege.
 // - getVisibleFields: filters the full field list using canSeeField.
-// - isFieldRequired: loginPin is never required; proxy fields become required when hasProxy is true; otherwise use each field’s required flag.
+// - isFieldRequired: proxy fields become required when hasProxy is true; otherwise use each field’s required flag.
 // - getRequiredFieldNames: builds the current required-field set and enforces the paired rule: at least one of Day 1 / Day 2 must be selected.
 // - findMissingRequiredFields: returns names of required fields that are effectively empty (handles strings, numbers, booleans, null/undefined).
 //
@@ -65,9 +65,6 @@ export function canSeeField(
 
     if (!showId && field.name === 'id') return false;
 
-    // Never show PIN when editing an existing registration
-    if (isSaved && (field.type === 'pin' || field.name === 'loginPin')) return false;
-
     if (
         isSaved &&
         (field.name === 'hasProxy' ||
@@ -98,10 +95,9 @@ export function getVisibleFields(params: {
 }
 
 /**
- * Required-ness rule for a single field. Unsure PIN is never required.
+ * Required-ness rule for a single field.
  */
 export function isFieldRequired(field: FormField, state: Record<string, any>): boolean {
-    if (field.name === 'loginPin') return false;
     const isProxyField = PROXY_FIELDS_SET.has(field.name);
     return Boolean(field.required) || (isProxyField && Boolean(state.hasProxy));
 }

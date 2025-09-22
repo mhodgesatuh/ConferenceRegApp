@@ -24,7 +24,7 @@
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'pin';
+    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section';
     required?: boolean;
     scope: 'admin' | 'registration';
     priv?: 'update';
@@ -37,7 +37,7 @@ export interface FormField {
 export const registrationFormData: FormField[] = [
     {
         name: 'section-creds',
-        label: 'You will be able to use your email address and the provided Pin if you need to update your registration information.',
+        label: 'Review and update your registration information below.',
         type: 'section',
         scope: 'registration',
     },
@@ -48,13 +48,6 @@ export const registrationFormData: FormField[] = [
         required: true,
         scope: 'registration',
         clickedByDefault: true,
-    },
-    {
-        name: 'loginPin',
-        label: 'Login PIN',
-        type: 'pin',
-        readOnly: true,
-        scope: 'registration',
     },
     {
         name: 'section-info',

@@ -1,7 +1,8 @@
 // frontend/src/features/registration/RegistrationPage.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+
 import RegistrationForm from "./RegistrationForm";
 import { registrationFormData } from "@/data/registrationFormData";
 import { apiFetch } from "@/lib/api";
@@ -13,13 +14,24 @@ const RegistrationPage: React.FC = () => {
     const { registration } = (location.state as LocationState) || {};
     const [initialData, setInitialData] = useState<any | undefined>(registration);
 
+    const storedId = useMemo(() => {
+        try {
+            const raw = sessionStorage.getItem("regId");
+            if (!raw) return undefined;
+            const parsed = Number(raw);
+            return Number.isNaN(parsed) ? undefined : parsed;
+        } catch {
+            return undefined;
+        }
+    }, []);
+
     useEffect(() => {
         const tryRefetch = async () => {
-            const idFromState = registration?.id;
-            if (!idFromState || initialData?.id) return;
+            const idToLoad = registration?.id ?? storedId;
+            if (!idToLoad || initialData?.id === idToLoad) return;
 
             try {
-                const data = await apiFetch(`/api/registrations/${idFromState}`, { method: "GET" });
+                const data = await apiFetch(`/api/registrations/${idToLoad}`, { method: "GET" });
                 if (data?.registration) setInitialData(data.registration);
             } catch {
                 try { sessionStorage.removeItem("regId"); } catch {}
@@ -27,7 +39,7 @@ const RegistrationPage: React.FC = () => {
             }
         };
         tryRefetch();
-    }, [registration, initialData?.id]);
+    }, [registration, storedId, initialData?.id]);
 
     return <RegistrationForm fields={registrationFormData} initialData={initialData} />;
 };
