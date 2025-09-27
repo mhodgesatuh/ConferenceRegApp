@@ -1,3 +1,4 @@
+/* index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,9 +36,10 @@ hr {
     border-radius: 2px;
 }
 
+/* ---------- Base theme tokens ---------- */
 @layer base {
     :root {
-        --background: 43 70% 85%; /* deeper beige */
+        --background: 43 70% 85%;
         --foreground: 0 0% 3.9%;
         --card: 0 0% 100%;
         --card-foreground: 0 0% 3.9%;
@@ -100,7 +102,7 @@ hr {
     }
 }
 
-/* --- Administration page look & feel --- */
+/* ---------- Components ---------- */
 @layer components {
     /* Card shell */
     .page-card {
@@ -118,27 +120,6 @@ hr {
         @apply border-primary text-neutral-900;
     }
 
-    /* Table header & rows */
-    .admin-table-frame thead th {
-        @apply bg-amber-100/60 text-neutral-700 font-semibold border-b border-neutral-200;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-    .admin-table-frame th,
-    .admin-table-frame td {
-        @apply px-3 py-2;
-    }
-    .admin-table-frame tbody tr:nth-child(odd) {
-        @apply bg-white;
-    }
-    .admin-table-frame tbody tr:nth-child(even) {
-        @apply bg-neutral-50;
-    }
-    .admin-table-frame tbody tr:hover {
-        @apply bg-amber-50;
-    }
-
     /* Full-bleed but leave 1vw gutters (98% total) */
     .bleed-98 {
         width: 98vw;
@@ -149,12 +130,10 @@ hr {
         margin-right: -49vw;
     }
 
-    /* Frame for a visible outline */
+    /* Table frame + sticky header */
     .admin-table-frame {
         @apply bg-white border border-neutral-300 rounded-lg shadow-sm overflow-x-auto p-[2px];
     }
-
-    /* Table header & rows */
     .admin-table-frame thead th {
         @apply bg-amber-100/60 text-neutral-700 font-semibold border-b border-neutral-200;
         position: sticky;
@@ -165,29 +144,30 @@ hr {
     .admin-table-frame td {
         @apply px-3 py-2;
     }
-    .admin-table-frame tbody tr:nth-child(odd) {
-        @apply bg-white;
-    }
-    .admin-table-frame tbody tr:nth-child(even) {
-        @apply bg-neutral-50;
-    }
-    .admin-table-frame tbody tr:hover {
-        @apply bg-amber-50;
-    }
+    .admin-table-frame tbody tr:nth-child(odd) { @apply bg-white; }
+    .admin-table-frame tbody tr:nth-child(even) { @apply bg-neutral-50; }
+    .admin-table-frame tbody tr:hover { @apply bg-amber-50; }
 
     /* Filter pills */
-    .admin-filter-pill {
-        @apply whitespace-nowrap rounded-full px-3 py-1 text-sm;
+    .admin-filter-pill { @apply whitespace-nowrap rounded-full px-3 py-1 text-sm; }
+
+    /* Toolbar layout */
+    .admin-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
+    .admin-toolbar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .admin-toolbar-row--between { justify-content: space-between; }
 }
 
-/* ---- admin hover overrides (placed LAST) ---- */
+/* ---------- Utilities (keep last for override strength) ---------- */
 @layer utilities {
-    .admin-toolbar-btn:hover {
-        background-color: #fffbeb !important; /* amber-50 */
-    }
-
-    .admin-table-frame tbody tr:hover {
-        background-color: #fffbeb !important; /* amber-50 */
-    }
+    .admin-toolbar-btn:hover { background-color: #fffbeb !important; } /* amber-50 */
+    .admin-table-frame tbody tr:hover { background-color: #fffbeb !important; }
 }

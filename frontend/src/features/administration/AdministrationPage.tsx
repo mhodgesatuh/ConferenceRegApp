@@ -41,32 +41,29 @@ const AdministrationPage: React.FC = () => {
     const initialDataForUpdate = selected ?? fetchedById ?? registration;
 
     const dynamicColsBase = useMemo(
-        () =>
-            buildListColumnsFromForm<Registration>(
-                registrationFormData as unknown as FormField[]
-            ),
+        () => buildListColumnsFromForm<Registration>(registrationFormData as FormField[]),
         []
     );
 
+    // Static form metadata → stable memo (no deps needed)
     const booleanFieldNames = useMemo(
         () =>
             (registrationFormData as FormField[])
                 .filter((f) => f.type === "checkbox" && f.name && f.list !== false)
                 .map((f) => f.name),
-        [registrationFormData]
+        [] // registrationFormData is a static import
     );
 
-    const boolFilterFn: FilterFn<Registration> = (row, id, value) => {
-        if (value === undefined) return true;
-        return Boolean(row.getValue(id));
+    const boolFilterFn: FilterFn<Registration> = (row, id, _value) => {
+        const v = row.getValue(id);
+        // treat "checked-only" as true; undefined means "no filter"
+        return v === true || v === 1 || v === "true" || v === "1" || v === true;
     };
 
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
         return dynamicColsBase.map((col) => {
             const key = getAccessorKey(col);
-            if (!key || !booleanFieldNames.includes(key)) {
-                return col;
-            }
+            if (!key || !booleanFieldNames.includes(key)) return col;
             return {
                 ...col,
                 enableColumnFilter: true,
@@ -105,9 +102,7 @@ const AdministrationPage: React.FC = () => {
         []
     );
 
-    const columns = useMemo<ColumnDef<Registration>[]>(() => {
-        return [editIconCol, ...dynamicCols];
-    }, [dynamicCols, editIconCol]);
+    const columns = useMemo<ColumnDef<Registration>[]>(() => [editIconCol, ...dynamicCols], [dynamicCols, editIconCol]);
 
     const filterKeys = useMemo(() => buildFilterKeys(dynamicCols), [dynamicCols]);
 
@@ -136,15 +131,22 @@ const AdministrationPage: React.FC = () => {
         <div className="page-card space-y-4">
             <PageHeader title="Administration" />
 
-            {/* Tabs */}
-            <div className="admin-tabs">
+            <div className="admin-tabs" role="tablist" aria-label="Administration tabs">
                 <button
+                    role="tab"
+                    aria-selected={activeTab === "list"}
+                    aria-controls="tab-panel-list"
+                    id="tab-list"
                     className={`admin-tab ${activeTab === "list" ? "admin-tab--active" : ""}`}
                     onClick={() => setActiveTab("list")}
                 >
                     List Registrations
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={activeTab === "update"}
+                    aria-controls="tab-panel-update"
+                    id="tab-update"
                     className={`admin-tab ${activeTab === "update" ? "admin-tab--active" : ""}`}
                     onClick={() => setActiveTab("update")}
                 >
@@ -152,13 +154,22 @@ const AdministrationPage: React.FC = () => {
                 </button>
             </div>
 
-            {/* LIST TAB */}
+            {activeTab === "list" && (
+                <div id="tab-panel-list" role="tabpanel" aria-labelledby="tab-list" className="space-y-4">
+                    …
+                </div>
+            )}
+            {activeTab === "update" && (
+                <div id="tab-panel-update" role="tabpanel" aria-labelledby="tab-update">
+                    …
+                </div>
+            )}
+
             {activeTab === "list" && (
                 <div className="space-y-4">
                     {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
                     {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-                    {/* Nearly full-width table (98% of the page) */}
                     <div className="bleed-98">
                         <div className="admin-table-frame">
                             <DataTable<Registration>
@@ -170,42 +181,62 @@ const AdministrationPage: React.FC = () => {
                                 persistKey="admin.registrations.v1"
                                 renderToolbar={(state) => (
                                     <div className="admin-toolbar">
-                                        {/* Filters row */}
-                                        <div className="admin-toolbar-row">
-                                            <span className="font-medium">Filters:</span>
-                                            {booleanFieldNames.map((name) => {
-                                                const enabled =
-                                                    state.table.getColumn(name)?.getFilterValue() === true;
-                                                return (
-                                                    <Button
-                                                        key={name}
-                                                        type="button"
-                                                        variant={enabled ? "default" : "outline"}
-                                                        size="sm"
-                                                        className="admin-filter-pill"
-                                                        onClick={() => {
-                                                            const col = state.table.getColumn(name);
-                                                            if (col)
-                                                                col.setFilterValue(enabled ? undefined : true);
-                                                        }}
-                                                    >
-                                                        {camelToTitle(name)}
-                                                    </Button>
-                                                );
-                                            })}
-                                            <div className="ml-auto">{state.renderClearFiltersButton?.()}</div>
+                                        {/* Row 1: filter pills (left) + Clear Filters (right) */}
+                                        <div className="admin-toolbar-row admin-toolbar-row--between">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-medium">Filters:</span>
+                                                {booleanFieldNames.map((name) => {
+                                                    const enabled = state.table.getColumn(name)?.getFilterValue() === true;
+                                                    return (
+                                                        <Button
+                                                            key={name}
+                                                            type="button"
+                                                            variant={enabled ? "default" : "outline"}
+                                                            size="sm"
+                                                            className="admin-filter-pill"
+                                                            onClick={() => {
+                                                                const col = state.table.getColumn(name);
+                                                                if (col) col.setFilterValue(enabled ? undefined : true);
+                                                            }}
+                                                        >
+                                                            {camelToTitle(name)}
+                                                        </Button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Right side: Clear Filters */}
+                                            <div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="admin-toolbar-btn admin-toolbar-btn--dark"
+                                                    onClick={state.clearFilters}
+                                                >
+                                                    Clear Filters
+                                                </Button>
+                                            </div>
                                         </div>
-
-                                        {/* Search + controls row */}
-                                        <div className="admin-toolbar-row">
-                                            <DebouncedSearch
-                                                value={state.globalFilter}
-                                                onChange={state.setGlobalFilter}
-                                            />
-                                            {state.renderColumnVisibilityToggle()}
-                                            {state.renderPageSizeSelect([10, 20, 50, 100])}
-                                            {state.renderExportButton("Export")}
-
+                                        {/* Row 2: search + columns + rows-per-page (left) + Export (right) */}
+                                        <div className="admin-toolbar-row admin-toolbar-row--between">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <DebouncedSearch value={state.globalFilter} onChange={state.setGlobalFilter} />
+                                                {state.renderColumnVisibilityToggle()}
+                                                {state.renderPageSizeSelect([10, 20, 50, 100])}
+                                            </div>
+                                            {/* Right side: Export */}
+                                            <div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="admin-toolbar-btn admin-toolbar-btn--dark"
+                                                    onClick={state.exportCSV}
+                                                >
+                                                    Export
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -215,14 +246,8 @@ const AdministrationPage: React.FC = () => {
                 </div>
             )}
 
-            {/* UPDATE TAB */}
             {activeTab === "update" && (
-                <RegistrationForm
-                    fields={registrationFormData}
-                    initialData={initialDataForUpdate}
-                    forceAdmin
-                    showHeader={false}
-                />
+                <RegistrationForm fields={registrationFormData} initialData={initialDataForUpdate} forceAdmin showHeader={false} />
             )}
         </div>
     );

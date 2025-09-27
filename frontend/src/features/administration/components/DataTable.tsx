@@ -1,7 +1,10 @@
 // src/features/administration/components/DataTable.tsx
-
-import React, {useEffect, useState} from "react";
-import type {ColumnDef, ColumnFiltersState, Table as ReactTable,} from "@tanstack/react-table";
+import React, { useEffect, useState } from "react";
+import type {
+    ColumnDef,
+    ColumnFiltersState,
+    Table as ReactTable,
+} from "@tanstack/react-table";
 import {
     flexRender,
     getCoreRowModel,
@@ -15,19 +18,38 @@ import {
     VisibilityState,
 } from "@tanstack/react-table";
 
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
-import {Button} from "@/components/ui/button";
-import {Checkbox} from "@/components/ui/checkbox";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
-import {ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Settings,} from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Settings,
+} from "lucide-react";
 
-/** Toolbar state passed to renderToolbar (generic + includes table). */
+/** Toolbar state passed to renderToolbar. */
 export type DataTableToolbarRenderState<T extends object = any> = {
     table: ReactTable<T>;
     globalFilter: string;
@@ -37,9 +59,7 @@ export type DataTableToolbarRenderState<T extends object = any> = {
     renderPageSizeSelect: (options: number[]) => React.ReactNode;
     resetAll: () => void;
     clearFilters: () => void;
-    renderClearFiltersButton: (label?: string) => React.ReactNode;
     exportCSV: () => void;
-    renderExportButton: (label?: string) => React.ReactNode;
 };
 
 export type DataTableProps<T extends object> = {
@@ -49,12 +69,11 @@ export type DataTableProps<T extends object> = {
     filterKeys?: string[];
     onRowClick?: (row: T) => void;
     renderToolbar?: (state: DataTableToolbarRenderState<T>) => React.ReactNode;
-    /** Optional: persist UI state (page size, global filter, column visibility & filters) */
+    /** Persist UI state (page size, global filter, column visibility & filters) */
     persistKey?: string;
 };
 
 export function DataTable<T extends object>(props: DataTableProps<T>) {
-
     const {
         data,
         columns,
@@ -68,11 +87,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     function isAlwaysVisible(col: any) {
         const id = col?.id ?? col?.accessorKey;
         const meta = col?.meta as { alwaysVisible?: boolean } | undefined;
-        return (
-            col?.enableHiding === false || // native guard
-            meta?.alwaysVisible === true || // optional meta flag
-            id === "edit" // explicit guarantee for the edit icon column
-        );
+        return col?.enableHiding === false || meta?.alwaysVisible === true || id === "edit";
     }
 
     // table state
@@ -137,18 +152,20 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
     // toolbar helpers
-    const renderColumnVisibilityToggle = () => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4"/> Columns
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-                {table
-                    .getAllLeafColumns()
-                    .filter((c) => c.getCanHide())
-                    .map((c) => (
+    const renderColumnVisibilityToggle = () => {
+        const columns = table
+            .getAllLeafColumns()
+            .filter((c) => c.getCanHide())
+            .sort((a, b) => a.id.localeCompare(b.id));
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2" aria-label="Toggle columns">
+                        <Settings className="h-4 w-4" /> Columns
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                    {columns.map((c) => (
                         <DropdownMenuCheckboxItem
                             key={c.id}
                             className="capitalize"
@@ -158,21 +175,20 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                             {c.id}
                         </DropdownMenuCheckboxItem>
                     ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
 
     const renderPageSizeSelect = (options: number[]) => (
         <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
                 value={String(pagination.pageSize)}
-                onValueChange={(v) =>
-                    setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))
-                }
+                onValueChange={(v) => setPagination((p) => ({ ...p, pageSize: Number(v), pageIndex: 0 }))}
             >
                 <SelectTrigger className="w-[90px]">
-                    <SelectValue/>
+                    <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                     {options.map((n) => (
@@ -215,7 +231,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     }
 
     function getExportableLeafColumns() {
-        // Exclude technical/system fields from the toggle
+        // Exclude technical/system fields from the export
         const EXCLUDE = new Set(["id", "pin", "created_at", "updated_at"]);
         return table.getAllLeafColumns().filter((col) => {
             const key = (col.columnDef as any)?.accessorKey as string | undefined;
@@ -224,9 +240,8 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     }
 
     function exportCSV() {
-        // All rows from props.data (ignore pagination/filters), sorted by email
+        // Export all rows (ignore pagination/filters), sorted by email
         const allRows = [...data] as Array<Record<string, any>>;
-
         const sorted = allRows.sort((a, b) => {
             const A = (a?.email ?? "").toString();
             const B = (b?.email ?? "").toString();
@@ -237,7 +252,6 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         });
 
         const leafCols = getExportableLeafColumns();
-
         const headers = [
             ...leafCols.map((col) => {
                 const key = (col.columnDef as any)?.accessorKey ?? col.id ?? "";
@@ -252,27 +266,20 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         ];
 
         const dataRows = sorted.map((row) => {
-            const baseCols = leafCols
-                .map((col) => {
-                    const key = (col.columnDef as any)?.accessorKey ?? col.id;
-                    const value = key ? (row as any)[key as string] : undefined;
-                    if (value instanceof Date) return escapeCSV(value.toISOString());
-                    if (typeof value === "boolean") return escapeCSV(value ? "true" : "false");
-                    if (typeof value === "object" && value !== null)
-                        return escapeCSV(JSON.stringify(value));
-                    return escapeCSV(value);
-                });
+            const baseCols = leafCols.map((col) => {
+                const key = (col.columnDef as any)?.accessorKey ?? col.id;
+                const value = key ? (row as any)[key as string] : undefined;
+                if (value instanceof Date) return escapeCSV(value.toISOString());
+                if (typeof value === "boolean") return escapeCSV(value ? "true" : "false");
+                if (typeof value === "object" && value !== null) return escapeCSV(JSON.stringify(value));
+                return escapeCSV(value);
+            });
 
             const createdAtRaw = (row as any)?.created_at ?? (row as any)?.createdAt;
             const updatedAtRaw = (row as any)?.updated_at ?? (row as any)?.updatedAt;
 
-            const createdAt = createdAtRaw
-                ? escapeCSV(new Date(createdAtRaw).toISOString())
-                : "";
-            const updatedAt = updatedAtRaw
-                ? escapeCSV(new Date(updatedAtRaw).toISOString())
-                : "";
-
+            const createdAt = createdAtRaw ? escapeCSV(new Date(createdAtRaw).toISOString()) : "";
+            const updatedAt = updatedAtRaw ? escapeCSV(new Date(updatedAtRaw).toISOString()) : "";
 
             return [...baseCols, createdAt, updatedAt].join(",");
         });
@@ -289,32 +296,6 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
         URL.revokeObjectURL(url);
     }
 
-    const renderExportButton = (label = "Export All") => (
-        <div className="ml-auto">
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="admin-toolbar-btn admin-toolbar-btn--dark"
-                onClick={exportCSV}
-            >
-                {label}
-            </Button>
-        </div>
-    );
-
-    const renderClearFiltersButton = (label = "Clear Filters") => (
-        <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="admin-toolbar-btn admin-toolbar-btn--dark"
-            onClick={clearFilters}
-        >
-            {label}
-        </Button>
-    );
-
     // --- Optional persistence: restore on mount ---
     useEffect(() => {
         if (!persistKey) return;
@@ -322,15 +303,12 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
             const raw = localStorage.getItem(persistKey);
             if (!raw) return;
             const saved = JSON.parse(raw);
-            if (saved.pageSize) {
-                setPagination((p) => ({ ...p, pageSize: saved.pageSize, pageIndex: 0 }));
-            }
+            if (saved.pageSize) setPagination((p) => ({ ...p, pageSize: saved.pageSize, pageIndex: 0 }));
             if (saved.globalFilter != null) setGlobalFilter(saved.globalFilter);
             if (saved.columnFilters) setColumnFilters(saved.columnFilters);
             if (saved.columnVisibility && Object.keys(saved.columnVisibility).length > 0) {
                 setColumnVisibility((prev) => {
                     const merged = { ...prev, ...saved.columnVisibility };
-                    // force always-visible columns ON
                     const enforce = (cols: any[] | undefined) => {
                         cols?.forEach((c) => {
                             const id = (c as any).id ?? (c as any).accessorKey;
@@ -378,9 +356,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                 renderPageSizeSelect,
                 resetAll,
                 clearFilters,
-                renderClearFiltersButton,
                 exportCSV,
-                renderExportButton,
             })}
 
             {/* Table */}
@@ -428,10 +404,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={table.getAllLeafColumns().length}
-                                    className="h-24 text-center"
-                                >
+                                <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">
                                     No results.
                                 </TableCell>
                             </TableRow>
@@ -461,7 +434,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanPreviousPage()}
                         aria-label="First page"
                     >
-                        <ChevronsLeft className="h-4 w-4"/>
+                        <ChevronsLeft className="h-4 w-4" />
                     </Button>
                     <Button
                         variant="outline"
@@ -470,15 +443,12 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanPreviousPage()}
                         aria-label="Previous page"
                     >
-                        <ChevronLeft className="h-4 w-4"/>
+                        <ChevronLeft className="h-4 w-4" />
                     </Button>
 
                     <span className="text-sm">
-            Page{" "}
-                        <span className="font-medium">
-              {table.getState().pagination.pageIndex + 1}
-            </span>{" "}
-                        of <span className="font-medium">{table.getPageCount()}</span>
+            Page <span className="font-medium">{table.getState().pagination.pageIndex + 1}</span> of{" "}
+                        <span className="font-medium">{table.getPageCount()}</span>
           </span>
 
                     <Button
@@ -488,7 +458,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanNextPage()}
                         aria-label="Next page"
                     >
-                        <ChevronRight className="h-4 w-4"/>
+                        <ChevronRight className="h-4 w-4" />
                     </Button>
                     <Button
                         variant="outline"
@@ -497,7 +467,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
                         disabled={!table.getCanNextPage()}
                         aria-label="Last page"
                     >
-                        <ChevronsRight className="h-4 w-4"/>
+                        <ChevronsRight className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -505,7 +475,7 @@ export function DataTable<T extends object>(props: DataTableProps<T>) {
     );
 }
 
-/* Column helper utilities for callers (selection/actions common patterns) */
+/* Column helper utilities for callers */
 DataTable.selectionColumn = function selectionColumn<T extends object>(): ColumnDef<T> {
     return {
         id: "select",
@@ -515,10 +485,7 @@ DataTable.selectionColumn = function selectionColumn<T extends object>(): Column
         header: ({ table }) => (
             <Checkbox
                 aria-label="Select all on page"
-                checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
-                }
+                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
                 onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
             />
         ),
