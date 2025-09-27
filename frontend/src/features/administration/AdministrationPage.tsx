@@ -1,7 +1,7 @@
 // frontend/src/features/administration/AdministrationPage.tsx
 
 import React, { useMemo, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import PageHeader from "@/components/PageHeader";
 import { Button, Input } from "@/components/ui";
@@ -29,8 +29,21 @@ const AdministrationPage: React.FC = () => {
     const { state } = useLocation();
     const { registration } = (state as LocationState) || {};
 
-    const [activeTab, setActiveTab] = useState<"list" | "update">("list");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get("tab") === "update" ? "update" : "list";
+    const setActiveTab = (tab: "list" | "update") => {
+        if (activeTab === tab) return;
+        const next = new URLSearchParams(searchParams);
+        next.set("tab", tab);
+        setSearchParams(next, { replace: true });
+    };
     const [selected, setSelected] = useState<Registration | undefined>();
+
+    useEffect(() => {
+        if (activeTab === "list") {
+            setSelected(undefined);
+        }
+    }, [activeTab]);
 
     const { data: registrations, isLoading, error } = useRegistrations();
 
@@ -130,29 +143,6 @@ const AdministrationPage: React.FC = () => {
     return (
         <div className="page-card space-y-4">
             <PageHeader title="Administration" />
-
-            <div className="admin-tabs" role="tablist" aria-label="Administration tabs">
-                <button
-                    role="tab"
-                    aria-selected={activeTab === "list"}
-                    aria-controls="tab-panel-list"
-                    id="tab-list"
-                    className={`admin-tab ${activeTab === "list" ? "admin-tab--active" : ""}`}
-                    onClick={() => setActiveTab("list")}
-                >
-                    List Registrations
-                </button>
-                <button
-                    role="tab"
-                    aria-selected={activeTab === "update"}
-                    aria-controls="tab-panel-update"
-                    id="tab-update"
-                    className={`admin-tab ${activeTab === "update" ? "admin-tab--active" : ""}`}
-                    onClick={() => setActiveTab("update")}
-                >
-                    Update Registration
-                </button>
-            </div>
 
             {activeTab === "list" && (
                 <div id="tab-panel-list" role="tabpanel" aria-labelledby="tab-list" className="space-y-4">

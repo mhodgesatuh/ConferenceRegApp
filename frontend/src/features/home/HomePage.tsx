@@ -62,14 +62,6 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                 <img src="/conference_intro.png" alt="Conference Logo" className="w-full" />
             </div>
 
-            <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-semibold">Welcome to the Conference</h1>
-                <p className="text-sm text-muted-foreground sm:text-base">
-                    Registration is invitation only. Use the credentials provided in your invitation to access
-                    or update your registration details.
-                </p>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="email">
