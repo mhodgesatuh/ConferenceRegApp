@@ -1,18 +1,21 @@
 // frontend/src/features/registration/RegistrationPage.tsx
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import RegistrationForm from "./RegistrationForm";
 import { registrationFormData } from "@/data/registrationFormData";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/features/auth/AuthContext";
 
 type LocationState = { registration?: any };
 
 const RegistrationPage: React.FC = () => {
     const location = useLocation();
-    const { registration } = (location.state as LocationState) || {};
-    const [initialData, setInitialData] = useState<any | undefined>(registration);
+    const navigate = useNavigate();
+    const { registration: stateRegistration } = (location.state as LocationState) || {};
+    const { registration: authRegistration, setRegistration } = useAuth();
+    const [initialData, setInitialData] = useState<any | undefined>(stateRegistration ?? authRegistration);
 
     const storedId = useMemo(() => {
         try {
@@ -26,8 +29,18 @@ const RegistrationPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if (stateRegistration) {
+            setInitialData((prev) => prev ?? stateRegistration);
+            return;
+        }
+        if (authRegistration) {
+            setInitialData((prev) => prev ?? authRegistration);
+        }
+    }, [stateRegistration, authRegistration]);
+
+    useEffect(() => {
         const tryRefetch = async () => {
-            const idToLoad = registration?.id ?? storedId;
+            const idToLoad = stateRegistration?.id ?? authRegistration?.id ?? storedId;
             if (!idToLoad || initialData?.id === idToLoad) return;
 
             try {
@@ -36,12 +49,30 @@ const RegistrationPage: React.FC = () => {
             } catch {
                 try { sessionStorage.removeItem("regId"); } catch {}
                 setInitialData(undefined); // fall back to brand-new form
+                setRegistration(null);
+                navigate("/home", { replace: true });
             }
         };
         tryRefetch();
-    }, [registration, storedId, initialData?.id]);
+    }, [stateRegistration, authRegistration?.id, storedId, initialData?.id, navigate, setRegistration]);
 
-    return <RegistrationForm fields={registrationFormData} initialData={initialData} />;
+    const handleSaved = useCallback(
+        (regData: Record<string, any>) => {
+            if (regData && regData.id != null) {
+                setInitialData(regData);
+                setRegistration(regData);
+            }
+        },
+        [setRegistration]
+    );
+
+    return (
+        <RegistrationForm
+            fields={registrationFormData}
+            initialData={initialData}
+            onSaved={handleSaved}
+        />
+    );
 };
 
 export default RegistrationPage;

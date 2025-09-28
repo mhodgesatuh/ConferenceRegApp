@@ -55,6 +55,7 @@ type RegistrationFormProps = {
     initialData?: Record<string, any>;
     forceAdmin?: boolean;
     showHeader?: boolean;
+    onSaved?: (registration: Record<string, any>) => void;
 };
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({
@@ -62,6 +63,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                                                initialData,
                                                                forceAdmin = false,
                                                                showHeader = true,
+                                                               onSaved,
                                                            }) => {
 
     // Reducer-backed form state
@@ -190,6 +192,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         dispatch({ type: 'CHANGE_FIELD', name, value: checked });
     };
 
+    const handleValueChange = (name: string, value: string | null) => {
+        clearMissing(name);
+        const nextValue = value ?? '';
+        dispatch({ type: 'CHANGE_FIELD', name, value: nextValue });
+        const error = validateField(name, nextValue);
+        setErrors((prev) => {
+            const { [name]: _removed, ...rest } = prev;
+            return error ? { ...rest, [name]: error } : rest;
+        });
+    };
+
     // --- Submit ---------------------------------------------------------------
 
     const validateAll = (): string[] => {
@@ -256,6 +269,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 }
 
                 setMessage({ text: 'Registration saved successfully.', type: 'success' });
+                if (data?.id) {
+                    const newRegistration = { ...state, id: data.id } as Record<string, any>;
+                    onSaved?.(newRegistration);
+                }
             } else {
                 // PUT returns { registration: {...} }
                 if (data?.registration) {
@@ -264,6 +281,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     );
                 }
                 setMessage({ text: 'Registration updated successfully.', type: 'success' });
+                if (data?.registration) {
+                    onSaved?.(data.registration as Record<string, any>);
+                }
             }
         } catch (err: any) {
             const server = err?.data;
@@ -300,6 +320,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             isMissing={isMissing}
                             onCheckboxChange={handleCheckboxChange}
                             onInputChange={handleInputChange}
+                            onValueChange={handleValueChange}
                             error={errorFor(field)}
                         />
                     </React.Fragment>

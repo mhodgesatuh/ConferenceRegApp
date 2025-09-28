@@ -1,7 +1,8 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/features/auth/AuthContext';
 
 type AdminTabsProps = {
     activeTab: 'list' | 'update';
@@ -11,13 +12,29 @@ type AdminTabsProps = {
 
 const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, canViewList = true }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const { registration, logout } = useAuth();
+    const [loggingOut, setLoggingOut] = useState(false);
 
-    const handleHome = () => navigate('/home');
+    const handleLogout = useCallback(async () => {
+        if (loggingOut) return;
+        setLoggingOut(true);
+        try {
+            await logout();
+        } catch {
+            // Ignore errors; we'll always navigate home.
+        } finally {
+            setLoggingOut(false);
+            navigate('/home', { replace: true });
+        }
+    }, [loggingOut, logout, navigate]);
+
+    const handleHome = useCallback(() => navigate('/home'), [navigate]);
     const handleForm = () => onSelect('update');
     const handleList = () => onSelect('list');
 
-    const homeActive = location.pathname === '/home';
+    const isLoggedIn = Boolean(registration);
+    const homeLabel = isLoggedIn ? 'Logout' : 'Home';
+    const handlePrimary = isLoggedIn ? handleLogout : handleHome;
 
     return (
         <div className="w-full border-b bg-card">
@@ -26,11 +43,12 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, canViewList 
                     <button
                         type="button"
                         role="tab"
-                        aria-selected={homeActive}
-                        className={cn('admin-tab', homeActive && 'admin-tab--active')}
-                        onClick={handleHome}
+                        aria-selected={false}
+                        className={cn('admin-tab')}
+                        onClick={handlePrimary}
+                        disabled={loggingOut}
                     >
-                        Home
+                        {loggingOut ? 'Logging out…' : homeLabel}
                     </button>
                     <button
                         type="button"

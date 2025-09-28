@@ -17,16 +17,19 @@ export function useRegistrations() {
     const [data, setData] = useState<Registration[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
     const load = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+        setErrorStatus(null);
         try {
             const res = await apiFetch("/api/registrations");
             setData(res?.registrations ?? []);
         } catch (e: any) {
             const msg = e?.data?.error || e?.message || "Failed to load registrations";
             setError(msg);
+            setErrorStatus(typeof e?.status === "number" ? e.status : null);
         } finally {
             setIsLoading(false);
         }
@@ -45,7 +48,7 @@ export function useRegistrations() {
     );
 
     return useMemo(
-        () => ({ data, setData, isLoading, error, reload, byId }),
-        [data, isLoading, error, reload, byId]
+        () => ({ data, setData, isLoading, error, errorStatus, reload, byId }),
+        [data, isLoading, error, errorStatus, reload, byId]
     );
 }

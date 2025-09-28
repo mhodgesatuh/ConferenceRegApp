@@ -42,6 +42,7 @@ export const registrations = mysqlTable('registrations', {
     // Registration information
     day1Attendee: boolean('day1_attendee').default(false),
     day2Attendee: boolean('day2_attendee').default(false),
+    lunchMenu: varchar('lunch_menu', {length: 128}),
     question1: varchar('question1', {length: 128}).notNull(),
     question2: varchar('question2', {length: 128}).notNull(),
     isCancelled: boolean('is_cancelled').default(false),

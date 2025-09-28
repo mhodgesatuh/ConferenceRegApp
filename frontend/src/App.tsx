@@ -8,6 +8,7 @@ import AdminRegistrationPage from './features/registration/AdminRegistrationPage
 import HomePage from './features/home/HomePage';
 import AdministrationPage from './features/administration/AdministrationPage';
 import AppLayout from '@/components/layout/AppLayout';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
 
 type LoginSuccessPayload = {
     registration?: any;
@@ -15,22 +16,18 @@ type LoginSuccessPayload = {
 
 const AppRoutes: React.FC = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleLoginSuccess = useCallback(
         ({ registration }: LoginSuccessPayload) => {
             if (!registration) return;
 
-            try {
-                sessionStorage.setItem('regId', String(registration.id ?? ''));
-                sessionStorage.setItem('regIsOrganizer', registration.isOrganizer ? 'true' : 'false');
-            } catch {
-                /* ignore sessionStorage failures */
-            }
+            login(registration);
 
             const target = registration.isOrganizer ? '/organizer' : '/register';
             navigate(target, { state: { registration } });
         },
-        [navigate],
+        [login, navigate],
     );
 
     return (
@@ -47,9 +44,11 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
     return (
         <BrowserRouter>
-            <AppLayout>
-                <AppRoutes />
-            </AppLayout>
+            <AuthProvider>
+                <AppLayout>
+                    <AppRoutes />
+                </AppLayout>
+            </AuthProvider>
         </BrowserRouter>
     );
 };

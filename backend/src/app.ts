@@ -6,6 +6,8 @@ import compression from "compression";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import registrationRoutes from "./routes/registration";
+import sessionRoutes from "./routes/session";
+import validationTableRoutes from "./routes/validationTables";
 import {errorLogger, requestLogger} from "@/utils/logger";
 import {requireProxySeal} from "@/utils/auth";
 
@@ -45,6 +47,8 @@ app.use(helmet({
 
 // 3) API routes
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/session", sessionRoutes);
+app.use("/api/validation-tables", validationTableRoutes);
 
 // 4) Error logging
 app.use(errorLogger());
