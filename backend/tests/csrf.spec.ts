@@ -4,7 +4,7 @@ import request from 'supertest';
 import { describe, it, expect } from 'vitest';
 import app from '@/app';
 
-const ORIGIN = process.env.UI_ORIGIN || 'https://localhost:8080';
+const ORIGIN = process.env.UI_ORIGIN || 'https://localhost:8443';
 const SEAL = process.env.INTERNAL_SECRET || 'test-secret';
 
 describe('CSRF flow', () => {

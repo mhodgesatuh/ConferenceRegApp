@@ -83,12 +83,12 @@ init-backend: ## Rebuild and restart backend + proxy (current profile)
 	$(ECHO_PROFILE)
 	$(COMPOSE) build --no-cache $(SERVICE_BACKEND)
 	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
-	@echo "Backend reachable via nginx at: https://localhost:8080"
+@echo "Backend reachable via nginx at: https://localhost:8443"
 
 up-backend: ## Start db + backend + proxy (no UI container)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
-	@echo "Backend up at: https://localhost:8080"
+@echo "Backend up at: https://localhost:8443"
 
 backend-shell: ## Open a shell in the backend container (current profile)
 	$(ECHO_PROFILE)
@@ -202,7 +202,7 @@ build-nocache: ## Build Docker images without cache (current profile/env)
 up: ## Start containers in detached mode (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d
-	@echo "Running: https://localhost:8080/"
+@echo "Running: https://localhost:8443/"
 
 down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
