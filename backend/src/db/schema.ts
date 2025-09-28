@@ -106,5 +106,5 @@ export const validationTables = mysqlTable('validation_tables', {
     value: varchar('value', {length: 128}).notNull(),
 
 }, (table) => ({
-    valueIdx: index('idx_validation_tables_value').on(table.value),
+    valueIdx: index('idx_validation_tables_name').on(table.validationTable),
 }));
