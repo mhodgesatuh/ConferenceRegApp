@@ -13,6 +13,7 @@ SERVICE_DB := conference-db
 SERVICE_PROXY := proxy
 DEBUG_PORT := 9229
 DEBUG_VITEST_PORT := 9230
+UI_PORT := 8443
 
 # Frontend npm runner
 FRONTEND_NPM := cd $(FRONTEND_DIR) && npm
@@ -83,12 +84,12 @@ init-backend: ## Rebuild and restart backend + proxy (current profile)
 	$(ECHO_PROFILE)
 	$(COMPOSE) build --no-cache $(SERVICE_BACKEND)
 	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
-@echo "Backend reachable via nginx at: https://localhost:8443"
+	@echo "Backend reachable via nginx at: https://localhost:$(UI_PORT)"
 
 up-backend: ## Start db + backend + proxy (no UI container)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
-@echo "Backend up at: https://localhost:8443"
+	@echo "Backend up at: https://localhost:$(UI_PORT)"
 
 backend-shell: ## Open a shell in the backend container (current profile)
 	$(ECHO_PROFILE)
@@ -202,7 +203,7 @@ build-nocache: ## Build Docker images without cache (current profile/env)
 up: ## Start containers in detached mode (current profile/env)
 	$(ECHO_PROFILE)
 	$(COMPOSE) up -d
-@echo "Running: https://localhost:8443/"
+	@echo "Running: https://localhost:$(UI_PORT)/"
 
 down: ## Stop and remove containers (current profile/env)
 	$(ECHO_PROFILE)
