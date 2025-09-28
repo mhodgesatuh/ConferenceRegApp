@@ -1,9 +1,11 @@
 // frontend/src/features/administration/AdministrationPage.tsx
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 import PageHeader from "@/components/PageHeader";
+import AdminTabs from "@/components/ui/AdminTabs";
+import TabContent from "@/components/ui/TabContent";
 import { Button, Input } from "@/components/ui";
 import RegistrationForm from "@/features/registration/RegistrationForm";
 import { registrationFormData } from "@/data/registrationFormData";
@@ -31,12 +33,15 @@ const AdministrationPage: React.FC = () => {
 
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get("tab") === "update" ? "update" : "list";
-    const setActiveTab = (tab: "list" | "update") => {
-        if (activeTab === tab) return;
-        const next = new URLSearchParams(searchParams);
-        next.set("tab", tab);
-        setSearchParams(next, { replace: true });
-    };
+    const setActiveTab = useCallback(
+        (tab: "list" | "update") => {
+            if (activeTab === tab) return;
+            const next = new URLSearchParams(searchParams);
+            next.set("tab", tab);
+            setSearchParams(next, { replace: true });
+        },
+        [activeTab, searchParams, setSearchParams]
+    );
     const [selected, setSelected] = useState<Registration | undefined>();
 
     useEffect(() => {
@@ -52,6 +57,13 @@ const AdministrationPage: React.FC = () => {
     const { data: fetchedById } = useRegistrationById(idFromState);
 
     const initialDataForUpdate = selected ?? fetchedById ?? registration;
+    const canViewList = Boolean(registration?.isOrganizer ?? fetchedById?.isOrganizer);
+
+    useEffect(() => {
+        if (!canViewList && activeTab === "list") {
+            setActiveTab("update");
+        }
+    }, [canViewList, activeTab, setActiveTab]);
 
     const dynamicColsBase = useMemo(
         () => buildListColumnsFromForm<Registration>(registrationFormData as FormField[]),
@@ -141,105 +153,110 @@ const AdministrationPage: React.FC = () => {
     };
 
     return (
-        <div className="page-card space-y-4">
-            <PageHeader title="Administration" />
+        <>
+            <AdminTabs activeTab={activeTab} onSelect={setActiveTab} canViewList={canViewList} />
 
-            {activeTab === "list" && (
-                <div id="tab-panel-list" role="tabpanel" aria-labelledby="tab-list" className="space-y-4">
-                    …
-                </div>
-            )}
-            {activeTab === "update" && (
-                <div id="tab-panel-update" role="tabpanel" aria-labelledby="tab-update">
-                    …
-                </div>
-            )}
+            <TabContent>
+                <div className="space-y-6">
+                    <PageHeader title="Registration Form" />
 
-            {activeTab === "list" && (
-                <div className="space-y-4">
-                    {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
-                    {error && <div className="text-sm text-red-600">Error: {error}</div>}
+                    {activeTab === "list" && canViewList && (
+                        <section
+                            id="tab-panel-list"
+                            role="tabpanel"
+                            aria-labelledby="tab-list"
+                            className="space-y-4"
+                        >
+                            {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+                            {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-                    <div className="bleed-98">
-                        <div className="admin-table-frame">
-                            <DataTable<Registration>
-                                data={registrations}
-                                columns={columns}
-                                defaultPageSize={DEFAULT_PAGE_SIZE}
-                                filterKeys={filterKeys}
-                                onRowClick={(reg) => setSelected(reg)}
-                                persistKey="admin.registrations.v1"
-                                renderToolbar={(state) => (
-                                    <div className="admin-toolbar">
-                                        {/* Row 1: filter pills (left) + Clear Filters (right) */}
-                                        <div className="admin-toolbar-row admin-toolbar-row--between">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="font-medium">Filters:</span>
-                                                {booleanFieldNames.map((name) => {
-                                                    const enabled = state.table.getColumn(name)?.getFilterValue() === true;
-                                                    return (
-                                                        <Button
-                                                            key={name}
-                                                            type="button"
-                                                            variant={enabled ? "default" : "outline"}
-                                                            size="sm"
-                                                            className="admin-filter-pill"
-                                                            onClick={() => {
-                                                                const col = state.table.getColumn(name);
-                                                                if (col) col.setFilterValue(enabled ? undefined : true);
-                                                            }}
-                                                        >
-                                                            {camelToTitle(name)}
-                                                        </Button>
-                                                    );
-                                                })}
+                            <div className="admin-table-frame">
+                                <DataTable<Registration>
+                                    data={registrations}
+                                    columns={columns}
+                                    defaultPageSize={DEFAULT_PAGE_SIZE}
+                                    filterKeys={filterKeys}
+                                    onRowClick={(reg) => setSelected(reg)}
+                                    persistKey="admin.registrations.v1"
+                                    renderToolbar={(state) => (
+                                        <div className="admin-toolbar">
+                                            {/* Row 1: filter pills (left) + Clear Filters (right) */}
+                                            <div className="admin-toolbar-row admin-toolbar-row--between">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-medium">Filters:</span>
+                                                    {booleanFieldNames.map((name) => {
+                                                        const enabled = state.table.getColumn(name)?.getFilterValue() === true;
+                                                        return (
+                                                            <Button
+                                                                key={name}
+                                                                type="button"
+                                                                variant={enabled ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="admin-filter-pill"
+                                                                onClick={() => {
+                                                                    const col = state.table.getColumn(name);
+                                                                    if (col) col.setFilterValue(enabled ? undefined : true);
+                                                                }}
+                                                            >
+                                                                {camelToTitle(name)}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Right side: Clear Filters */}
+                                                <div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="admin-toolbar-btn admin-toolbar-btn--dark"
+                                                        onClick={state.clearFilters}
+                                                    >
+                                                        Clear Filters
+                                                    </Button>
+                                                </div>
                                             </div>
-
-                                            {/* Right side: Clear Filters */}
-                                            <div>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="admin-toolbar-btn admin-toolbar-btn--dark"
-                                                    onClick={state.clearFilters}
-                                                >
-                                                    Clear Filters
-                                                </Button>
-                                            </div>
-                                        </div>
-                                        {/* Row 2: search + columns + rows-per-page (left) + Export (right) */}
-                                        <div className="admin-toolbar-row admin-toolbar-row--between">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <DebouncedSearch value={state.globalFilter} onChange={state.setGlobalFilter} />
-                                                {state.renderColumnVisibilityToggle()}
-                                                {state.renderPageSizeSelect([10, 20, 50, 100])}
-                                            </div>
-                                            {/* Right side: Export */}
-                                            <div>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="admin-toolbar-btn admin-toolbar-btn--dark"
-                                                    onClick={state.exportCSV}
-                                                >
-                                                    Export
-                                                </Button>
+                                            {/* Row 2: search + columns + rows-per-page (left) + Export (right) */}
+                                            <div className="admin-toolbar-row admin-toolbar-row--between">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <DebouncedSearch value={state.globalFilter} onChange={state.setGlobalFilter} />
+                                                    {state.renderColumnVisibilityToggle()}
+                                                    {state.renderPageSizeSelect([10, 20, 50, 100])}
+                                                </div>
+                                                {/* Right side: Export */}
+                                                <div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="admin-toolbar-btn admin-toolbar-btn--dark"
+                                                        onClick={state.exportCSV}
+                                                    >
+                                                        Export
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                />
+                            </div>
+                        </section>
+                    )}
+
+                    {activeTab === "update" && (
+                        <section id="tab-panel-update" role="tabpanel" aria-labelledby="tab-update">
+                            <RegistrationForm
+                                fields={registrationFormData}
+                                initialData={initialDataForUpdate}
+                                forceAdmin
+                                showHeader={false}
                             />
-                        </div>
-                    </div>
+                        </section>
+                    )}
                 </div>
-            )}
-
-            {activeTab === "update" && (
-                <RegistrationForm fields={registrationFormData} initialData={initialDataForUpdate} forceAdmin showHeader={false} />
-            )}
-        </div>
+            </TabContent>
+        </>
     );
 };
 
