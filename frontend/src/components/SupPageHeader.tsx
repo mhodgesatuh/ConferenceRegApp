@@ -2,11 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-type SubPageHeadingProps = {
+type SupPageHeaderProps = {
     showHomeLink?: boolean;
 };
 
-const SubPageHeading: React.FC<SubPageHeadingProps> = ({ showHomeLink = false }) => {
+const SupPageHeader: React.FC<SupPageHeaderProps> = ({ showHomeLink = false }) => {
     return (
         <div className="w-full border-b bg-muted/40">
             <div className="mx-auto flex w-full max-w-5xl items-center px-4 py-2 sm:px-8">
@@ -21,4 +21,4 @@ const SubPageHeading: React.FC<SubPageHeadingProps> = ({ showHomeLink = false })
     );
 };
 
-export default SubPageHeading;
+export default SupPageHeader;

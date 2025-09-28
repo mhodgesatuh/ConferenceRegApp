@@ -3,8 +3,8 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 
-import PageHeading from '@/components/ui/PageHeading';
-import PageFooter from '@/components/ui/PageFooter';
+import PageHeader from '@/components/PageHeader';
+import PageFooter from '@/components/PageFooter';
 
 type AppLayoutProps = {
     children: React.ReactNode;
@@ -16,7 +16,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
-            <PageHeading />
+            <PageHeader />
 
             <main className="flex-1 w-full">
                 {isAdmin ? (

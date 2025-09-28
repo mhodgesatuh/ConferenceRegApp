@@ -3,9 +3,9 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
-import PageHeader from "@/components/PageHeader";
+import PageTitle from "@/components/PageTitle";
 import AdminTabs from "@/components/ui/AdminTabs";
-import TabContent from "@/components/ui/TabContent";
+import TabContent from "@/components/TabContent";
 import { Button, Input } from "@/components/ui";
 import RegistrationForm from "@/features/registration/RegistrationForm";
 import { registrationFormData } from "@/data/registrationFormData";
@@ -27,6 +27,11 @@ interface LocationState {
 
 const DEFAULT_PAGE_SIZE = 20;
 
+const TAB_LABELS: Record<'list' | 'update', string> = {
+    update: "Registration Form",
+    list: "Registrations Table",
+};
+
 const AdministrationPage: React.FC = () => {
     const { state } = useLocation();
     const { registration } = (state as LocationState) || {};
@@ -43,6 +48,7 @@ const AdministrationPage: React.FC = () => {
         [activeTab, searchParams, setSearchParams]
     );
     const [selected, setSelected] = useState<Registration | undefined>();
+    const activeTabLabel = TAB_LABELS[activeTab];
 
     useEffect(() => {
         if (activeTab === "list") {
@@ -169,7 +175,7 @@ const AdministrationPage: React.FC = () => {
 
             <TabContent>
                 <div className="space-y-6">
-                    <PageHeader title="Registration Form" />
+                    <PageTitle title={activeTabLabel} />
 
                     {activeTab === "list" && canViewList && (
                         <section
