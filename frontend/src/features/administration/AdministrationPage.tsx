@@ -1,7 +1,7 @@
 // frontend/src/features/administration/AdministrationPage.tsx
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import PageTitle from "@/components/PageTitle";
 import AdminTabs from "@/components/ui/AdminTabs";
@@ -13,13 +13,14 @@ import type { FormField } from "@/data/registrationFormData";
 import { getAccessorKey } from "./table/utils";
 
 import type { ColumnDef, FilterFn } from "@tanstack/react-table";
-import { Pencil } from "lucide-react";
+import { Pencil, UserPlus } from "lucide-react";
 
 import { DataTable } from "./components/DataTable";
 import { buildFilterKeys, buildListColumnsFromForm, camelToTitle } from "./table/columns";
 import { useRegistrations } from "./hooks/useRegistrations";
 import { useRegistrationById } from "./hooks/useRegistrationById";
 import type { Registration } from "./types";
+import { useAuth } from "@/features/auth/AuthContext";
 
 interface LocationState {
     registration?: any;
@@ -35,7 +36,9 @@ const TAB_LABELS: Record<'list' | 'update', string> = {
 
 const AdministrationPage: React.FC = () => {
     const { state } = useLocation();
-    const { registration } = (state as LocationState) || {};
+    const navigate = useNavigate();
+    const { registration: stateRegistration } = (state as LocationState) || {};
+    const { registration: authRegistration, isOrganizer } = useAuth();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get("tab") === "update" ? "update" : "list";
@@ -49,33 +52,38 @@ const AdministrationPage: React.FC = () => {
         [activeTab, searchParams, setSearchParams]
     );
     const [selected, setSelected] = useState<Registration | undefined>();
+    const [creatingNew, setCreatingNew] = useState(false);
     const activeTabLabel = TAB_LABELS[activeTab];
 
     useEffect(() => {
         if (activeTab === "list") {
             setSelected(undefined);
+            setCreatingNew(false);
         }
     }, [activeTab]);
 
-    const { data: registrations, isLoading, error } = useRegistrations();
+    const { data: registrations, isLoading, error, errorStatus, reload } = useRegistrations();
 
-    const storedId = Number(sessionStorage.getItem("regId") ?? "");
-    const storedOrganizerFlag = useMemo<boolean | undefined>(() => {
-        try {
-            const raw = sessionStorage.getItem("regIsOrganizer");
-            if (raw === null) return undefined;
-            if (raw === "true" || raw === "1") return true;
-            if (raw === "false" || raw === "0") return false;
-            return undefined;
-        } catch {
-            return undefined;
+    const activeRegistrationId = useMemo(() => {
+        if (creatingNew) return undefined;
+        const candidate = (selected as Registration | undefined)?.id
+            ?? (stateRegistration as Registration | undefined)?.id
+            ?? (authRegistration as Registration | undefined)?.id;
+        return typeof candidate === "number" && !Number.isNaN(candidate) ? candidate : undefined;
+    }, [creatingNew, selected, stateRegistration, authRegistration]);
+
+    const { data: fetchedById, errorStatus: registrationErrorStatus } = useRegistrationById(activeRegistrationId);
+
+    const initialDataForUpdate = creatingNew
+        ? {}
+        : selected ?? fetchedById ?? stateRegistration ?? authRegistration;
+    const canViewList = Boolean(stateRegistration?.isOrganizer || isOrganizer);
+
+    useEffect(() => {
+        if (errorStatus === 401 || registrationErrorStatus === 401) {
+            navigate("/home", { replace: true });
         }
-    }, []);
-    const idFromState = registration?.id ?? (Number.isNaN(storedId) ? null : storedId);
-    const { data: fetchedById } = useRegistrationById(idFromState);
-
-    const initialDataForUpdate = selected ?? fetchedById ?? registration;
-    const canViewList = Boolean(registration?.isOrganizer ?? storedOrganizerFlag);
+    }, [errorStatus, registrationErrorStatus, navigate]);
 
     useEffect(() => {
         if (!canViewList && activeTab === "list") {
@@ -115,6 +123,12 @@ const AdministrationPage: React.FC = () => {
         });
     }, [dynamicColsBase, booleanFieldNames]);
 
+    const handleNewAttendee = useCallback(() => {
+        setCreatingNew(true);
+        setSelected(undefined);
+        setActiveTab("update");
+    }, [setActiveTab, setSelected, setCreatingNew]);
+
     const editIconCol: ColumnDef<Registration> = useMemo(
         () => ({
             id: "edit",
@@ -132,9 +146,9 @@ const AdministrationPage: React.FC = () => {
                         className="p-1 rounded hover:bg-muted"
                         onClick={(e) => {
                             e.stopPropagation();
+                            setCreatingNew(false);
                             setSelected(reg);
                             setActiveTab("update");
-                            sessionStorage.setItem("regId", String(reg.id));
                         }}
                     >
                         <Pencil className="h-4 w-4" />
@@ -142,7 +156,7 @@ const AdministrationPage: React.FC = () => {
                 );
             },
         }),
-        []
+        [setActiveTab, setSelected, setCreatingNew]
     );
 
     const columns = useMemo<ColumnDef<Registration>[]>(() => [editIconCol, ...dynamicCols], [dynamicCols, editIconCol]);
@@ -170,6 +184,17 @@ const AdministrationPage: React.FC = () => {
         );
     };
 
+    const handleFormSaved = useCallback(
+        (regData: Record<string, any>) => {
+            if (regData && regData.id != null) {
+                setSelected(regData as Registration);
+                setCreatingNew(false);
+            }
+            reload();
+        },
+        [reload, setSelected, setCreatingNew]
+    );
+
     return (
         <>
             <AdminTabs activeTab={activeTab} onSelect={setActiveTab} canViewList={canViewList} />
@@ -194,7 +219,10 @@ const AdministrationPage: React.FC = () => {
                                     columns={columns}
                                     defaultPageSize={DEFAULT_PAGE_SIZE}
                                     filterKeys={filterKeys}
-                                    onRowClick={(reg) => setSelected(reg)}
+                                    onRowClick={(reg) => {
+                                        setCreatingNew(false);
+                                        setSelected(reg);
+                                    }}
                                     persistKey="admin.registrations.v1"
                                     renderToolbar={(state) => (
                                         <div className="admin-toolbar">
@@ -238,6 +266,16 @@ const AdministrationPage: React.FC = () => {
                                             {/* Row 2: search + columns + rows-per-page (left) + Export (right) */}
                                             <div className="admin-toolbar-row admin-toolbar-row--between">
                                                 <div className="flex items-center gap-2 flex-wrap">
+                                                    <Button
+                                                        type="button"
+                                                        variant="default"
+                                                        size="sm"
+                                                        className="admin-toolbar-btn"
+                                                        onClick={handleNewAttendee}
+                                                    >
+                                                        <UserPlus className="mr-1 h-4 w-4" aria-hidden="true" />
+                                                        <span>+ Attendee</span>
+                                                    </Button>
                                                     <DebouncedSearch value={state.globalFilter} onChange={state.setGlobalFilter} />
                                                     {state.renderColumnVisibilityToggle()}
                                                     {state.renderPageSizeSelect([10, 20, 50, 100])}
@@ -269,6 +307,7 @@ const AdministrationPage: React.FC = () => {
                                 initialData={initialDataForUpdate}
                                 forceAdmin
                                 showHeader={false}
+                                onSaved={handleFormSaved}
                             />
                         </section>
                     )}

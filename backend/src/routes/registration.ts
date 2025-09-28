@@ -30,7 +30,7 @@ import rateLimit from "express-rate-limit";
 import csrf from "csurf";
 import {CSRF_HEADER} from "@/constants/security";
 import {log, sendError} from "@/utils/logger";
-import {createSession, requireAuth} from "@/utils/auth";
+import {createSession, getSession, requireAuth} from "@/utils/auth";
 import {isDuplicateKey} from "@/utils/dbErrors";
 import {logDbError} from "@/utils/dbErrorLogger";
 import {
@@ -173,6 +173,7 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
     }
 
     try {
+        const existingSession = getSession(req);
         const loginPin = generatePin(8);
 
         const { id } = await createRegistration(
@@ -192,6 +193,7 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
                 cancellationReason: toNull(req.body.cancellationReason),
                 day1Attendee: toTinyInt(req.body.day1Attendee),
                 day2Attendee: toTinyInt(req.body.day2Attendee),
+                lunchMenu: toNull(req.body.lunchMenu),
                 question1: String(req.body.question1).trim(),
                 question2: String(req.body.question2).trim(),
                 isAttendee: 1, // always true on create
@@ -207,7 +209,9 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
         log.info("Registration created", { email, registrationId: id });
 
         // Establish a session and immediately fetch a CSRF token
-        createSession(res, id, /* isOrganizer */ false);
+        if (!existingSession) {
+            createSession(res, id, /* isOrganizer */ false);
+        }
         res.status(201).json({ id, loginPin });
 
     } catch (err) {
@@ -285,6 +289,7 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                     req.body.cancellationReason !== undefined ? toNull(req.body.cancellationReason) : undefined,
                 day1Attendee: req.body.day1Attendee !== undefined ? toTinyInt(req.body.day1Attendee) : undefined,
                 day2Attendee: req.body.day2Attendee !== undefined ? toTinyInt(req.body.day2Attendee) : undefined,
+                lunchMenu: req.body.lunchMenu !== undefined ? toNull(req.body.lunchMenu) : undefined,
                 question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
                 question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
                 // Don't force isAttendee=true on update; preserve/allow explicit changes

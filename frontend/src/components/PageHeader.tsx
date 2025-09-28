@@ -1,6 +1,17 @@
 import React from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
 
 const PageHeader: React.FC = () => {
+    const { registration } = useAuth();
+    const firstName = typeof registration?.firstName === 'string' ? registration.firstName.trim() : '';
+    const lastName = typeof registration?.lastName === 'string' ? registration.lastName.trim() : '';
+    const hasName = firstName !== '' || lastName !== '';
+    const message = registration
+        ? hasName
+            ? `Welcome ${[firstName, lastName].filter(Boolean).join(' ')}`
+            : 'Welcome'
+        : 'Invitation-only access';
+
     return (
         <div
             className="w-full bg-cover bg-center"
@@ -12,7 +23,7 @@ const PageHeader: React.FC = () => {
                         Conference Registration
                     </h1>
                     <p className="mt-2 text-sm font-medium text-white/90 sm:text-base">
-                        Invitation-only access
+                        {message}
                     </p>
                 </div>
             </div>

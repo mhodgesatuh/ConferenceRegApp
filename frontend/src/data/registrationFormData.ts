@@ -24,13 +24,14 @@
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section';
+    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'validation-table';
     required?: boolean;
     scope: 'admin' | 'registration';
     priv?: 'update';
     readOnly?: boolean;
     list?: boolean;
     clickedByDefault?: boolean;
+    validationTable?: string;
 }
 
 // Export a typed constant for each form element type.
@@ -116,6 +117,14 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+    },
+    {
+        name: 'lunchMenu',
+        label: 'Lunch Menu',
+        type: 'validation-table',
+        required: false,
+        scope: 'registration',
+        validationTable: 'lunch-menu',
     },
     {
         name: 'question1',

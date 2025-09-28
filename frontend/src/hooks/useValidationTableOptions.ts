@@ -1,0 +1,60 @@
+// frontend/src/hooks/useValidationTableOptions.ts
+
+import {useEffect, useState} from "react";
+import {apiFetch} from "@/lib/api";
+
+export interface ValidationTableState {
+    options: string[];
+    isLoading: boolean;
+    error: string | null;
+}
+
+export function useValidationTableOptions(table?: string): ValidationTableState {
+    const [options, setOptions] = useState<string[]>([]);
+    const [isLoading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!table) {
+            setOptions([]);
+            setError('Missing validation table');
+            return;
+        }
+
+        let cancelled = false;
+        const controller = new AbortController();
+
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const init: RequestInit = {
+                    method: 'GET',
+                    signal: controller.signal,
+                };
+                const data = await apiFetch(`/api/validation-tables/${encodeURIComponent(table)}`, init);
+                if (cancelled) return;
+                const values = Array.isArray(data?.values)
+                    ? data.values.map((v: unknown) => String(v))
+                    : [];
+                setOptions(values);
+            } catch (err: any) {
+                if (cancelled) return;
+                const message = err?.data?.error || err?.message || 'Failed to load options';
+                setError(message);
+                setOptions([]);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+            controller.abort();
+        };
+    }, [table]);
+
+    return { options, isLoading, error };
+}

@@ -23,6 +23,8 @@ import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
 import {Message} from '@/components/ui/message';
+import {ValidationTableSelect} from '@/components/ui/validation-table-select';
+import {useValidationTableOptions} from '@/hooks/useValidationTableOptions';
 
 type Props = {
     field: FormField;
@@ -30,10 +32,11 @@ type Props = {
     isMissing: (name: string) => boolean;
     onCheckboxChange: (name: string, value: boolean | 'indeterminate' | undefined) => void;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onValueChange: (name: string, value: string | null) => void;
     error?: string;
 };
 
-export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInputChange, error }: Props) {
+export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInputChange, onValueChange, error }: Props) {
 
     if (field.type === 'section') {
         return <Section key={`section-${field.label}`}>{field.label}</Section>;
@@ -70,6 +73,43 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                 />
                 {hasError && <Message id={errorId} text={error!} isError />}
             </>
+        );
+    }
+
+    if (field.type === 'validation-table') {
+        const { options, isLoading, error: loadError } = useValidationTableOptions(field.validationTable);
+        const validationError = error;
+        const fetchError = loadError ?? null;
+        const isFieldMissing = isMissing(field.name);
+        const hasAnyError = Boolean(validationError) || Boolean(fetchError) || isFieldMissing;
+        const validationErrorId = validationError ? `${field.name}-error` : undefined;
+        const fetchErrorId = fetchError ? `${field.name}-fetch-error` : undefined;
+        const describedBy = [validationErrorId, fetchErrorId].filter(Boolean).join(' ') || undefined;
+        const raw = state[field.name];
+        const safeValue = typeof raw === 'string' ? raw : '';
+
+        return (
+            <div key={field.name} className="flex flex-col gap-1">
+                <Label htmlFor={field.name}>
+                    {field.label}
+                    {field.required && <sup className="text-red-500">*</sup>}
+                </Label>
+                <ValidationTableSelect
+                    id={field.name}
+                    value={safeValue}
+                    options={options}
+                    onChange={(val) => onValueChange(field.name, val)}
+                    allowClear={!field.required}
+                    isLoading={isLoading}
+                    disabled={!isLoading && options.length === 0}
+                    placeholder="Select an option"
+                    aria-invalid={hasAnyError}
+                    aria-describedby={describedBy}
+                    className={hasAnyError ? 'w-full bg-red-100' : 'w-full'}
+                />
+                {fetchError && <Message id={fetchErrorId} text={fetchError} isError />}
+                {validationError && <Message id={validationErrorId} text={validationError} isError />}
+            </div>
         );
     }
 
