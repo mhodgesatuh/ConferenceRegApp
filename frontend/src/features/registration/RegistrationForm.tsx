@@ -1,7 +1,7 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
 import React, { useEffect, useMemo, useReducer, useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import PageTitle from "@/components/PageTitle";
 
 import { FormField } from "@/data/registrationFormData";
 import { formReducer, initialFormState } from "./formReducer";
@@ -286,7 +286,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     // --- Render ---------------------------------------------------------------
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {showHeader && <PageHeader title={PAGE_TITLE} />}
+            {showHeader && <PageTitle title={PAGE_TITLE} />}
 
             {fieldsForRender.map((field) => {
                 const hr = field.type === 'section' ? <hr className="my-4" /> : null;
