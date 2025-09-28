@@ -53,11 +53,22 @@ const AdministrationPage: React.FC = () => {
     const { data: registrations, isLoading, error } = useRegistrations();
 
     const storedId = Number(sessionStorage.getItem("regId") ?? "");
+    const storedOrganizerFlag = useMemo<boolean | undefined>(() => {
+        try {
+            const raw = sessionStorage.getItem("regIsOrganizer");
+            if (raw === null) return undefined;
+            if (raw === "true" || raw === "1") return true;
+            if (raw === "false" || raw === "0") return false;
+            return undefined;
+        } catch {
+            return undefined;
+        }
+    }, []);
     const idFromState = registration?.id ?? (Number.isNaN(storedId) ? null : storedId);
     const { data: fetchedById } = useRegistrationById(idFromState);
 
     const initialDataForUpdate = selected ?? fetchedById ?? registration;
-    const canViewList = Boolean(registration?.isOrganizer ?? fetchedById?.isOrganizer);
+    const canViewList = Boolean(registration?.isOrganizer ?? storedOrganizerFlag);
 
     useEffect(() => {
         if (!canViewList && activeTab === "list") {
