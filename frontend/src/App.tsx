@@ -22,6 +22,7 @@ const AppRoutes: React.FC = () => {
 
             try {
                 sessionStorage.setItem('regId', String(registration.id ?? ''));
+                sessionStorage.setItem('regIsOrganizer', registration.isOrganizer ? 'true' : 'false');
             } catch {
                 /* ignore sessionStorage failures */
             }
