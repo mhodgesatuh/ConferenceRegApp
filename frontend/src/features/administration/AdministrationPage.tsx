@@ -25,6 +25,7 @@ interface LocationState {
     registration?: any;
 }
 
+// Set the initial number of rows displayed per page in the DataTable component.
 const DEFAULT_PAGE_SIZE = 20;
 
 const TAB_LABELS: Record<'list' | 'update', string> = {

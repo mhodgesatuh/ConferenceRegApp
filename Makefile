@@ -10,6 +10,7 @@ FRONTEND_DIR := frontend
 SERVICE_BACKEND := conference-backend
 SERVICE_FRONTEND := conference-ui
 SERVICE_DB := conference-db
+SERVICE_PROXY := proxy
 DEBUG_PORT := 9229
 DEBUG_VITEST_PORT := 9230
 
@@ -78,10 +79,16 @@ endif
 	$(MAKE) drop-tables
 	$(MAKE) schema
 
-init-backend: ## Rebuild and restart the backend container only (current profile)
+init-backend: ## Rebuild and restart backend + proxy (current profile)
 	$(ECHO_PROFILE)
 	$(COMPOSE) build --no-cache $(SERVICE_BACKEND)
-	$(COMPOSE) up -d $(SERVICE_BACKEND)
+	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
+	@echo "Backend reachable via nginx at: https://localhost:8080"
+
+up-backend: ## Start db + backend + proxy (no UI container)
+	$(ECHO_PROFILE)
+	$(COMPOSE) up -d $(SERVICE_DB) $(SERVICE_BACKEND) $(SERVICE_PROXY)
+	@echo "Backend up at: https://localhost:8080"
 
 backend-shell: ## Open a shell in the backend container (current profile)
 	$(ECHO_PROFILE)
@@ -391,5 +398,5 @@ endif
         rebuild logs prod-build prod-up prod-down prod-deploy \
         frontend-install frontend-dev frontend-build frontend-preview \
         frontend-test frontend-test-watch frontend-typecheck \
-        frontend-typecheck-node frontend-typecheck-all \
+        frontend-typecheck-node frontend-typecheck-all up-backend \
         debug test-debug nuke-npm rebuild-frontend

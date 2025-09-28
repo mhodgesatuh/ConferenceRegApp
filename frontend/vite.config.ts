@@ -1,23 +1,10 @@
 // frontend/vite.config.ts
-
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import * as fs from 'fs';
-import * as path from 'path';
 
 export default defineConfig(({ command }) => {
     const isDev = command === 'serve';
-
-    const keyPath = path.resolve('/certs/localhost-key.pem');
-    const certPath = path.resolve('/certs/localhost.pem');
-    const httpsOptions =
-        fs.existsSync(keyPath) && fs.existsSync(certPath)
-            ? {
-                key: fs.readFileSync(keyPath),
-                cert: fs.readFileSync(certPath),
-            }
-            : undefined;
 
     return {
         plugins: [react(), tsconfigPaths()],
@@ -25,12 +12,12 @@ export default defineConfig(({ command }) => {
             ? {
                 host: true,
                 port: 3000,
-                https: httpsOptions,
+                // omit "https" so Vite serves HTTP by default
                 proxy: {
                     '/api': {
-                        target: 'https://conference-backend:8080',
+                        target: 'https://localhost:8080', // nginx is TLS on 8080
                         changeOrigin: true,
-                        secure: false,
+                        secure: false, // accept self-signed
                     },
                 },
             }
