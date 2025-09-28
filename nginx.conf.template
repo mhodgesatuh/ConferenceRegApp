@@ -39,7 +39,7 @@ http {
     server_name _;
 
     # If HTTP hits the HTTPS listener (Nginx logs 497), redirect to https
-    error_page 497 =301 https://$host:8080$request_uri;
+    error_page 497 =301 https://$host:8443$request_uri;
 
     ssl_certificate     /etc/nginx/certs/localhost.pem;
     ssl_certificate_key /etc/nginx/certs/localhost-key.pem;
@@ -65,7 +65,7 @@ http {
       proxy_pass http://conference_backend;     # ⬅️ back to HTTP
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
 
-      proxy_set_header X-Forwarded-Port $server_port;
+      proxy_set_header X-Forwarded-Port 8443;
       proxy_set_header X-Forwarded-Proto $scheme;
     }
 

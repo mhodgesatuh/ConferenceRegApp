@@ -57,7 +57,7 @@ See the docs folder for application documentation.
 
 ## Developer Notes
 
-- Frontend: <https://localhost:8080/>
+- Frontend: <https://localhost:8443/>
 - Makefile commands honor the `ENV_PROFILE` variable. Set `ENV_PROFILE=prod` to run against the production profile.
 - Command `make ensure-drizzle-deps` updates Drizzle.
 - TLS certificates are stored in `backend/certs` and are mounted into the backend container.
@@ -306,7 +306,7 @@ To confirm everything is working, try:
 make init
 ```
 
-Then visit: [https://localhost:8080](https://localhost:8080)
+Then visit: [https://localhost:8443](https://localhost:8443)
 
 ---
 # Future work

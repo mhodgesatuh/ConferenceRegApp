@@ -15,7 +15,7 @@ export default defineConfig(({ command }) => {
                 // omit "https" so Vite serves HTTP by default
                 proxy: {
                     '/api': {
-                        target: 'https://localhost:8080', // nginx is TLS on 8080
+                        target: 'https://localhost:8443', // nginx is TLS on 8443
                         changeOrigin: true,
                         secure: false, // accept self-signed
                     },
