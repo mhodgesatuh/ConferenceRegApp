@@ -101,7 +101,6 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                     onChange={(val) => onValueChange(field.name, val)}
                     allowClear={!field.required}
                     isLoading={isLoading}
-                    disabled={!isLoading && options.length === 0}
                     placeholder="Select an option"
                     aria-invalid={hasAnyError}
                     aria-describedby={describedBy}
