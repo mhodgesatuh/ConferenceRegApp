@@ -17,7 +17,8 @@ export function useValidationTableOptions(table?: string): ValidationTableState 
     useEffect(() => {
         if (!table) {
             setOptions([]);
-            setError('Missing validation table');
+            setError(null);
+            setLoading(false);
             return;
         }
 
@@ -40,9 +41,17 @@ export function useValidationTableOptions(table?: string): ValidationTableState 
                 setOptions(values);
             } catch (err: any) {
                 if (cancelled) return;
-                const message = err?.data?.error || err?.message || 'Failed to load options';
-                setError(message);
-                setOptions([]);
+                const status: number | undefined = typeof err?.status === 'number' ? err.status : undefined;
+                const code = err?.data?.error;
+
+                if (status === 404 || code === 'validation_table_not_found') {
+                    setOptions([]);
+                    setError(null);
+                } else {
+                    const message = code || err?.message || 'Failed to load options';
+                    setError(message);
+                    setOptions([]);
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }
