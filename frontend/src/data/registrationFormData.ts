@@ -124,7 +124,7 @@ export const registrationFormData: FormField[] = [
         type: 'validation-table',
         required: false,
         scope: 'registration',
-        validationTable: 'lunch-menu',
+        validationTable: 'lunch_menu',
     },
     {
         name: 'question1',

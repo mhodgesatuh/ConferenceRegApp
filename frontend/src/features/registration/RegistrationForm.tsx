@@ -10,7 +10,7 @@ import { Button, Message } from "@/components/ui";
 import {useMissingFields} from "@/hooks/useMissingFields";
 import {FieldRenderer} from "./FieldFactory";
 import {apiFetch, primeCsrf} from "@/lib/api";
-
+import type {Registration} from "@/features/administration/types";
 
 import {
     findMissingRequiredFields,
@@ -30,8 +30,8 @@ type MessageType = '' | 'success' | 'error';
 
 const asTrimmedString = (v: unknown) => (v == null ? "" : String(v).trim());
 
-const normalizeForSubmit = (src: Record<string, any>) => {
-    const out: Record<string, any> = {};
+const normalizeForSubmit = (src: Record<string, unknown>) => {
+    const out: Record<string, unknown> = {};
 
     for (const [k, v] of Object.entries(src)) {
         if (typeof v === "string") {
@@ -52,10 +52,10 @@ const normalizeForSubmit = (src: Record<string, any>) => {
 
 type RegistrationFormProps = {
     fields: FormField[];
-    initialData?: Record<string, any>;
+    initialData?: Partial<Registration>;
     forceAdmin?: boolean;
     showHeader?: boolean;
-    onSaved?: (registration: Record<string, any>) => void;
+    onSaved?: (registration: Registration) => void;
 };
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({
@@ -270,7 +270,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
                 setMessage({ text: 'Registration saved successfully.', type: 'success' });
                 if (data?.id) {
-                    const newRegistration = { ...state, id: data.id } as Record<string, any>;
+                    const newRegistration: Registration = { ...(state as any), id: data.id };
                     onSaved?.(newRegistration);
                 }
             } else {
@@ -282,7 +282,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 }
                 setMessage({ text: 'Registration updated successfully.', type: 'success' });
                 if (data?.registration) {
-                    onSaved?.(data.registration as Record<string, any>);
+                    onSaved?.(data.registration as Registration);
                 }
             }
         } catch (err: any) {

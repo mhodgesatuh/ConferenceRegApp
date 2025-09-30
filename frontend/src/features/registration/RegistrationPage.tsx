@@ -1,22 +1,28 @@
 // frontend/src/features/registration/RegistrationPage.tsx
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
+import type {Registration} from "@/features/administration/types";
 
 import RegistrationForm from "./RegistrationForm";
-import { registrationFormData } from "@/data/registrationFormData";
-import { apiFetch } from "@/lib/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import {registrationFormData} from "@/data/registrationFormData";
+import {apiFetch} from "@/lib/api";
+import {useAuth} from "@/features/auth/AuthContext";
 
 type LocationState = { registration?: any };
+
+function asRegistration(x: unknown): Registration | undefined {
+    return x && typeof (x as any).id === "number" ? (x as Registration) : undefined;
+}
 
 const RegistrationPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { registration: stateRegistration } = (location.state as LocationState) || {};
     const { registration: authRegistration, setRegistration } = useAuth();
-    const [initialData, setInitialData] = useState<any | undefined>(stateRegistration ?? authRegistration);
-
+    const [initialData, setInitialData] = useState<Registration | undefined>(
+        asRegistration(stateRegistration) ?? asRegistration(authRegistration)
+    );
     const storedId = useMemo(() => {
         try {
             const raw = sessionStorage.getItem("regId");
@@ -33,8 +39,8 @@ const RegistrationPage: React.FC = () => {
             setInitialData((prev) => prev ?? stateRegistration);
             return;
         }
-        if (authRegistration) {
-            setInitialData((prev) => prev ?? authRegistration);
+        if (asRegistration(authRegistration)) {
+            setInitialData((prev) => prev ?? (authRegistration as Registration));
         }
     }, [stateRegistration, authRegistration]);
 
@@ -45,9 +51,14 @@ const RegistrationPage: React.FC = () => {
 
             try {
                 const data = await apiFetch(`/api/registrations/${idToLoad}`, { method: "GET" });
-                if (data?.registration) setInitialData(data.registration);
+                if (data?.registration && typeof data.registration.id === "number") {
+                    setInitialData(data.registration as Registration);
+                }
             } catch {
-                try { sessionStorage.removeItem("regId"); } catch {}
+                try {
+                    sessionStorage.removeItem("regId");
+                } catch {
+                }
                 setInitialData(undefined); // fall back to brand-new form
                 setRegistration(null);
                 navigate("/home", { replace: true });
@@ -57,7 +68,7 @@ const RegistrationPage: React.FC = () => {
     }, [stateRegistration, authRegistration?.id, storedId, initialData?.id, navigate, setRegistration]);
 
     const handleSaved = useCallback(
-        (regData: Record<string, any>) => {
+        (regData: Registration) => {
             if (regData && regData.id != null) {
                 setInitialData(regData);
                 setRegistration(regData);
