@@ -75,8 +75,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const [submitting, setSubmitting] = useState(false);
 
     // UI flags
-    const [showId, setShowId] = useState(Boolean(initialData?.id));
-    const [isSaved, setIsSaved] = useState(Boolean(initialData?.id));
     const [message, setMessage] = useState<{ text: string; type: MessageType }>({ text: '', type: '' });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,16 +94,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     );
 
     /* Only the fields marked visible are rendered. */
+    const hasExistingRegistration = Boolean(state.id);
+
     const fieldsForRender = useMemo(
         () =>
             getVisibleFields({
                 fields,
                 state,
                 hasUpdatePrivilege,
-                isSaved,
-                showId,
+                isSaved: hasExistingRegistration,
+                showId: hasExistingRegistration,
             }),
-        [fields, state, hasUpdatePrivilege, isSaved, showId]
+        [fields, state, hasUpdatePrivilege, hasExistingRegistration]
     );
 
     // --- Effects ---------------------------------------------------------------
@@ -117,13 +117,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
         dispatch({ type: "RESET", initialState: merged });
     }, [initialData, fields]);
-
-    // Flags
-    useEffect(() => {
-        const hasId = Boolean(initialData?.id);
-        setShowId(hasId);
-        setIsSaved(hasId);
-    }, [initialData?.id]);
 
     // Enforce proxy consistency: if proxy data exists, hasProxy must be true
     useEffect(() => {
@@ -258,8 +251,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
             if (!isUpdate) {
                 if (data?.id) dispatch({ type: 'CHANGE_FIELD', name: 'id', value: data.id });
-                setShowId(true);
-                setIsSaved(true);
 
                 // 👇 Prime CSRF so the very next PUT succeeds
                 try {
@@ -331,8 +322,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             <div className="flex items-center gap-2">
                 <Button type="submit" disabled={submitting}>
                     {submitting
-                        ? (isSaved ? 'Saving…' : 'Submitting…')
-                        : (isSaved ? 'Save Registration' : 'Submit Registration')}
+                        ? (hasExistingRegistration ? 'Saving…' : 'Submitting…')
+                        : (hasExistingRegistration ? 'Save Registration' : 'Submit Registration')}
                 </Button>
                 {message.text && <Message text={message.text} isError={isError} />}
             </div>
