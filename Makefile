@@ -190,6 +190,13 @@ studio: ## Launch Drizzle Studio
 	  $(DRIZZLE) studio --host=0.0.0.0 --port=3337 \
 	'
 
+load-fixtures: ## Load default administrator and lunch menu fixtures into the database
+	$(ECHO_PROFILE)
+	@echo " - loading database fixtures..."
+	@$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME < backend/fixtures/registrations.sql
+	@$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$$DB_USER -p$$DB_PASSWORD $$DB_NAME < backend/fixtures/validation_tables.sql
+	@echo " - fixtures loaded."
+
 ##–––––– Docker: Container Lifecycle –––––––––––––––––––––––––––––––––––––––
 
 build: ## Build Docker images (current profile/env) — uses cache
@@ -400,4 +407,4 @@ endif
         frontend-install frontend-dev frontend-build frontend-preview \
         frontend-test frontend-test-watch frontend-typecheck \
         frontend-typecheck-node frontend-typecheck-all up-backend \
-        debug test-debug nuke-npm rebuild-frontend
+        debug test-debug nuke-npm rebuild-frontend load-fixtures
