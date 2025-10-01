@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react";
 import {apiFetch} from "@/lib/api";
 
-function toSnake(s: string): string {
+function toSnakeCase(s: string): string {
     // Converts lunchMenu / lunch-menu / Lunch_Menu -> lunch_menu
     return s
         .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -41,7 +41,7 @@ export function useValidationTableOptions(table?: string): ValidationTableState 
                     method: 'GET',
                     signal: controller.signal,
                 };
-                const key = toSnake(table);
+                const key = toSnakeCase(table);
                 const data = await apiFetch(`/api/validation-tables/${encodeURIComponent(key)}`, init);
                 if (cancelled) return;
                 const values = Array.isArray(data?.values)

@@ -1,13 +1,7 @@
 // frontend/src/components/ui/validation-table-select.tsx
 
 import React from 'react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select';
 
 export type ValidationTableSelectProps = {
     id?: string;
@@ -23,42 +17,51 @@ export type ValidationTableSelectProps = {
     className?: string;
 };
 
-export const ValidationTableSelect: React.FC<ValidationTableSelectProps> = ({
-    id,
-    value,
-    options,
-    onChange,
-    placeholder = 'Select an option',
-    disabled = false,
-    allowClear = false,
-    isLoading = false,
-    className,
-    ...ariaProps
-}) => {
+export const ValidationTableSelect: React.FC<ValidationTableSelectProps> = (
+    {
+        id,
+        value,
+        options,
+        onChange,
+        placeholder = 'Select an option',
+        disabled = false,
+        allowClear = false,
+        isLoading = false,
+        className,
+        ...ariaProps
+    }) => {
     const normalizedValue = value ?? '';
     const resolvedPlaceholder = isLoading ? 'Loading…' : placeholder;
+
+    // Normalize incoming options: coerce to strings, drop null/empty
+    const safeOptions = options
+        .filter((o) => o != null)
+        .map((o) => String(o))
+        .filter((o) => o.trim() !== '');
 
     return (
         <Select
             value={normalizedValue}
-            onValueChange={(next) => onChange(next === '' ? null : next)}
+            onValueChange={(next) => {
+                if (next === '' || next === '__clear') onChange(null);
+                else onChange(next);
+            }}
             disabled={disabled || isLoading}
         >
             <SelectTrigger id={id} className={className ?? 'w-full'} {...ariaProps}>
-                <SelectValue placeholder={resolvedPlaceholder} />
+                <SelectValue placeholder={resolvedPlaceholder}/>
             </SelectTrigger>
             <SelectContent>
                 {allowClear && (
-                    <SelectItem value="">
-                        None
-                    </SelectItem>
+                    // Radix requires non-empty item values
+                    <SelectItem value="__clear">None</SelectItem>
                 )}
-                {options.length === 0 ? (
+                {safeOptions.length === 0 ? (
                     <SelectItem value="__empty" disabled>
                         {isLoading ? 'Loading…' : 'No options available'}
                     </SelectItem>
                 ) : (
-                    options.map((option) => (
+                    safeOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                             {option}
                         </SelectItem>

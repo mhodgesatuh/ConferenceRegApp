@@ -10,7 +10,7 @@ const PageHeader: React.FC = () => {
         ? hasName
             ? `Welcome ${[firstName, lastName].filter(Boolean).join(' ')}`
             : 'Welcome'
-        : 'Invitation-only access';
+        : 'By Invitation';
 
     return (
         <div
