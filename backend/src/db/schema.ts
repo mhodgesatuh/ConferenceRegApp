@@ -11,6 +11,7 @@ import {
     timestamp,
     uniqueIndex,
     varchar,
+    text,
 } from 'drizzle-orm/mysql-core';
 import {sql} from 'drizzle-orm/sql';
 
@@ -47,6 +48,10 @@ export const registrations = mysqlTable('registrations', {
     question2: varchar('question2', {length: 128}).notNull(),
     isCancelled: boolean('is_cancelled').default(false),
     cancellationReason: varchar('cancellation_reason', {length: 512}),
+
+    // Presenter information
+    presenterBio: text('presenter_bio'),
+    presenterPicUrl: varchar('presenter_pic_url', {length: 256}),
 
     // Administration
     cancelledAttendance: boolean('cancelled_attendance').default(false),

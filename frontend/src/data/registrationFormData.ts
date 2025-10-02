@@ -24,7 +24,7 @@
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'validation-table';
+    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'validation-table' | 'text-area';
     required?: boolean;
     scope: 'admin' | 'registration';
     priv?: 'update';
@@ -129,14 +129,14 @@ export const registrationFormData: FormField[] = [
     {
         name: 'question1',
         label: 'Question 1',
-        type: 'text',
+        type: 'text-area',
         required: true,
         scope: 'registration',
     },
     {
         name: 'question2',
         label: 'Question 2',
-        type: 'text',
+        type: 'text-area',
         required: true,
         scope: 'registration',
     },
@@ -153,6 +153,34 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+    },
+    {
+        name: 'cancellationReason',
+        label: 'Reason for cancellation',
+        type: 'text',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'presenter',
+        label: 'Conference speakers, please provide a bio and a picture.',
+        type: 'section',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'presenterBio',
+        label: 'Bio',
+        type: 'text',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'presenterPicUrl',
+        label: 'Photo Upload',
+        type: 'text',
+        required: false,
+        scope: 'registration',
     },
     {
         name: 'cancellationReason',
