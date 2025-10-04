@@ -1,4 +1,4 @@
-# Makefile - Build, deploy, and manage Drizzle ORM for ConferenceRegApp
+# (root) Makefile - Build, deploy, and manage Drizzle ORM for ConferenceRegApp
 #
 
 # -----------------------------------------------------------------------------
@@ -106,18 +106,33 @@ ensure-drizzle-deps:
 	  npm ls drizzle-kit >/dev/null 2>&1 || npm install --no-fund --no-audit -D drizzle-kit@latest tsx@latest; \
 	  npm ls drizzle-orm >/dev/null 2>&1 || npm install --no-fund --no-audit drizzle-orm@latest'
 
-generate: ensure-drizzle-deps ## Diff schema locally → write SQL + journal
+generate: ensure-drizzle-deps ## 1) Diff schema locally → write SQL + journal
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
 	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
 	  $(DRIZZLE) generate && \
 	  echo " - migration files written to backend/drizzle/migrations/"'
 
-schema: ensure-drizzle-deps ## Incrementally apply only new migrations
+commit-migration: ## 2) Stage & commit new Drizzle migration files
+	$(ECHO_PROFILE)
+	@git add -f $(BACKEND_DIR)/drizzle/migrations
+	@git commit -m "chore: add new Drizzle migration files"
+
+schema: ensure-drizzle-deps ## 3) Incrementally apply only new migrations
 	$(ECHO_PROFILE)
 	@$(COMPOSE) up -d $(SERVICE_BACKEND)
 	@$(RUN_IN_BACKEND) 'set -e; cd /app/backend && \
 	  $(DRIZZLE) migrate'
+
+# Run Drizzle Studio inside the backend container on HTTP
+studio: ## 4) Launch Drizzle Studio
+	$(ECHO_PROFILE)
+	@echo " - starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=127.0.0.1 (use Firefox)"
+	@$(COMPOSE) run --rm -p 127.0.0.1:3337:3337 $(SERVICE_BACKEND) sh -lc '\
+	  set -e; \
+	  cd /app/backend && \
+	  $(DRIZZLE) studio --host=0.0.0.0 --port=3337 \
+	'
 
 baseline: ensure-drizzle-deps ## Snapshot current schema into “init” migration
 	$(ECHO_PROFILE)
@@ -145,11 +160,6 @@ reset-db: ## Completely remove and recreate the database (current profile/env)
 	@echo " - recreating fresh database from $(ENV_FILE)…"
 	$(COMPOSE) up -d $(SERVICE_DB)
 	@echo " - database reset complete. next step: make schema"
-
-commit-migration: ## Stage & commit new Drizzle migration files
-	$(ECHO_PROFILE)
-	@git add $(BACKEND_DIR)/drizzle/migrations
-	@git commit -m "chore: add new Drizzle migration files"
 
 studio-check: ## Verify certs & hosts entry for Drizzle Studio
 	$(ECHO_PROFILE)
@@ -179,16 +189,6 @@ studio-cert: ## Generate & install dev certs for Drizzle Studio (requires mkcert
 	mkdir -p $(BACKEND_DIR)/certs; \
 	mv local.drizzle.studio*.pem $(BACKEND_DIR)/certs; \
 	echo " - certificates created and moved to $(BACKEND_DIR)/certs"
-
-# Run Drizzle Studio inside the backend container on HTTP
-studio: ## Launch Drizzle Studio
-	$(ECHO_PROFILE)
-	@echo " - starting Drizzle Studio → https://local.drizzle.studio/?port=3337&host=127.0.0.1 (use Firefox)"
-	@$(COMPOSE) run --rm -p 127.0.0.1:3337:3337 $(SERVICE_BACKEND) sh -lc '\
-	  set -e; \
-	  cd /app/backend && \
-	  $(DRIZZLE) studio --host=0.0.0.0 --port=3337 \
-	'
 
 load-fixtures: ## Load default administrator and lunch menu fixtures into the database
 	$(ECHO_PROFILE)

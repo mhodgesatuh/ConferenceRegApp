@@ -1,4 +1,4 @@
-# docker-compose.yml
+# (root) docker-compose.yml
 services:
   proxy:
     image: nginx:alpine
