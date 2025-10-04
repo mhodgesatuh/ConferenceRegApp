@@ -20,22 +20,6 @@ const MAX_PREVIEW_SIZE = 50;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // mirror backend default (2 MiB)
 const MAX_FILE_MB = Math.round(MAX_FILE_BYTES / (1024 * 1024));
 
-function readFileAsDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = typeof reader.result === 'string' ? reader.result : '';
-            if (!result) {
-                reject(new Error('Unable to read the selected file.'));
-                return;
-            }
-            resolve(result);
-        };
-        reader.onerror = () => reject(new Error('Failed to read the selected file.'));
-        reader.readAsDataURL(file);
-    });
-}
-
 type PresenterPhotoFieldProps = {
     field: FormField;
     value: string;
@@ -72,8 +56,7 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
 
         setIsUploading(true);
         try {
-            const dataUrl = await readFileAsDataUrl(file);
-            const response = await uploadPresenterPhoto(dataUrl);
+            const response = await uploadPresenterPhoto(file);
             if (!response?.presenterPicUrl) {
                 throw new Error('Upload succeeded but no file path was returned.');
             }

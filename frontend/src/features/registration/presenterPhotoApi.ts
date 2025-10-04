@@ -11,9 +11,12 @@ export type UploadPresenterPhotoResponse = {
     bytes?: number;
 };
 
-export async function uploadPresenterPhoto(dataUrl: string): Promise<UploadPresenterPhotoResponse> {
+export async function uploadPresenterPhoto(file: File): Promise<UploadPresenterPhotoResponse> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
     return apiFetch('/api/presenters/photo', {
         method: 'POST',
-        body: JSON.stringify({ dataUrl }),
+        body: formData,
     });
 }

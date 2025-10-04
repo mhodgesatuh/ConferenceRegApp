@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
+import multer, { MulterError } from "multer";
 import { requireAuth } from "@/utils/auth";
 import { log, sendError } from "@/utils/logger";
 import { getRegistrationWithPinById } from "./registration.service"; // or add a lighter getRegistrationById
@@ -22,6 +23,29 @@ const UPLOAD_ROOT = path.isAbsolute(rawUploadDir)
 const PHOTO_SUBDIR = "presenters";
 const MAX_PHOTO_BYTES = Number(process.env.PRESENTER_MAX_BYTES || 2 * 1024 * 1024); // 2 MiB default
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+class UnsupportedMimeTypeError extends Error {
+    public readonly mime: string;
+
+    constructor(mime: string) {
+        super("Unsupported mime type");
+        this.name = "UnsupportedMimeTypeError";
+        this.mime = mime;
+    }
+}
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_PHOTO_BYTES },
+    fileFilter(_req, file, cb) {
+        const mime = (file.mimetype || "").toLowerCase();
+        if (!ALLOWED_MIME.has(mime)) {
+            cb(new UnsupportedMimeTypeError(mime));
+            return;
+        }
+        cb(null, true);
+    },
+});
 
 const uploadLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
@@ -72,65 +96,70 @@ function hasExpectedSignature(buffer: Buffer, mime: string): boolean {
     }
 }
 
-router.post("/photo", uploadLimiter, async (req: Request, res: Response) => {
-    const dataUrlRaw = typeof req.body?.dataUrl === "string" ? req.body.dataUrl.trim() : "";
+const singlePhotoUpload = upload.single("photo");
 
-    if (!dataUrlRaw) {
-        sendError(res, 400, "No photo provided");
-        return;
-    }
+router.post("/photo", uploadLimiter, (req: Request, res: Response) => {
+    singlePhotoUpload(req, res, async (err: unknown) => {
+        if (err) {
+            if (err instanceof UnsupportedMimeTypeError) {
+                sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
+                return;
+            }
+            if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
+                sendError(res, 413, "Photo is too large", { maxBytes: MAX_PHOTO_BYTES, maxReadable: formatBytes(MAX_PHOTO_BYTES) });
+                return;
+            }
+            log.warn("Presenter photo upload rejected", { err });
+            sendError(res, 400, "Photo could not be processed");
+            return;
+        }
 
-    const match = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i.exec(dataUrlRaw);
-    if (!match) {
-        sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
-        return;
-    }
+        const file = (req as any).file as (Express.Multer.File & { buffer: Buffer }) | undefined;
 
-    const mime = match[1].toLowerCase();
-    if (!ALLOWED_MIME.has(mime)) {
-        sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
-        return;
-    }
+        if (!file) {
+            sendError(res, 400, "No photo provided");
+            return;
+        }
 
-    let buffer: Buffer;
-    try {
-        buffer = Buffer.from(match[2], "base64");
-    } catch (err) {
-        log.warn("Presenter photo decode failed", { err });
-        sendError(res, 400, "Photo could not be decoded");
-        return;
-    }
+        const buffer = file.buffer;
+        const mime = (file.mimetype || "").toLowerCase();
 
-    if (buffer.length === 0) {
-        sendError(res, 400, "Photo is empty");
-        return;
-    }
+        if (!buffer || buffer.length === 0) {
+            sendError(res, 400, "Photo is empty");
+            return;
+        }
 
-    if (buffer.length > MAX_PHOTO_BYTES) {
-        sendError(res, 413, "Photo is too large", { maxBytes: MAX_PHOTO_BYTES, maxReadable: formatBytes(MAX_PHOTO_BYTES) });
-        return;
-    }
+        if (buffer.length > MAX_PHOTO_BYTES) {
+            sendError(res, 413, "Photo is too large", { maxBytes: MAX_PHOTO_BYTES, maxReadable: formatBytes(MAX_PHOTO_BYTES) });
+            return;
+        }
 
-    if (!hasExpectedSignature(buffer, mime)) {
-        log.warn("Presenter photo failed signature check", { mime });
-        sendError(res, 400, "Photo appears to be invalid or unsafe");
-        return;
-    }
+        if (!ALLOWED_MIME.has(mime)) {
+            sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
+            return;
+        }
 
-    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : "webp";
+        if (!hasExpectedSignature(buffer, mime)) {
+            log.warn("Presenter photo failed signature check", { mime });
+            sendError(res, 400, "Photo appears to be invalid or unsafe");
+            return;
+        }
 
-    try {
-        const { relative, absolute } = buildRelativeFilePath(ext);
-        await ensureDirectory(path.dirname(absolute));
-        await fs.writeFile(absolute, buffer);
+        const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : "webp";
 
-        log.info("Presenter photo stored", { path: relative, size: buffer.length });
+        try {
+            const { relative, absolute } = buildRelativeFilePath(ext);
+            await ensureDirectory(path.dirname(absolute));
+            await fs.writeFile(absolute, buffer);
 
-        res.status(201).json({ presenterPicUrl: relative, bytes: buffer.length });
-    } catch (err) {
-        log.error("Presenter photo save failed", { err });
-        sendError(res, 500, "Failed to save presenter photo");
-    }
+            log.info("Presenter photo stored", { path: relative, size: buffer.length });
+
+            res.status(201).json({ presenterPicUrl: relative, bytes: buffer.length });
+        } catch (writeErr) {
+            log.error("Presenter photo save failed", { err: writeErr });
+            sendError(res, 500, "Failed to save presenter photo");
+        }
+    });
 });
 
 /** owner-or-organizer guard (same semantics as registration.ts ownerOnly) */

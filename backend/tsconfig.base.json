@@ -10,9 +10,13 @@
         "incremental": true,
 
         "types": ["node"],
+        "typeRoots": ["./node_modules/@types", "./src/types"],
 
         "baseUrl": ".",
-        "paths": { "@/*": ["src/*"] },
+        "paths": {
+            "@/*": ["src/*"],
+            "multer": ["src/vendor/multer"]
+        },
 
         "lib": ["ESNext"],
         "target": "ES2020",
