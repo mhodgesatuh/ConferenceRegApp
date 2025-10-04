@@ -10,6 +10,7 @@ import sessionRoutes from "./routes/session";
 import validationTableRoutes from "./routes/validationTables";
 import {errorLogger, requestLogger} from "@/utils/logger";
 import {requireProxySeal} from "@/utils/auth";
+import presentersRouter from "@/routes/presenters";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use(cors(uiOrigin ? {
     allowedHeaders: ['Content-Type', 'x-csrf-token', 'X-CSRF-Token'],
 } : { origin: false }));
 
+// ---- Liveness probe: no auth, no proxy seal ----
+app.get("/healthz", (_req, res) => res.json({ ok: true }));
+
 app.use(requestLogger());
 app.use(requireProxySeal);
 
@@ -39,7 +43,6 @@ app.use(helmet({
             "img-src": ["'self'", "data:"],
             "style-src": ["'self'", "'unsafe-inline'"],
             "script-src": ["'self'"],
-            "connect-src": ["'self'", "/api"],
         }
     } : false,
     crossOriginEmbedderPolicy: false,
@@ -49,6 +52,7 @@ app.use(helmet({
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/validation-tables", validationTableRoutes);
+app.use("/api/presenters", presentersRouter);
 
 // 4) Error logging
 app.use(errorLogger());

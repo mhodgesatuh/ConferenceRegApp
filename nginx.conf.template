@@ -11,7 +11,7 @@ http {
                       'up=$upstream_status proto=$scheme host=$host';
   access_log /var/log/nginx/access.log main_ext;
 
-  client_max_body_size 1m;
+  client_max_body_size 10m;
 
   # Upstreams
   upstream conference_backend {
@@ -43,6 +43,53 @@ http {
 
     ssl_certificate     /etc/nginx/certs/localhost.pem;
     ssl_certificate_key /etc/nginx/certs/localhost-key.pem;
+
+    # PUBLIC STATIC MEDIA
+    # Serves files from ./data/presenter-photos (mounted read-only at /srv/presenter-photos)
+
+    location /media/ {
+      alias /srv/presenter-photos/;     # /media/foo -> /srv/presenter-photos/foo
+      autoindex off;
+
+      # Allow only safe read methods
+      limit_except GET HEAD { deny all; }
+
+      # Only treat these as images; everything else served as octet-stream
+      types {
+        image/jpeg  jpg jpeg;
+        image/png   png;
+        image/webp  webp;
+        image/gif   gif;
+        image/avif  avif;
+      }
+      default_type application/octet-stream;
+
+      # Caching + hardening
+      add_header X-Content-Type-Options nosniff always;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+
+      # 404 if file not found (no fallback to UI)
+      try_files $uri =404;
+    }
+
+    # GUARDED MEDIA VIA X-ACCEL-REDIRECT
+    # Backend checks authZ and replies with:
+    #   X-Accel-Redirect: /protected/presenters/<id>/portrait.webp
+
+    location /protected/ {
+      internal;                          # never directly accessible
+      alias /srv/presenter-photos/;
+      limit_except GET HEAD { deny all; }
+
+      types {
+        image/jpeg  jpg jpeg;
+        image/png   png;
+      }
+      default_type application/octet-stream;
+      add_header X-Content-Type-Options nosniff always;
+      add_header Cache-Control "private, max-age=600" always;
+      try_files $uri =404;
+    }
 
     # UI
     location / {

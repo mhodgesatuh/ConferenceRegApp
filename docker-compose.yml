@@ -13,6 +13,7 @@ services:
     volumes:
       - ./nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./backend/certs:/etc/nginx/certs:ro
+      - ./data/presenter-photos:/srv/presenter-photos:ro
     depends_on:
       - conference-backend
       - conference-ui
@@ -32,8 +33,12 @@ services:
       - .env
     environment:
       UPDATE_DEPS: ${UPDATE_DEPS:-false}
+      UPLOAD_DIR: /data/presenter-photos
+      MAX_UPLOAD_BYTES: 5242880
     depends_on:
       - conference-db
+    volumes:
+      - ./data/presenter-photos:/data/presenter-photos
     networks: [appnet]
 
   conference-db:
