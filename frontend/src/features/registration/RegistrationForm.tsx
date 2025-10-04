@@ -20,6 +20,7 @@ import {
     isValidEmail,
     isValidPhone,
     PROXY_FIELDS_SET,
+    PRESENTER_FIELDS_SET,
     userHasUpdatePrivilege,
 } from './formRules';
 
@@ -45,6 +46,10 @@ const normalizeForSubmit = (src: Record<string, unknown>) => {
     // If proxy is off, hard-null all proxy fields
     if (!out.hasProxy) {
         for (const f of PROXY_FIELDS_SET) out[f] = null;
+    }
+
+    if (!out.isPresenter) {
+        for (const f of PRESENTER_FIELDS_SET) out[f] = null;
     }
 
     return out;
@@ -144,9 +149,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         return "";
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, type, value, valueAsNumber } = e.target;
-        const parsed = type === 'number' ? (isNaN(valueAsNumber) ? '' : valueAsNumber) : value;
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const target = e.target;
+        const { name, value } = target;
+        const parsed = target instanceof HTMLInputElement && target.type === 'number'
+            ? (isNaN(target.valueAsNumber) ? '' : target.valueAsNumber)
+            : value;
         clearMissing(name);
         dispatch({ type: 'CHANGE_FIELD', name, value: parsed });
         const error = validateField(name, parsed);

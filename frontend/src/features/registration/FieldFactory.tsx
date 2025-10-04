@@ -5,7 +5,7 @@
 // - Renders three kinds of UI:
 //   - section: displays a Section header component.
 //   - checkbox: renders a Checkbox with disabled logic for hasProxy when proxy fields already contain text.
-//   - text-like inputs (text, email, phone, number): renders a labeled Input.
+//   - text-like inputs (text, email, phone, number, text-area): renders a labeled control.
 // - Error + missing handling:
 //   - Computes hasError and isFieldMissing; applies red highlight class when either is true.
 //   - Associates an aria-describedby with an inline <Message> when an error exists.
@@ -19,6 +19,7 @@
 import React from 'react';
 import {FormField} from '@/data/registrationFormData';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
 import {Label} from '@/components/ui/label';
 import {Checkbox} from '@/components/ui/checkbox-wrapper';
 import {Section} from '@/components/ui/section';
@@ -31,7 +32,7 @@ type Props = {
     state: Record<string, any>;
     isMissing: (name: string) => boolean;
     onCheckboxChange: (name: string, value: boolean | 'indeterminate' | undefined) => void;
-    onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onValueChange: (name: string, value: string | null) => void;
     error?: string;
 };
@@ -112,9 +113,9 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
         );
     }
 
-    // text, email, phone, number
+    // text, email, phone, number, text-area
     const isReadOnly = field.name === 'id';
-    const inputType = field.type;
+    const inputType = field.type === 'text-area' ? 'text' : field.type;
 
     const hasError = Boolean(error);
     const isFieldMissing = isMissing(field.name);
@@ -125,28 +126,39 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
     const raw = state[field.name];
     const safeValue = typeof raw === 'number' ? raw : (raw ?? '');
 
+    const commonProps = {
+        id: field.name,
+        name: field.name,
+        value: field.type === 'text-area' && typeof safeValue === 'number' ? String(safeValue) : safeValue,
+        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            if (isReadOnly) return;
+            onInputChange(e);
+        },
+        required: field.required,
+        'aria-required': field.required,
+        'aria-invalid': showErrorStyle,
+        'aria-describedby': errorId,
+        className: showErrorStyle ? 'bg-red-100' : undefined,
+    } as const;
+
     return (
         <div key={field.name} className="flex flex-col gap-1">
             <Label htmlFor={field.name}>
                 {field.label}
                 {field.required && <sup className="text-red-500">*</sup>}
             </Label>
-            <Input
-                id={field.name}
-                name={field.name}
-                type={inputType}
-                value={safeValue}
-                onChange={(e) => {
-                    if (isReadOnly) return;
-                    onInputChange(e);
-                }}
-                readOnly={isReadOnly}
-                required={field.required}
-                aria-required={field.required}
-                aria-invalid={showErrorStyle}
-                aria-describedby={errorId}
-                className={showErrorStyle ? 'bg-red-100' : undefined}
-            />
+            {field.type === 'text-area' ? (
+                <Textarea
+                    {...commonProps}
+                    rows={6}
+                />
+            ) : (
+                <Input
+                    {...commonProps}
+                    type={inputType}
+                    readOnly={isReadOnly}
+                />
+            )}
             {hasError && <Message id={errorId} text={error!} isError />}
         </div>
     );

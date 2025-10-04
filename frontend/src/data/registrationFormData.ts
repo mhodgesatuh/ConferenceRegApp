@@ -171,20 +171,13 @@ export const registrationFormData: FormField[] = [
     {
         name: 'presenterBio',
         label: 'Bio',
-        type: 'text',
+        type: 'text-area',
         required: false,
         scope: 'registration',
     },
     {
         name: 'presenterPicUrl',
         label: 'Photo Upload',
-        type: 'text',
-        required: false,
-        scope: 'registration',
-    },
-    {
-        name: 'cancellationReason',
-        label: 'Reason for cancellation',
         type: 'text',
         required: false,
         scope: 'registration',
