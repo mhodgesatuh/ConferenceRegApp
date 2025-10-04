@@ -24,7 +24,8 @@
         "studio": "DB_HOST=127.0.0.1 drizzle-kit studio --host=127.0.0.1 --port=3337"
     },
     "_moduleAliases": {
-        "@": "dist"
+        "@": "dist",
+        "multer": "dist/vendor/multer"
     },
     "dependencies": {
         "body-parser": "^1.20.2",
