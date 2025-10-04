@@ -1,11 +1,137 @@
 // backend/src/routes/presenters.ts
 
 import { Router, Request, Response, NextFunction } from "express";
+import path from "path";
+import fs from "fs/promises";
+import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import { requireAuth } from "@/utils/auth";
 import { log, sendError } from "@/utils/logger";
 import { getRegistrationWithPinById } from "./registration.service"; // or add a lighter getRegistrationById
 
 const router = Router();
+
+const DIST_DIR = path.resolve(__dirname, "..");
+const BACKEND_DIR = path.resolve(DIST_DIR, "..");
+const ROOT_DIR = path.resolve(BACKEND_DIR, "..");
+const rawUploadDir = process.env.UPLOAD_DIR || "data/presenter-photos";
+const UPLOAD_ROOT = path.isAbsolute(rawUploadDir)
+    ? rawUploadDir
+    : path.join(ROOT_DIR, rawUploadDir);
+
+const PHOTO_SUBDIR = "presenters";
+const MAX_PHOTO_BYTES = Number(process.env.PRESENTER_MAX_BYTES || 2 * 1024 * 1024); // 2 MiB default
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+const uploadLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 12,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function ensureDirectory(dir: string): Promise<void> {
+    await fs.mkdir(dir, { recursive: true });
+}
+
+function buildRelativeFilePath(extension: string): { relative: string; absolute: string } {
+    const safeExt = extension.replace(/[^a-z0-9.]/gi, "");
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${safeExt}`;
+    const relative = path.posix.join(PHOTO_SUBDIR, fileName);
+    const absolute = path.join(UPLOAD_ROOT, relative);
+    return { relative, absolute };
+}
+
+function hasExpectedSignature(buffer: Buffer, mime: string): boolean {
+    if (buffer.length === 0) return false;
+    switch (mime) {
+        case "image/jpeg":
+            return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+        case "image/png":
+            return buffer.length > 8 &&
+                buffer[0] === 0x89 &&
+                buffer[1] === 0x50 &&
+                buffer[2] === 0x4e &&
+                buffer[3] === 0x47 &&
+                buffer[4] === 0x0d &&
+                buffer[5] === 0x0a &&
+                buffer[6] === 0x1a &&
+                buffer[7] === 0x0a;
+        case "image/webp":
+            return buffer.length > 12 &&
+                buffer.toString("ascii", 0, 4) === "RIFF" &&
+                buffer.toString("ascii", 8, 12) === "WEBP";
+        default:
+            return false;
+    }
+}
+
+router.post("/photo", uploadLimiter, async (req: Request, res: Response) => {
+    const dataUrlRaw = typeof req.body?.dataUrl === "string" ? req.body.dataUrl.trim() : "";
+
+    if (!dataUrlRaw) {
+        sendError(res, 400, "No photo provided");
+        return;
+    }
+
+    const match = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i.exec(dataUrlRaw);
+    if (!match) {
+        sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
+        return;
+    }
+
+    const mime = match[1].toLowerCase();
+    if (!ALLOWED_MIME.has(mime)) {
+        sendError(res, 400, "Unsupported photo format", { allowed: Array.from(ALLOWED_MIME) });
+        return;
+    }
+
+    let buffer: Buffer;
+    try {
+        buffer = Buffer.from(match[2], "base64");
+    } catch (err) {
+        log.warn("Presenter photo decode failed", { err });
+        sendError(res, 400, "Photo could not be decoded");
+        return;
+    }
+
+    if (buffer.length === 0) {
+        sendError(res, 400, "Photo is empty");
+        return;
+    }
+
+    if (buffer.length > MAX_PHOTO_BYTES) {
+        sendError(res, 413, "Photo is too large", { maxBytes: MAX_PHOTO_BYTES, maxReadable: formatBytes(MAX_PHOTO_BYTES) });
+        return;
+    }
+
+    if (!hasExpectedSignature(buffer, mime)) {
+        log.warn("Presenter photo failed signature check", { mime });
+        sendError(res, 400, "Photo appears to be invalid or unsafe");
+        return;
+    }
+
+    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : "webp";
+
+    try {
+        const { relative, absolute } = buildRelativeFilePath(ext);
+        await ensureDirectory(path.dirname(absolute));
+        await fs.writeFile(absolute, buffer);
+
+        log.info("Presenter photo stored", { path: relative, size: buffer.length });
+
+        res.status(201).json({ presenterPicUrl: relative, bytes: buffer.length });
+    } catch (err) {
+        log.error("Presenter photo save failed", { err });
+        sendError(res, 500, "Failed to save presenter photo");
+    }
+});
 
 /** owner-or-organizer guard (same semantics as registration.ts ownerOnly) */
 function ownerOrOrganizer(req: Request, res: Response, next: NextFunction) {

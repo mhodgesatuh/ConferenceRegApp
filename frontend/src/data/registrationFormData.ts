@@ -24,7 +24,7 @@
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'validation-table' | 'text-area';
+    type: 'text' | 'email' | 'phone' | 'checkbox' | 'number' | 'section' | 'validation-table' | 'text-area' | 'presenter-photo';
     required?: boolean;
     scope: 'admin' | 'registration';
     priv?: 'update';
@@ -178,7 +178,7 @@ export const registrationFormData: FormField[] = [
     {
         name: 'presenterPicUrl',
         label: 'Photo Upload',
-        type: 'text',
+        type: 'presenter-photo',
         required: false,
         scope: 'registration',
     },

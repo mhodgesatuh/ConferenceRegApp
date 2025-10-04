@@ -26,6 +26,7 @@ import {Section} from '@/components/ui/section';
 import {Message} from '@/components/ui/message';
 import {ValidationTableSelect} from '@/components/ui/validation-table-select';
 import {useValidationTableOptions} from '@/hooks/useValidationTableOptions';
+import {PresenterPhotoField} from './PresenterPhotoField';
 
 type Props = {
     field: FormField;
@@ -74,6 +75,21 @@ export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInp
                 />
                 {hasError && <Message id={errorId} text={error!} isError />}
             </>
+        );
+    }
+
+    if (field.type === 'presenter-photo') {
+        const raw = state[field.name];
+        const value = typeof raw === 'string' ? raw : '';
+        return (
+            <PresenterPhotoField
+                key={field.name}
+                field={field}
+                value={value}
+                onChange={(val) => onValueChange(field.name, val)}
+                isMissing={isMissing(field.name)}
+                error={error}
+            />
         );
     }
 
