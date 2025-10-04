@@ -21,7 +21,7 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
     ]);
 
     // exclude certain UI-only/unsafe types (lowercased)
-    const EXCLUDED_TYPES = new Set(["password", "hidden", "textarea", "file", "section"]);
+    const EXCLUDED_TYPES = new Set(["password", "hidden", "textarea", "text-area", "file", "section"]);
 
     return (fields as any[])
         .filter((f) => {

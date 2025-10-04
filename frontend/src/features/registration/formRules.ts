@@ -21,6 +21,9 @@ import {FormField} from '@/data/registrationFormData';
 
 export const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
 export const CANCEL_FIELDS_SET = new Set(['isCancelled', 'cancelledAttendance', 'cancellationReason']);
+export const PRESENTER_FIELDS_SET = new Set(['presenterBio', 'presenterPicUrl']);
+
+const asBoolean = (value: unknown): boolean => value === true || value === 1 || value === '1';
 
 /**
  * Basic email format validation
@@ -62,6 +65,8 @@ export function canSeeField(
     ctx: { state: Record<string, any>; hasUpdatePrivilege: boolean; isSaved: boolean; showId: boolean }
 ): boolean {
     const { state, hasUpdatePrivilege, isSaved, showId } = ctx;
+    const hasProxy = asBoolean(state.hasProxy);
+    const isPresenter = asBoolean(state.isPresenter);
 
     if (!showId && field.name === 'id') return false;
 
@@ -74,7 +79,12 @@ export function canSeeField(
         return false;
 
     if (!isSaved && CANCEL_FIELDS_SET.has(field.name)) return false;
-    if (!state.hasProxy && PROXY_FIELDS_SET.has(field.name)) return false;
+    if (!hasProxy && PROXY_FIELDS_SET.has(field.name)) return false;
+    if (
+        !isPresenter &&
+        (PRESENTER_FIELDS_SET.has(field.name) || (field.type === 'section' && field.name === 'presenter'))
+    )
+        return false;
     if (field.scope === 'admin' && !hasUpdatePrivilege) return false;
 
     return true;
@@ -99,7 +109,12 @@ export function getVisibleFields(params: {
  */
 export function isFieldRequired(field: FormField, state: Record<string, any>): boolean {
     const isProxyField = PROXY_FIELDS_SET.has(field.name);
-    return Boolean(field.required) || (isProxyField && Boolean(state.hasProxy));
+    const isPresenterField = PRESENTER_FIELDS_SET.has(field.name);
+    const hasProxy = asBoolean(state.hasProxy);
+    const isPresenter = asBoolean(state.isPresenter);
+    if (isProxyField && hasProxy) return true;
+    if (isPresenterField && isPresenter) return true;
+    return Boolean(field.required);
 }
 
 /**
@@ -110,7 +125,9 @@ export function getRequiredFieldNames(fields: FormField[], state: Record<string,
     for (const f of fields) if (isFieldRequired(f, state)) required.add(f.name);
 
     // Special paired rule: at least one day selected
-    if (!state.day1Attendee && !state.day2Attendee) {
+    const day1 = asBoolean(state.day1Attendee);
+    const day2 = asBoolean(state.day2Attendee);
+    if (!day1 && !day2) {
         required.add('day1Attendee');
         required.add('day2Attendee');
     }

@@ -39,6 +39,7 @@ import {
     isValidEmail,
     missingRequiredFields,
     REQUIRED_FIELDS,
+    toBool,
     toNull,
     toTinyInt,
 } from "./registration.utils";
@@ -69,6 +70,8 @@ interface CreateRegistrationBody {
     day2Attendee?: boolean;
     question1: string;
     question2: string;
+    presenterBio?: string;
+    presenterPicUrl?: string;
     isAttendee?: boolean;
     isCancelled?: boolean;
     isMonitor?: boolean;
@@ -149,8 +152,20 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
     }
 
     const missing = missingRequiredFields(req.body, false, REQUIRED_FIELDS);
-    if (missing.length) {
-        sendError(res, 400, "Missing required information", { missing });
+    const needsPresenterInfo = toBool(req.body.isPresenter);
+    const presenterMissing: string[] = [];
+    if (needsPresenterInfo) {
+        if (!req.body.presenterBio || String(req.body.presenterBio).trim() === "") {
+            presenterMissing.push("presenterBio");
+        }
+        if (!req.body.presenterPicUrl || String(req.body.presenterPicUrl).trim() === "") {
+            presenterMissing.push("presenterPicUrl");
+        }
+    }
+
+    const missingAll = [...missing, ...presenterMissing];
+    if (missingAll.length) {
+        sendError(res, 400, "Missing required information", { missing: Array.from(new Set(missingAll)) });
         return;
     }
 
@@ -196,6 +211,8 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
                 lunchMenu: toNull(req.body.lunchMenu),
                 question1: String(req.body.question1).trim(),
                 question2: String(req.body.question2).trim(),
+                presenterBio: toNull(req.body.presenterBio),
+                presenterPicUrl: toNull(req.body.presenterPicUrl),
                 isAttendee: 1, // always true on create
                 isCancelled: toTinyInt(req.body.isCancelled),
                 isMonitor: toTinyInt(req.body.isMonitor),
@@ -268,6 +285,35 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
         }
 
         try {
+            const [existingRecord] = await getRegistrationWithPinById(id);
+
+            if (!existingRecord?.registrations) {
+                sendError(res, 404, REGISTRATION_NOT_FOUND, { id });
+                return;
+            }
+
+            const current = existingRecord.registrations;
+            const targetIsPresenter =
+                req.body.isPresenter !== undefined
+                    ? toBool(req.body.isPresenter)
+                    : Boolean(current.isPresenter);
+
+            if (targetIsPresenter) {
+                const presenterMissing: string[] = [];
+                const nextBio =
+                    req.body.presenterBio !== undefined ? req.body.presenterBio : current.presenterBio;
+                const nextPic =
+                    req.body.presenterPicUrl !== undefined ? req.body.presenterPicUrl : current.presenterPicUrl;
+
+                if (!nextBio || String(nextBio).trim() === "") presenterMissing.push("presenterBio");
+                if (!nextPic || String(nextPic).trim() === "") presenterMissing.push("presenterPicUrl");
+
+                if (presenterMissing.length) {
+                    sendError(res, 400, "Missing required information", { missing: presenterMissing });
+                    return;
+                }
+            }
+
             const updateValues = {
                 email, // only set if provided
                 phone1: req.body.phone1 !== undefined ? toNull(req.body.phone1) : undefined,
@@ -292,6 +338,8 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                 lunchMenu: req.body.lunchMenu !== undefined ? toNull(req.body.lunchMenu) : undefined,
                 question1: req.body.question1 !== undefined ? String(req.body.question1).trim() : undefined,
                 question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
+                presenterBio: req.body.presenterBio !== undefined ? toNull(req.body.presenterBio) : undefined,
+                presenterPicUrl: req.body.presenterPicUrl !== undefined ? toNull(req.body.presenterPicUrl) : undefined,
                 // Don't force isAttendee=true on update; preserve/allow explicit changes
                 isAttendee: req.body.isAttendee !== undefined ? toTinyInt(req.body.isAttendee) : undefined,
                 isCancelled: req.body.isCancelled !== undefined ? toTinyInt(req.body.isCancelled) : undefined,

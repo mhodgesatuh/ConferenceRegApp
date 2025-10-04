@@ -29,10 +29,11 @@ export const initialFormState = (fields: FormField[]): FormState =>
             case 'section':
                 break;
 
-            // everything else (text, email, phone)
+            // everything else (text, email, phone, text-area)
             case 'text':
             case 'email':
             case 'phone':
+            case 'text-area':
             default:
                 acc[name] = '';
         }
