@@ -1,12 +1,12 @@
 // frontend/src/features/administration/components/PresentersTab.tsx
 
-import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { Copy } from "lucide-react";
+import React, {useCallback, useEffect, useId, useMemo, useRef, useState} from "react";
+import {Copy} from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import {cn} from "@/lib/utils";
 import presenterPlaceholder from "@/assets/presenter-placeholder.svg";
-import type { Registration } from "../types";
-import { formatFullName } from "../utils/formatName";
+import type {Registration} from "../types";
+import {formatFullName} from "../utils/formatName";
 
 type PresentersTabProps = {
     presenters: Registration[];
@@ -21,32 +21,49 @@ type CopyButtonProps = {
 
 const CopyButton: React.FC<CopyButtonProps> = ({ text, label }) => {
     const [copied, setCopied] = useState(false);
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [showManual, setShowManual] = useState(false);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const timeoutRef = useRef<number | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const instructionsId = useId();
 
+    // Optional helper to ensure focus/select when the manual UI opens.
+    // (You can remove this if you prefer relying solely on autoFocus+onFocus below.)
+    const openManualUI = useCallback(() => {
+        setShowManual(true);
+        requestAnimationFrame(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.select();
+            }
+        });
+    }, []);
+
+    // Close on Escape (attached to the input so it always receives keys)
+    const handleManualKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === "Escape") setShowManual(false);
+    }, []);
+
+    // Click outside to dismiss
+    useEffect(() => {
+        if (!showManual) return;
+        const onDocClick = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setShowManual(false);
+            }
+        };
+        document.addEventListener("mousedown", onDocClick);
+        return () => document.removeEventListener("mousedown", onDocClick);
+    }, [showManual]);
+
+    // Clear timer on unmount
     useEffect(() => {
         return () => {
             if (timeoutRef.current != null) {
-                clearTimeout(timeoutRef.current);
+                window.clearTimeout(timeoutRef.current);
                 timeoutRef.current = null;
             }
         };
-    }, []);
-
-    const fallbackCopy = useCallback((value: string) => {
-        if (typeof document === "undefined") return;
-        const textarea = document.createElement("textarea");
-        textarea.value = value;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "absolute";
-        textarea.style.left = "-9999px";
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand("copy");
-        } catch {
-            // Ignore failure; we gave it our best shot.
-        }
-        document.body.removeChild(textarea);
     }, []);
 
     const handleCopy = useCallback(async () => {
@@ -56,42 +73,71 @@ const CopyButton: React.FC<CopyButtonProps> = ({ text, label }) => {
         try {
             if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(value);
+                setCopied(true);
+                if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current);
+                timeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
             } else {
-                fallbackCopy(value);
+                openManualUI();
             }
-            setCopied(true);
         } catch {
-            fallbackCopy(value);
-            setCopied(true);
+            openManualUI();
         }
+    }, [text, openManualUI]);
 
-        if (timeoutRef.current != null) {
-            clearTimeout(timeoutRef.current);
-        }
-        if (typeof window !== "undefined") {
-            timeoutRef.current = window.setTimeout(() => {
-                setCopied(false);
-                timeoutRef.current = null;
-            }, 1500);
-        }
-    }, [fallbackCopy, text]);
+    const handleManualDone = useCallback(() => setShowManual(false), []);
 
     if (!text || !text.trim()) return null;
 
     return (
-        <button
-            type="button"
-            onClick={handleCopy}
-            aria-label={`Copy ${label}`}
-            title={copied ? "Copied" : `Copy ${label}`}
-            className={cn(
-                "inline-flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground transition",
-                "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                copied && "bg-muted text-foreground"
+        <div className="relative inline-flex">
+            <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={`Copy ${label}`}
+                title={copied ? "Copied" : `Copy ${label}`}
+                className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground transition",
+                    "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    copied && "bg-muted text-foreground"
+                )}
+            >
+                <Copy className="h-4 w-4" aria-hidden="true"/>
+            </button>
+
+            {showManual && (
+                <div
+                    ref={containerRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Manual copy ${label}`}
+                    aria-describedby={instructionsId}
+                    className="absolute z-50 mt-2 w-[240px] rounded-md border border-border bg-popover p-2 shadow-lg"
+                >
+                    <div id={instructionsId} className="text-xs text-muted-foreground mb-1">
+                        Press <kbd className="px-1 border rounded">⌘/Ctrl</kbd> +{" "}
+                        <kbd className="px-1 border rounded">C</kbd> to copy:
+                    </div>
+                    <input
+                        ref={inputRef}
+                        readOnly
+                        value={text}
+                        autoFocus
+                        className="w-full rounded border border-input bg-background px-2 py-1 text-xs"
+                        onFocus={(e) => e.currentTarget.select()}
+                        onKeyDown={handleManualKeyDown}
+                    />
+                    <div className="mt-2 flex justify-end">
+                        <button
+                            type="button"
+                            className="text-xs rounded border border-border px-2 py-1 hover:bg-muted"
+                            onClick={handleManualDone}
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
             )}
-        >
-            <Copy className="h-4 w-4" aria-hidden="true" />
-        </button>
+        </div>
     );
 };
 
@@ -102,7 +148,14 @@ type CopyableFieldProps = {
     emphasize?: boolean;
 };
 
-const CopyableField: React.FC<CopyableFieldProps> = ({ label, text, multiline = false, emphasize = false }) => {
+const CopyableField: React.FC<CopyableFieldProps> = (
+    {
+        label,
+        text,
+        multiline = false,
+        emphasize = false,
+    }) => {
+
     const value = (text ?? "").trim();
     if (!value) return null;
 
@@ -114,8 +167,10 @@ const CopyableField: React.FC<CopyableFieldProps> = ({ label, text, multiline = 
             )}
         >
             <div className="mb-2 flex items-start justify-between gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
-                <CopyButton text={value} label={label} />
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mr-1.5">
+          {label}
+        </span>
+                <CopyButton text={value} label={label}/>
             </div>
             <div className={cn("text-sm text-foreground", multiline && "whitespace-pre-line")}>{value}</div>
         </div>
@@ -129,10 +184,12 @@ const CopyableLine: React.FC<CopyableFieldProps> = ({ label, text }) => {
     return (
         <div className="flex items-start justify-between gap-2">
             <div className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
                 <span className="text-sm text-foreground">{value}</span>
             </div>
-            <CopyButton text={value} label={label} />
+            <CopyButton text={value} label={label}/>
         </div>
     );
 };
@@ -202,15 +259,17 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                         <div key={presenter.id} className="space-y-4">
                             <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                                 <div className="space-y-4">
-                                    <CopyableField label="Name" text={name} emphasize />
-                                    <CopyableLine label="Email" text={presenter.email} />
-                                    <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline />
-                                    <CopyableField label="Session Title" text={presenter.session1Title} />
-                                    <CopyableField label="Session Description" text={presenter.session1Description} multiline />
+                                    <CopyableField label="Name" text={name} emphasize/>
+                                    <CopyableLine label="Email" text={presenter.email}/>
+                                    <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline/>
+                                    <CopyableField label="Session Title" text={presenter.session1Title}/>
+                                    <CopyableField label="Session Description" text={presenter.session1Description}
+                                                   multiline/>
                                     {hasSecondSession && (
                                         <>
-                                            <CopyableField label="Session 2 Title" text={session2Title} />
-                                            <CopyableField label="Session 2 Description" text={session2Description} multiline />
+                                            <CopyableField label="Session 2 Title" text={session2Title}/>
+                                            <CopyableField label="Session 2 Description" text={session2Description}
+                                                           multiline/>
                                         </>
                                     )}
                                 </div>
@@ -226,7 +285,7 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                                     />
                                 </div>
                             </div>
-                            <hr className="border-border" />
+                            <hr className="border-border"/>
                         </div>
                     );
                 })}
