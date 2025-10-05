@@ -14,6 +14,7 @@ import clsx from 'clsx';
 import {Button, Label, Message} from '@/components/ui';
 import type {FormField} from '@/data/registrationFormData';
 import { useAppConfig } from '@/hooks/useAppConfig';
+import presenterPlaceholder from '@/assets/presenter-placeholder.svg';
 import {uploadPresenterPhoto} from './presenterPhotoApi';
 
 const ACCEPTED_TYPES = 'image/png,image/jpeg,image/webp';
@@ -93,6 +94,9 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
         setCacheBuster(Date.now());
     }, [onChange]);
 
+    const previewSrc = imageSrc ?? presenterPlaceholder;
+    const previewAlt = imageSrc ? 'Presenter photo preview' : 'Default presenter placeholder';
+
     return (
         <div className="flex flex-col gap-1" aria-live="polite">
             <Label htmlFor={field.name}>
@@ -107,17 +111,16 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
                     )}
                     aria-hidden
                 >
-                    {imageSrc ? (
-                        <img
-                            src={imageSrc}
-                            alt="Presenter photo preview"
-                            className="h-full w-full rounded object-cover"
-                            width={MAX_PREVIEW_SIZE}
-                            height={MAX_PREVIEW_SIZE}
-                        />
-                    ) : (
-                        <span className="leading-tight text-red-700">No<br/>Photo</span>
-                    )}
+                    <img
+                        src={previewSrc}
+                        alt={previewAlt}
+                        className={clsx(
+                            'h-full w-full rounded',
+                            imageSrc ? 'object-cover' : 'object-contain'
+                        )}
+                        width={MAX_PREVIEW_SIZE}
+                        height={MAX_PREVIEW_SIZE}
+                    />
                 </div>
                 <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
