@@ -7,6 +7,7 @@ import PageTitle from "@/components/PageTitle";
 import AdminTabs from "@/components/ui/AdminTabs";
 import TabContent from "@/components/TabContent";
 import { Button, Input } from "@/components/ui";
+import type { ButtonProps } from "@/components/ui/button";
 import RegistrationForm from "@/features/registration/RegistrationForm";
 import { registrationFormData } from "@/data/registrationFormData";
 import type { FormField } from "@/data/registrationFormData";
@@ -21,6 +22,7 @@ import { useRegistrations } from "./hooks/useRegistrations";
 import { useRegistrationById } from "./hooks/useRegistrationById";
 import type { Registration } from "./types";
 import { useAuth } from "@/features/auth/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface LocationState {
     registration?: any;
@@ -33,6 +35,23 @@ const TAB_LABELS: Record<'list' | 'update', string> = {
     update: "Registration Form",
     list: "Registrations Table",
 };
+
+const AdminToolbarButton: React.FC<ButtonProps> = ({
+    className,
+    children,
+    type = "button",
+    ...props
+}) => (
+    <Button
+        type={type}
+        variant="outline"
+        size="sm"
+        className={cn("admin-toolbar-btn admin-toolbar-btn--dark", className)}
+        {...props}
+    >
+        {children}
+    </Button>
+);
 
 const AdministrationPage: React.FC = () => {
     const { state } = useLocation();
@@ -252,45 +271,27 @@ const AdministrationPage: React.FC = () => {
 
                                                 {/* Right side: Clear Filters */}
                                                 <div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="admin-toolbar-btn admin-toolbar-btn--dark"
-                                                        onClick={state.clearFilters}
-                                                    >
+                                                    <AdminToolbarButton onClick={state.clearFilters}>
                                                         Clear Filters
-                                                    </Button>
+                                                    </AdminToolbarButton>
                                                 </div>
                                             </div>
                                             {/* Row 2: search + columns + rows-per-page (left) + Export (right) */}
                                             <div className="admin-toolbar-row admin-toolbar-row--between">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <Button
-                                                        type="button"
-                                                        variant="default"
-                                                        size="sm"
-                                                        className="admin-toolbar-btn"
-                                                        onClick={handleNewAttendee}
-                                                    >
+                                                    <AdminToolbarButton onClick={handleNewAttendee}>
                                                         <UserPlus className="mr-1 h-4 w-4" aria-hidden="true" />
                                                         <span>+ Attendee</span>
-                                                    </Button>
+                                                    </AdminToolbarButton>
                                                     <DebouncedSearch value={state.globalFilter} onChange={state.setGlobalFilter} />
                                                     {state.renderColumnVisibilityToggle()}
                                                     {state.renderPageSizeSelect([10, 20, 50, 100])}
                                                 </div>
                                                 {/* Right side: Export */}
                                                 <div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="admin-toolbar-btn admin-toolbar-btn--dark"
-                                                        onClick={state.exportCSV}
-                                                    >
+                                                    <AdminToolbarButton onClick={state.exportCSV}>
                                                         Export
-                                                    </Button>
+                                                    </AdminToolbarButton>
                                                 </div>
                                             </div>
                                         </div>
