@@ -8,3 +8,4 @@ export * from './checkbox';
 export * from './section';
 export * from './message';
 export * from './tooltip';
+export { default as TabsBar } from './TabsBar';

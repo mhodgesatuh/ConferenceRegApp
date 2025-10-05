@@ -1,16 +1,17 @@
 // frontend/src/features/registration/RegistrationForm.tsx
 
-import React, { useEffect, useMemo, useReducer, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import PageTitle from "@/components/PageTitle";
 
 import { FormField } from "@/data/registrationFormData";
 import { formReducer, initialFormState } from "./formReducer";
 
-import { Button, Message } from "@/components/ui";
+import { Button, Message, TabsBar } from "@/components/ui";
 import {useMissingFields} from "@/hooks/useMissingFields";
 import {FieldRenderer} from "./FieldFactory";
 import {apiFetch, primeCsrf} from "@/lib/api";
 import type {Registration} from "@/features/administration/types";
+import { camelToTitle } from "@/lib/strings";
 
 import {
     findMissingRequiredFields,
@@ -300,12 +301,61 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const isError = message.type === 'error';
     const errorFor = (f: FormField) => errors[f.name];
 
+    const sectionFields = useMemo(
+        () => fieldsForRender.filter((field) => field.type === 'section'),
+        [fieldsForRender]
+    );
+
+    const [activeSection, setActiveSection] = useState<string>('');
+
+    useEffect(() => {
+        if (sectionFields.length === 0) {
+            setActiveSection('');
+            return;
+        }
+        setActiveSection((prev) => {
+            if (prev && sectionFields.some((section) => section.name === prev)) {
+                return prev;
+            }
+            return sectionFields[0]?.name ?? '';
+        });
+    }, [sectionFields]);
+
+    const handleSectionSelect = useCallback((sectionId: string) => {
+        setActiveSection(sectionId);
+        const target = typeof document !== 'undefined' ? document.getElementById(sectionId) : null;
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, []);
+
+    const sectionTabs = useMemo(
+        () =>
+            sectionFields.map((section) => ({
+                id: `tab-${section.name}`,
+                label: camelToTitle(section.name),
+                onClick: () => handleSectionSelect(section.name),
+                active: activeSection === section.name,
+                ariaControls: section.name,
+            })),
+        [sectionFields, activeSection, handleSectionSelect]
+    );
+
     // --- Render ---------------------------------------------------------------
 
     // --- Render ---------------------------------------------------------------
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
             {showHeader && <PageTitle title={PAGE_TITLE} />}
+
+            {sectionTabs.length > 0 && (
+                <TabsBar
+                    items={sectionTabs}
+                    ariaLabel="Registration sections"
+                    sticky
+                    className="shadow-sm"
+                />
+            )}
 
             {fieldsForRender.map((field) => {
                 const hr = field.type === 'section' ? <hr className="my-4" /> : null;

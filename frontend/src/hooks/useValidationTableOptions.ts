@@ -2,14 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {apiFetch} from "@/lib/api";
-
-function toSnakeCase(s: string): string {
-    // Converts lunchMenu / lunch-menu / Lunch_Menu -> lunch_menu
-    return s
-        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-        .replace(/[-\s]+/g, '_')
-        .toLowerCase();
-}
+import {toSnakeCase} from "@/lib/strings";
 
 export interface ValidationTableState {
     options: string[];
