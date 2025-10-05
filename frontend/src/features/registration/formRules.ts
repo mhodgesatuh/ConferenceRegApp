@@ -109,6 +109,12 @@ export function canSeeField(
         (PRESENTER_FIELDS_SET.has(field.name) || (field.type === 'section' && field.name === 'presenter'))
     )
         return false;
+
+    if (
+        PRESENTER_REQUIRED_SECOND_SESSION_FIELDS.has(field.name) &&
+        (!isPresenter || !asBoolean(state.isSecondSession))
+    )
+        return false;
     if (field.scope === 'admin' && !hasUpdatePrivilege) return false;
 
     return true;

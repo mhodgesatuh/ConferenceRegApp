@@ -191,6 +191,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             });
         }
 
+        if (name === "isSecondSession" && !checked) {
+            const secondSessionFields = ["session2Title", "session2Description"] as const;
+            secondSessionFields.forEach((field) => {
+                clearMissing(field);
+                dispatch({ type: "CHANGE_FIELD", name: field, value: "" });
+                setErrors((prev) => {
+                    const { [field]: _removed, ...rest } = prev;
+                    return rest;
+                });
+            });
+        }
+
         dispatch({ type: 'CHANGE_FIELD', name, value: checked });
     };
 
