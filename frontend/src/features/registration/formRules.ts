@@ -29,14 +29,22 @@ export const CANCEL_FIELDS_SET = new Set([
     'cancelledAttendance',
     'cancellationReason'
 ]);
-export const PRESENTER_FIELDS_SET = new Set([
+const PRESENTER_REQUIRED_BASE_FIELDS = new Set([
     'presenterBio',
     'presenterPicUrl',
     'session1Title',
     'session1Description',
-    'isSecondSession',
+]);
+
+const PRESENTER_REQUIRED_SECOND_SESSION_FIELDS = new Set([
     'session2Title',
     'session2Description',
+]);
+
+export const PRESENTER_FIELDS_SET = new Set([
+    ...PRESENTER_REQUIRED_BASE_FIELDS,
+    'isSecondSession',
+    ...PRESENTER_REQUIRED_SECOND_SESSION_FIELDS,
 ]);
 
 const asBoolean = (value: unknown): boolean => value === true || value === 1 || value === '1';
@@ -125,11 +133,16 @@ export function getVisibleFields(params: {
  */
 export function isFieldRequired(field: FormField, state: Record<string, any>): boolean {
     const isProxyField = PROXY_FIELDS_SET.has(field.name);
-    const isPresenterField = PRESENTER_FIELDS_SET.has(field.name);
     const hasProxy = asBoolean(state.hasProxy);
     const isPresenter = asBoolean(state.isPresenter);
     if (isProxyField && hasProxy) return true;
-    if (isPresenterField && isPresenter) return true;
+    if (isPresenter && PRESENTER_REQUIRED_BASE_FIELDS.has(field.name)) return true;
+    if (
+        isPresenter &&
+        asBoolean(state.isSecondSession) &&
+        PRESENTER_REQUIRED_SECOND_SESSION_FIELDS.has(field.name)
+    )
+        return true;
     return Boolean(field.required);
 }
 
