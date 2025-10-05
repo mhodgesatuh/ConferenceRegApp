@@ -17,11 +17,11 @@ async function fetchAppConfig(): Promise<AppConfig> {
 }
 
 export function useAppConfig() {
-    return useQuery<AppConfig>({
+    return useQuery<AppConfig, Error, AppConfig, ['appConfig']>({
         queryKey: ['appConfig'],
         queryFn: fetchAppConfig,
         staleTime: Infinity,
-        cacheTime: Infinity,
+        gcTime: Infinity,
     });
 }
 

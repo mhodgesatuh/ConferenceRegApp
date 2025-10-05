@@ -39,9 +39,9 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
     const [dialogMessage, setDialogMessage] = useState<string | null>(null);
     const [cacheBuster, setCacheBuster] = useState<number>(Date.now());
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const { data: appConfig } = useAppConfig();
+    const { data: appConfigData } = useAppConfig();
 
-    const maxFileBytes = appConfig?.presenterMaxBytes ?? DEFAULT_MAX_FILE_BYTES;
+    const maxFileBytes = appConfigData?.presenterMaxBytes ?? DEFAULT_MAX_FILE_BYTES;
     const maxFileReadable = useMemo(() => formatBytes(maxFileBytes), [maxFileBytes]);
 
     const showErrorStyle = isMissing || Boolean(error);
