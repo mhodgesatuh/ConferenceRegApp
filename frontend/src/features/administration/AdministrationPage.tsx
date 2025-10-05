@@ -18,7 +18,7 @@ import { Pencil, UserPlus } from "lucide-react";
 
 import { DataTable } from "./components/DataTable";
 import { buildFilterKeys, buildListColumnsFromForm } from "./table/columns";
-import { camelToTitle } from "@/lib/strings";
+import { camelToTitleCase } from "@/lib/strings";
 import { useRegistrations } from "./hooks/useRegistrations";
 import { useRegistrationById } from "./hooks/useRegistrationById";
 import type { Registration } from "./types";
@@ -264,7 +264,7 @@ const AdministrationPage: React.FC = () => {
                                                                     if (col) col.setFilterValue(enabled ? undefined : true);
                                                                 }}
                                                             >
-                                                                {camelToTitle(name)}
+                                                                {camelToTitleCase(name)}
                                                             </Button>
                                                         );
                                                     })}

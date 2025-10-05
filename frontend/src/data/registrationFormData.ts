@@ -1,6 +1,5 @@
 // frontend/src/data/registrationFormData.ts
 //
-//
 // Define the form's sections and input prompts.
 //
 
@@ -240,7 +239,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'isMonitor',
-        label: 'Is monitor (has "update" privileges)',
+        label: 'Is monitor (has "admin" privileges)',
         type: 'checkbox',
         required: false,
         scope: 'admin',
@@ -249,7 +248,7 @@ export const registrationFormData: FormField[] = [
     },
     {
         name: 'isOrganizer',
-        label: 'Is organizer (has "update" privileges)',
+        label: 'Is organizer (has "admin" privileges)',
         type: 'checkbox',
         required: false,
         scope: 'admin',

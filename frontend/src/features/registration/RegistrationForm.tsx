@@ -11,7 +11,7 @@ import {useMissingFields} from "@/hooks/useMissingFields";
 import {FieldRenderer} from "./FieldFactory";
 import {apiFetch, primeCsrf} from "@/lib/api";
 import type {Registration} from "@/features/administration/types";
-import { camelToTitle } from "@/lib/strings";
+import { camelToTitleCase } from "@/lib/strings";
 
 import {
     findMissingRequiredFields,
@@ -333,7 +333,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         () =>
             sectionFields.map((section) => ({
                 id: `tab-${section.name}`,
-                label: camelToTitle(section.name),
+                label: camelToTitleCase(section.name),
                 onClick: () => handleSectionSelect(section.name),
                 active: activeSection === section.name,
                 ariaControls: section.name,

@@ -1,4 +1,6 @@
-export function camelToTitle(input: string): string {
+// frontend/src/lib/strings.ts
+
+export function camelToTitleCase(input: string): string {
     if (!input) return '';
 
     // Normalize underscores/dashes to spaces first
@@ -26,7 +28,7 @@ export function camelToTitle(input: string): string {
     return s;
 }
 
-export function toSnakeCase(input: string): string {
+export function anyToSnakeCase(input: string): string {
     if (!input) return '';
 
     return input

@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { FormField } from "@/data/registrationFormData";
-import { camelToTitle } from "@/lib/strings";
+import { camelToTitleCase } from "@/lib/strings";
 import { getAccessorKey } from "./utils";
 
 export interface RegistrationIndexable {
@@ -44,7 +44,7 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
 
             return {
                 accessorKey: name,
-                header: camelToTitle(name),
+                header: camelToTitleCase(name),
                 cell: ({ getValue }) => {
                     const v = getValue<any>();
                     return v == null ? "" : String(v);

@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {apiFetch} from "@/lib/api";
-import {toSnakeCase} from "@/lib/strings";
+import {anyToSnakeCase} from "@/lib/strings";
 
 export interface ValidationTableState {
     options: string[];
@@ -34,7 +34,7 @@ export function useValidationTableOptions(table?: string): ValidationTableState 
                     method: 'GET',
                     signal: controller.signal,
                 };
-                const key = toSnakeCase(table);
+                const key = anyToSnakeCase(table);
                 const data = await apiFetch(`/api/validation-tables/${encodeURIComponent(key)}`, init);
                 if (cancelled) return;
                 const values = Array.isArray(data?.values)

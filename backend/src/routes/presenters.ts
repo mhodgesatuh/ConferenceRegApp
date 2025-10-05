@@ -9,7 +9,7 @@ import multer, { MulterError } from "multer";
 import { requireAuth } from "@/utils/auth";
 import { log, sendError } from "@/utils/logger";
 import { getPresenterMaxBytes } from "@/constants/presenters";
-import { getRegistrationWithPinById } from "./registration.service"; // or add a lighter getRegistrationById
+import { getRegistrationWithPinById } from "./registration.service";
 
 const router = Router();
 
