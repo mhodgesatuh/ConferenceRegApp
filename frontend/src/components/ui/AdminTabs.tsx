@@ -5,12 +5,12 @@ import { useAuth } from '@/features/auth/AuthContext';
 import TabsBar from './TabsBar';
 
 type AdminTabsProps = {
-    activeTab: 'list' | 'update';
-    onSelect: (tab: 'list' | 'update') => void;
-    canViewList?: boolean;
+    activeTab: 'list' | 'update' | 'presenters';
+    onSelect: (tab: 'list' | 'update' | 'presenters') => void;
+    isAdmin?: boolean;
 };
 
-const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, canViewList = true }) => {
+const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = true }) => {
     const navigate = useNavigate();
     const { registration, logout } = useAuth();
     const [loggingOut, setLoggingOut] = useState(false);
@@ -31,6 +31,7 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, canViewList 
     const handleHome = useCallback(() => navigate('/home'), [navigate]);
     const handleForm = () => onSelect('update');
     const handleList = () => onSelect('list');
+    const handlePresenters = () => onSelect('presenters');
 
     const isLoggedIn = Boolean(registration);
     const homeLabel = isLoggedIn ? 'Logout' : 'Home';
@@ -53,13 +54,20 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, canViewList 
         },
     ];
 
-    if (canViewList) {
+    if (isAdmin) {
         items.push({
             id: 'tab-list',
             label: 'Registrations Table',
             onClick: handleList,
             active: activeTab === 'list',
             ariaControls: 'tab-panel-list',
+        });
+        items.push({
+            id: 'tab-presenters',
+            label: 'Presenters',
+            onClick: handlePresenters,
+            active: activeTab === 'presenters',
+            ariaControls: 'tab-panel-presenters',
         });
     }
 

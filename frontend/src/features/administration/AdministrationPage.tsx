@@ -17,12 +17,14 @@ import type { ColumnDef, FilterFn } from "@tanstack/react-table";
 import { Pencil, UserPlus } from "lucide-react";
 
 import { DataTable } from "./components/DataTable";
+import PresentersTab from "./components/PresentersTab";
 import { buildFilterKeys, buildListColumnsFromForm } from "./table/columns";
 import { camelToTitleCase } from "@/lib/strings";
 import { useRegistrations } from "./hooks/useRegistrations";
 import { useRegistrationById } from "./hooks/useRegistrationById";
 import type { Registration } from "./types";
 import { useAuth } from "@/features/auth/AuthContext";
+import { hasAdminPrivileges } from "@/features/auth/adminPrivileges";
 import { cn } from "@/lib/utils";
 
 interface LocationState {
@@ -32,9 +34,12 @@ interface LocationState {
 // Set the initial number of rows displayed per page in the DataTable component.
 const DEFAULT_PAGE_SIZE = 20;
 
-const TAB_LABELS: Record<'list' | 'update', string> = {
+type AdminTabKey = "list" | "update" | "presenters";
+
+const TAB_LABELS: Record<AdminTabKey, string> = {
     update: "Registration Form",
     list: "Registrations Table",
+    presenters: "Presenters",
 };
 
 const AdminToolbarButton: React.FC<ButtonProps> = ({
@@ -58,12 +63,19 @@ const AdministrationPage: React.FC = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const { registration: stateRegistration } = (state as LocationState) || {};
-    const { registration: authRegistration, isOrganizer } = useAuth();
+    const { registration: authRegistration, isAdmin: authIsAdmin } = useAuth();
+
+    const stateIsAdmin = hasAdminPrivileges(stateRegistration);
+    const isAdmin = Boolean(stateIsAdmin || authIsAdmin);
 
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get("tab") === "update" ? "update" : "list";
+    const rawTab = searchParams.get("tab");
+    const fallbackTab: AdminTabKey = isAdmin ? "list" : "update";
+    const activeTab: AdminTabKey = rawTab === "update" || rawTab === "list" || rawTab === "presenters"
+        ? (rawTab as AdminTabKey)
+        : fallbackTab;
     const setActiveTab = useCallback(
-        (tab: "list" | "update") => {
+        (tab: AdminTabKey) => {
             if (activeTab === tab) return;
             const next = new URLSearchParams(searchParams);
             next.set("tab", tab);
@@ -97,7 +109,6 @@ const AdministrationPage: React.FC = () => {
     const initialDataForUpdate = creatingNew
         ? {}
         : selected ?? fetchedById ?? stateRegistration ?? authRegistration;
-    const canViewList = Boolean(stateRegistration?.isOrganizer || isOrganizer);
 
     useEffect(() => {
         if (errorStatus === 401 || registrationErrorStatus === 401) {
@@ -106,10 +117,10 @@ const AdministrationPage: React.FC = () => {
     }, [errorStatus, registrationErrorStatus, navigate]);
 
     useEffect(() => {
-        if (!canViewList && activeTab === "list") {
+        if (!isAdmin && (activeTab === "list" || activeTab === "presenters")) {
             setActiveTab("update");
         }
-    }, [canViewList, activeTab, setActiveTab]);
+    }, [isAdmin, activeTab, setActiveTab]);
 
     const dynamicColsBase = useMemo(
         () => buildListColumnsFromForm<Registration>(registrationFormData as FormField[]),
@@ -215,15 +226,20 @@ const AdministrationPage: React.FC = () => {
         [reload, setSelected, setCreatingNew]
     );
 
+    const presenters = useMemo(
+        () => (registrations ?? []).filter((reg) => Boolean(reg.isPresenter)),
+        [registrations]
+    );
+
     return (
         <>
-            <AdminTabs activeTab={activeTab} onSelect={setActiveTab} canViewList={canViewList} />
+            <AdminTabs activeTab={activeTab} onSelect={setActiveTab} isAdmin={isAdmin} />
 
             <TabContent>
                 <div className="space-y-6">
                     <PageTitle title={activeTabLabel} />
 
-                    {activeTab === "list" && canViewList && (
+                    {activeTab === "list" && isAdmin && (
                         <section
                             id="tab-panel-list"
                             role="tabpanel"
@@ -311,6 +327,17 @@ const AdministrationPage: React.FC = () => {
                                 showHeader={false}
                                 onSaved={handleFormSaved}
                             />
+                        </section>
+                    )}
+
+                    {activeTab === "presenters" && isAdmin && (
+                        <section
+                            id="tab-panel-presenters"
+                            role="tabpanel"
+                            aria-labelledby="tab-presenters"
+                            className="space-y-4"
+                        >
+                            <PresentersTab presenters={presenters} isLoading={isLoading} error={error} />
                         </section>
                     )}
                 </div>
