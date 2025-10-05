@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import TabsBar from './TabsBar';
@@ -37,14 +38,17 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
     const homeLabel = isLoggedIn ? 'Logout' : 'Home';
     const handlePrimary = isLoggedIn ? handleLogout : handleHome;
 
+    const primaryText = loggingOut ? 'Logging out…' : homeLabel;
+    const primaryLabel = isLoggedIn ? (
+        <span className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <span>{primaryText}</span>
+        </span>
+    ) : (
+        primaryText
+    );
+
     const items = [
-        {
-            id: 'admin-primary',
-            label: loggingOut ? 'Logging out…' : homeLabel,
-            onClick: handlePrimary,
-            disabled: loggingOut,
-            type: 'action' as const,
-        },
         {
             id: 'tab-update',
             label: 'Registration Form',
@@ -70,6 +74,15 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
             ariaControls: 'tab-panel-presenters',
         });
     }
+
+    items.push({
+        id: 'admin-primary',
+        label: primaryLabel,
+        onClick: handlePrimary,
+        disabled: loggingOut,
+        type: 'action' as const,
+        className: 'ml-auto',
+    });
 
     return <TabsBar items={items} ariaLabel="Administration tabs" />;
 };

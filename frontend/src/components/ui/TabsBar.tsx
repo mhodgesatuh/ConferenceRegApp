@@ -38,7 +38,7 @@ const TabsBar: React.FC<TabsBarProps> = ({
     innerClassName,
 }) => {
     const containerClasses = cn('w-full border-b bg-card', sticky && 'sticky top-0 z-40', className);
-    const innerClasses = cn('mx-auto w-[98vw] px-4 py-2 sm:px-6', innerClassName);
+    const innerClasses = cn('mx-auto w-full px-4 py-2 sm:px-6', innerClassName);
 
     return (
         <div className={containerClasses}>
