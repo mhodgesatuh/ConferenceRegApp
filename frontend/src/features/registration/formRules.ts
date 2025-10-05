@@ -19,9 +19,25 @@
 
 import {FormField} from '@/data/registrationFormData';
 
-export const PROXY_FIELDS_SET = new Set(['proxyName', 'proxyPhone', 'proxyEmail']);
-export const CANCEL_FIELDS_SET = new Set(['isCancelled', 'cancelledAttendance', 'cancellationReason']);
-export const PRESENTER_FIELDS_SET = new Set(['presenterBio', 'presenterPicUrl']);
+export const PROXY_FIELDS_SET = new Set([
+    'proxyName',
+    'proxyPhone',
+    'proxyEmail'
+]);
+export const CANCEL_FIELDS_SET = new Set([
+    'isCancelled',
+    'cancelledAttendance',
+    'cancellationReason'
+]);
+export const PRESENTER_FIELDS_SET = new Set([
+    'presenterBio',
+    'presenterPicUrl',
+    'session1Title',
+    'session1Description',
+    'isSecondSession',
+    'session2Title',
+    'session2Description',
+]);
 
 const asBoolean = (value: unknown): boolean => value === true || value === 1 || value === '1';
 
@@ -74,7 +90,7 @@ export function canSeeField(
         isSaved &&
         (field.name === 'hasProxy' ||
             PROXY_FIELDS_SET.has(field.name) ||
-            (field.type === 'section' && field.name === 'section-proxy'))
+            (field.type === 'section' && field.name === 'proxy-info'))
     )
         return false;
 

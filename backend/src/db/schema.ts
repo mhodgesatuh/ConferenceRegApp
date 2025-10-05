@@ -52,6 +52,11 @@ export const registrations = mysqlTable('registrations', {
     // Presenter information
     presenterBio: text('presenter_bio'),
     presenterPicUrl: varchar('presenter_pic_url', {length: 256}),
+    session1Title: varchar('session1_title', {length: 128}),
+    session1Description: text('session1_description'),
+    isSecondSession: boolean('is_second_session'),
+    session2Title: varchar('session2_title', {length: 128}),
+    session2Description: text('session2_description'),
 
     // Administration
     cancelledAttendance: boolean('cancelled_attendance').default(false),
