@@ -213,6 +213,11 @@ router.post("/", createLimiter, async (req: Request, res: Response): Promise<voi
                 question2: String(req.body.question2).trim(),
                 presenterBio: toNull(req.body.presenterBio),
                 presenterPicUrl: toNull(req.body.presenterPicUrl),
+                session1Title: toNull(req.body.session1Title),
+                session1Description: toNull(req.body.session1Description),
+                isSecondSession: toTinyInt(req.body.isSecondSession),
+                session2Title: toNull(req.body.session2Title),
+                session2Description: toNull(req.body.session2Description),
                 isAttendee: 1, // always true on create
                 isCancelled: toTinyInt(req.body.isCancelled),
                 isMonitor: toTinyInt(req.body.isMonitor),
@@ -340,6 +345,14 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                 question2: req.body.question2 !== undefined ? String(req.body.question2).trim() : undefined,
                 presenterBio: req.body.presenterBio !== undefined ? toNull(req.body.presenterBio) : undefined,
                 presenterPicUrl: req.body.presenterPicUrl !== undefined ? toNull(req.body.presenterPicUrl) : undefined,
+                session1Title: req.body.session1Title !== undefined ? toNull(req.body.session1Title) : undefined,
+                session1Description:
+                    req.body.session1Description !== undefined ? toNull(req.body.session1Description) : undefined,
+                isSecondSession:
+                    req.body.isSecondSession !== undefined ? toTinyInt(req.body.isSecondSession) : undefined,
+                session2Title: req.body.session2Title !== undefined ? toNull(req.body.session2Title) : undefined,
+                session2Description:
+                    req.body.session2Description !== undefined ? toNull(req.body.session2Description) : undefined,
                 // Don't force isAttendee=true on update; preserve/allow explicit changes
                 isAttendee: req.body.isAttendee !== undefined ? toTinyInt(req.body.isAttendee) : undefined,
                 isCancelled: req.body.isCancelled !== undefined ? toTinyInt(req.body.isCancelled) : undefined,

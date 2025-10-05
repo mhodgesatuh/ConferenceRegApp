@@ -107,7 +107,7 @@ const AdministrationPage: React.FC = () => {
     const { data: fetchedById, errorStatus: registrationErrorStatus } = useRegistrationById(activeRegistrationId);
 
     const initialDataForUpdate = creatingNew
-        ? {}
+        ? { isAttendee: true }
         : selected ?? fetchedById ?? stateRegistration ?? authRegistration;
 
     useEffect(() => {
