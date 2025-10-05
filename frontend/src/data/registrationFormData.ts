@@ -36,8 +36,8 @@ export interface FormField {
 // Export a typed constant for each form element type.
 export const registrationFormData: FormField[] = [
     {
-        name: 'section-creds',
-        label: 'Review and update your registration information below.',
+        name: 'contact-info',
+        label: 'Provide your contact information',
         type: 'section',
         scope: 'registration',
     },
@@ -48,12 +48,6 @@ export const registrationFormData: FormField[] = [
         required: true,
         scope: 'registration',
         clickedByDefault: true,
-    },
-    {
-        name: 'section-info',
-        label: 'Provide your (attendee) contact information.',
-        type: 'section',
-        scope: 'registration',
     },
     {
         name: 'phone1',
@@ -102,6 +96,12 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
+        name: 'attendance-info',
+        label: 'Attendance information.',
+        type: 'section',
+        scope: 'registration',
+    },
+    {
         name: 'day1Attendee',
         label: 'Attending Day 1',
         type: 'checkbox',
@@ -140,27 +140,6 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'section-cancel',
-        label: 'If you need to cancel, please return to this form to let us know.',
-        type: 'section',
-        scope: 'registration',
-    },
-    {
-        name: 'cancelledAttendance',
-        label: 'Cancel attendance',
-        type: 'checkbox',
-        required: false,
-        scope: 'registration',
-        clickedByDefault: true,
-    },
-    {
-        name: 'cancellationReason',
-        label: 'Reason for cancellation',
-        type: 'text',
-        required: false,
-        scope: 'registration',
-    },
-    {
         name: 'presenter',
         label: 'Conference speakers, please provide a bio and a picture.',
         type: 'section',
@@ -182,7 +161,28 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'section-proxy',
+        name: 'cancellation',
+        label: 'If you need to cancel, please return to this form to let us know.',
+        type: 'section',
+        scope: 'registration',
+    },
+    {
+        name: 'cancelledAttendance',
+        label: 'Cancel attendance',
+        type: 'checkbox',
+        required: false,
+        scope: 'registration',
+        clickedByDefault: true,
+    },
+    {
+        name: 'cancellationReason',
+        label: 'Reason for cancellation',
+        type: 'text',
+        required: false,
+        scope: 'registration',
+    },
+    {
+        name: 'proxy-info',
         label: 'If you are registering another person, please provide your contact information.',
         type: 'section',
         required: false,
@@ -218,7 +218,7 @@ export const registrationFormData: FormField[] = [
         scope: 'registration',
     },
     {
-        name: 'section-roles',
+        name: 'conference-roles',
         label: 'For internal use: indicate additional attendee roles.',
         type: 'section',
         scope: 'admin',

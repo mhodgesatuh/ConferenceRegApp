@@ -17,3 +17,4 @@ backend/node_modules/
 /backend/certs/
 
 .env.prod
+/data/

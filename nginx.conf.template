@@ -84,6 +84,7 @@ http {
       types {
         image/jpeg  jpg jpeg;
         image/png   png;
+        image/webp  webp;
       }
       default_type application/octet-stream;
       add_header X-Content-Type-Options nosniff always;
@@ -109,7 +110,7 @@ http {
         return 204;
       }
 
-      proxy_pass http://conference_backend;     # ⬅️ back to HTTP
+      proxy_pass http://conference_backend;     # back to HTTP
       proxy_set_header X-Internal-Secret "${INTERNAL_SECRET}";
 
       proxy_set_header X-Forwarded-Port 8443;
