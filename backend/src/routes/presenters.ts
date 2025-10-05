@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import multer, { MulterError } from "multer";
 import { requireAuth } from "@/utils/auth";
 import { log, sendError } from "@/utils/logger";
+import { getPresenterMaxBytes } from "@/constants/presenters";
 import { getRegistrationWithPinById } from "./registration.service"; // or add a lighter getRegistrationById
 
 const router = Router();
@@ -21,7 +22,7 @@ const UPLOAD_ROOT = path.isAbsolute(rawUploadDir)
     : path.join(ROOT_DIR, rawUploadDir);
 
 const PHOTO_SUBDIR = "presenters";
-const MAX_PHOTO_BYTES = Number(process.env.PRESENTER_MAX_BYTES || 2 * 1024 * 1024); // 2 MiB default
+const MAX_PHOTO_BYTES = getPresenterMaxBytes();
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 class UnsupportedMimeTypeError extends Error {

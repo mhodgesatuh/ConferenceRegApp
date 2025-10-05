@@ -34,7 +34,7 @@ services:
     environment:
       UPDATE_DEPS: ${UPDATE_DEPS:-false}
       UPLOAD_DIR: /data/presenter-photos
-      MAX_UPLOAD_BYTES: 5242880
+      PRESENTER_MAX_BYTES: 5242880
     depends_on:
       - conference-db
     volumes:
