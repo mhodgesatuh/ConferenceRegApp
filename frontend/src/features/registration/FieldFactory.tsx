@@ -41,7 +41,11 @@ type Props = {
 export function FieldRenderer({ field, state, isMissing, onCheckboxChange, onInputChange, onValueChange, error }: Props) {
 
     if (field.type === 'section') {
-        return <Section key={`section-${field.label}`}>{field.label}</Section>;
+        return (
+            <Section key={`section-${field.name}`} id={field.name} data-section={field.name}>
+                {field.label}
+            </Section>
+        );
     }
 
     if (field.type === 'checkbox') {

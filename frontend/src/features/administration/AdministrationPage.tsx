@@ -17,7 +17,8 @@ import type { ColumnDef, FilterFn } from "@tanstack/react-table";
 import { Pencil, UserPlus } from "lucide-react";
 
 import { DataTable } from "./components/DataTable";
-import { buildFilterKeys, buildListColumnsFromForm, camelToTitle } from "./table/columns";
+import { buildFilterKeys, buildListColumnsFromForm } from "./table/columns";
+import { camelToTitle } from "@/lib/strings";
 import { useRegistrations } from "./hooks/useRegistrations";
 import { useRegistrationById } from "./hooks/useRegistrationById";
 import type { Registration } from "./types";
