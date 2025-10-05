@@ -9,6 +9,7 @@ import HomePage from './features/home/HomePage';
 import AdministrationPage from './features/administration/AdministrationPage';
 import AppLayout from '@/components/layout/AppLayout';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
+import { hasAdminPrivileges } from './features/auth/adminPrivileges';
 
 type LoginSuccessPayload = {
     registration?: any;
@@ -24,7 +25,7 @@ const AppRoutes: React.FC = () => {
 
             login(registration);
 
-            const target = registration.isOrganizer ? '/organizer' : '/register';
+            const target = hasAdminPrivileges(registration) ? '/organizer' : '/register';
             navigate(target, { state: { registration } });
         },
         [login, navigate],

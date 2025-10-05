@@ -3,9 +3,12 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {apiFetch, clearCsrf} from "@/lib/api";
 
+import { hasAdminPrivileges } from "./adminPrivileges";
+
 export interface AuthContextValue {
     registration: Record<string, any> | null;
     isOrganizer: boolean;
+    isAdmin: boolean;
     loading: boolean;
     login: (registration: Record<string, any>) => void;
     logout: () => Promise<void>;
@@ -34,9 +37,14 @@ function persistRegistration(registration: Record<string, any> | null) {
                 "regIsOrganizer",
                 registration.isOrganizer ? "true" : "false"
             );
+            sessionStorage.setItem(
+                "regIsAdmin",
+                hasAdminPrivileges(registration) ? "true" : "false"
+            );
         } else {
             sessionStorage.removeItem("regId");
             sessionStorage.removeItem("regIsOrganizer");
+            sessionStorage.removeItem("regIsAdmin");
         }
     } catch {
         // Ignore storage errors (e.g., Safari private mode)
@@ -102,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         () => ({
             registration,
             isOrganizer: Boolean(registration?.isOrganizer),
+            isAdmin: hasAdminPrivileges(registration),
             loading,
             login,
             logout,
