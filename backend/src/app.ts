@@ -11,6 +11,7 @@ import validationTableRoutes from "./routes/validationTables";
 import {errorLogger, requestLogger} from "@/utils/logger";
 import {requireProxySeal} from "@/utils/auth";
 import presentersRouter from "@/routes/presenters";
+import configRouter from "@/routes/config";
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/registrations", registrationRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/validation-tables", validationTableRoutes);
 app.use("/api/presenters", presentersRouter);
+app.use("/api/config", configRouter);
 
 // 4) Error logging
 app.use(errorLogger());

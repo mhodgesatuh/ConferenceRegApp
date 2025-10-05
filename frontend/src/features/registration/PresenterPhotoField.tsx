@@ -13,12 +13,18 @@ import clsx from 'clsx';
 
 import {Button, Label, Message} from '@/components/ui';
 import type {FormField} from '@/data/registrationFormData';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import {uploadPresenterPhoto} from './presenterPhotoApi';
 
 const ACCEPTED_TYPES = 'image/png,image/jpeg,image/webp';
 const MAX_PREVIEW_SIZE = 50;
-const MAX_FILE_BYTES = 2 * 1024 * 1024; // mirror backend default (2 MiB)
-const MAX_FILE_MB = Math.round(MAX_FILE_BYTES / (1024 * 1024));
+const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MiB fallback when config missing
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Number((bytes / 1024).toFixed(1))} KB`;
+    return `${Number((bytes / (1024 * 1024)).toFixed(1))} MB`;
+}
 
 type PresenterPhotoFieldProps = {
     field: FormField;
@@ -33,6 +39,10 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
     const [dialogMessage, setDialogMessage] = useState<string | null>(null);
     const [cacheBuster, setCacheBuster] = useState<number>(Date.now());
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const { data: appConfig } = useAppConfig();
+
+    const maxFileBytes = appConfig?.presenterMaxBytes ?? DEFAULT_MAX_FILE_BYTES;
+    const maxFileReadable = useMemo(() => formatBytes(maxFileBytes), [maxFileBytes]);
 
     const showErrorStyle = isMissing || Boolean(error);
     const errorId = error ? `${field.name}-error` : undefined;
@@ -48,8 +58,8 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (file.size > MAX_FILE_BYTES) {
-            setDialogMessage(`The selected file is too large. Please choose an image under ${MAX_FILE_MB} MB.`);
+        if (file.size > maxFileBytes) {
+            setDialogMessage(`The selected file is too large. Please choose an image under ${maxFileReadable}.`);
             event.target.value = '';
             return;
         }
@@ -69,7 +79,7 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
             setIsUploading(false);
             event.target.value = '';
         }
-    }, [onChange]);
+    }, [onChange, maxFileBytes, maxFileReadable]);
 
     const handleUploadClick = useCallback(() => {
         inputRef.current?.click();
@@ -128,7 +138,7 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
                         )}
                     </div>
                     <p className="text-xs text-slate-600">
-                        Accepted formats: JPEG, PNG, WebP. Maximum size: {MAX_FILE_MB} MB.
+                        Accepted formats: JPEG, PNG, WebP. Maximum size: {maxFileReadable}.
                     </p>
                     {isUploading && <p className="text-xs text-slate-600">Uploading photo…</p>}
                 </div>
