@@ -67,9 +67,12 @@ export function PresenterPhotoField({ field, value, onChange, isMissing, error }
         setIsUploading(true);
         try {
             const response = await uploadPresenterPhoto(file);
+
             if (!response?.presenterPicUrl) {
-                throw new Error('Upload succeeded but no file path was returned.');
+                setDialogMessage('Upload succeeded but no file path was returned.');
+                return;
             }
+
             onChange(response.presenterPicUrl);
             setCacheBuster(Date.now());
         } catch (err: any) {

@@ -110,7 +110,7 @@ router.post("/photo", uploadLimiter, (req: Request, res: Response) => {
                 sendError(res, 413, "Photo is too large", { maxBytes: MAX_PHOTO_BYTES, maxReadable: formatBytes(MAX_PHOTO_BYTES) });
                 return;
             }
-            log.warn("Presenter photo upload rejected", { err });
+            log.warn("Photo upload rejected", { err });
             sendError(res, 400, "Photo could not be processed");
             return;
         }
@@ -141,7 +141,7 @@ router.post("/photo", uploadLimiter, (req: Request, res: Response) => {
         }
 
         if (!hasExpectedSignature(buffer, mime)) {
-            log.warn("Presenter photo failed signature check", { mime });
+            log.warn("Photo failed signature check", { mime });
             sendError(res, 400, "Photo appears to be invalid or unsafe");
             return;
         }
@@ -153,12 +153,12 @@ router.post("/photo", uploadLimiter, (req: Request, res: Response) => {
             await ensureDirectory(path.dirname(absolute));
             await fs.writeFile(absolute, buffer);
 
-            log.info("Presenter photo stored", { path: relative, size: buffer.length });
+            log.info("Photo stored", { path: relative, size: buffer.length });
 
             res.status(201).json({ presenterPicUrl: relative, bytes: buffer.length });
         } catch (writeErr) {
-            log.error("Presenter photo save failed", { err: writeErr });
-            sendError(res, 500, "Failed to save presenter photo");
+            log.error("Photo save failed", { err: writeErr });
+            sendError(res, 500, "Failed to save photo");
         }
     });
 });
@@ -209,7 +209,7 @@ router.get("/:id/photo", requireAuth, ownerOrOrganizer, async (req: Request, res
         // Minimal safety: require a relative path inside our media tree
         // (prevents path traversal and absolute paths)
         if (stored.startsWith("/") || stored.includes("..")) {
-            log.warn("Unsafe presenterPicUrl detected", { id, stored });
+            log.warn("Unsafe photo reference detected", { id, stored });
             sendError(res, 400, "Invalid photo path");
             return;
         }
@@ -228,7 +228,7 @@ router.get("/:id/photo", requireAuth, ownerOrOrganizer, async (req: Request, res
         return res.status(200).end();
 
     } catch (err) {
-        log.error("Presenter photo fetch failed", { err, id });
+        log.error("Photo fetch failed", { err, id });
         sendError(res, 500, "Failed to fetch photo");
     }
 });
