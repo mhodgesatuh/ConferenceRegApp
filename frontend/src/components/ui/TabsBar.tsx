@@ -1,3 +1,5 @@
+// frontend/src/components/ui/TabsBar.tsx
+
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -37,7 +39,7 @@ const TabsBar: React.FC<TabsBarProps> = ({
     className,
     innerClassName,
 }) => {
-    const containerClasses = cn('w-full border-b bg-card', sticky && 'sticky top-0 z-40', className);
+    const containerClasses = cn('w-full bg-card', sticky && 'sticky top-0 z-40', className);
     const innerClasses = cn('mx-auto w-full px-4 py-2 sm:px-6', innerClassName);
 
     return (

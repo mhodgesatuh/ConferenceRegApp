@@ -184,7 +184,7 @@ const CopyableLine: React.FC<CopyableFieldProps> = ({ label, text }) => {
     return (
         <div className="flex items-start justify-between gap-2">
             <div className="space-y-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mr-1.5">
           {label}
         </span>
                 <span className="text-sm text-foreground">{value}</span>
@@ -277,7 +277,7 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                                     <img
                                         src={photoSrc}
                                         alt={name ? `${name} presenter photo` : "Presenter photo"}
-                                        className="h-[50px] w-[50px] rounded object-cover md:h-[500px] md:w-[500px]"
+                                        className="h-[250px] w-[250px] rounded object-cover md:h-[500px] md:w-[500px]"
                                         width={500}
                                         height={500}
                                         loading="lazy"

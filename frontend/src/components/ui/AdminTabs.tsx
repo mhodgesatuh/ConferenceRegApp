@@ -1,8 +1,10 @@
-import React, { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+// frontend/src/components/ui/AdminTabs.tsx
 
-import { useAuth } from '@/features/auth/AuthContext';
+import React, {useCallback, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {LogOut} from 'lucide-react';
+
+import {useAuth} from '@/features/auth/AuthContext';
 import TabsBar from './TabsBar';
 
 type AdminTabsProps = {
@@ -41,14 +43,14 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
     const primaryText = loggingOut ? 'Logging out…' : homeLabel;
     const primaryLabel = isLoggedIn ? (
         <span className="flex items-center gap-2">
-            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <LogOut className="h-4 w-4" aria-hidden="true"/>
             <span>{primaryText}</span>
         </span>
     ) : (
         primaryText
     );
 
-    const items = [
+    const items: React.ComponentProps<typeof TabsBar>['items'] = [
         {
             id: 'tab-update',
             label: 'Registration Form',
@@ -84,7 +86,7 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
         className: 'ml-auto',
     });
 
-    return <TabsBar items={items} ariaLabel="Administration tabs" />;
+    return <TabsBar items={items} ariaLabel="Administration tabs"/>;
 };
 
 export default AdminTabs;
