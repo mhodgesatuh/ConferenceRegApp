@@ -365,7 +365,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     items={sectionTabs}
                     ariaLabel="Registration sections"
                     sticky
-                    className="shadow-sm"
                 />
             )}
 
