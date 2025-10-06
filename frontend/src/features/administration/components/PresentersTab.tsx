@@ -261,15 +261,15 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                                 <div className="space-y-4">
                                     <CopyableField label="Name" text={name} emphasize/>
                                     <CopyableLine label="Email" text={presenter.email}/>
-                                    <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline/>
-                                    <CopyableField label="Session Title" text={presenter.session1Title}/>
+                                    <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline emphasize/>
+                                    <CopyableField label="Session Title" text={presenter.session1Title} emphasize/>
                                     <CopyableField label="Session Description" text={presenter.session1Description}
-                                                   multiline/>
+                                                   multiline emphasize/>
                                     {hasSecondSession && (
                                         <>
-                                            <CopyableField label="Session 2 Title" text={session2Title}/>
+                                            <CopyableField label="Session 2 Title" text={session2Title} emphasize/>
                                             <CopyableField label="Session 2 Description" text={session2Description}
-                                                           multiline/>
+                                                           multiline emphasize/>
                                         </>
                                     )}
                                 </div>

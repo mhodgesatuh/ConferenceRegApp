@@ -18,6 +18,7 @@ import { Pencil, UserPlus } from "lucide-react";
 
 import { DataTable } from "./components/DataTable";
 import PresentersTab from "./components/PresentersTab";
+import RsvpUploadTab from "./components/RsvpUploadTab";
 import { buildFilterKeys, buildListColumnsFromForm } from "./table/columns";
 import { camelToTitleCase } from "@/lib/strings";
 import { useRegistrations } from "./hooks/useRegistrations";
@@ -34,12 +35,13 @@ interface LocationState {
 // Set the initial number of rows displayed per page in the DataTable component.
 const DEFAULT_PAGE_SIZE = 20;
 
-type AdminTabKey = "list" | "update" | "presenters";
+type AdminTabKey = "list" | "update" | "presenters" | "rsvp";
 
 const TAB_LABELS: Record<AdminTabKey, string> = {
     update: "Registration Form",
     list: "Registrations Table",
     presenters: "Presenters",
+    rsvp: "RSVP",
 };
 
 const AdminToolbarButton: React.FC<ButtonProps> = ({
@@ -71,7 +73,7 @@ const AdministrationPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const rawTab = searchParams.get("tab");
     const fallbackTab: AdminTabKey = isAdmin ? "list" : "update";
-    const activeTab: AdminTabKey = rawTab === "update" || rawTab === "list" || rawTab === "presenters"
+    const activeTab: AdminTabKey = rawTab === "update" || rawTab === "list" || rawTab === "presenters" || rawTab === "rsvp"
         ? (rawTab as AdminTabKey)
         : fallbackTab;
     const setActiveTab = useCallback(
@@ -117,7 +119,7 @@ const AdministrationPage: React.FC = () => {
     }, [errorStatus, registrationErrorStatus, navigate]);
 
     useEffect(() => {
-        if (!isAdmin && (activeTab === "list" || activeTab === "presenters")) {
+        if (!isAdmin && (activeTab === "list" || activeTab === "presenters" || activeTab === "rsvp")) {
             setActiveTab("update");
         }
     }, [isAdmin, activeTab, setActiveTab]);
@@ -338,6 +340,17 @@ const AdministrationPage: React.FC = () => {
                             className="space-y-4"
                         >
                             <PresentersTab presenters={presenters} isLoading={isLoading} error={error} />
+                        </section>
+                    )}
+
+                    {activeTab === "rsvp" && isAdmin && (
+                        <section
+                            id="tab-panel-rsvp"
+                            role="tabpanel"
+                            aria-labelledby="tab-rsvp"
+                            className="space-y-4"
+                        >
+                            <RsvpUploadTab />
                         </section>
                     )}
                 </div>
