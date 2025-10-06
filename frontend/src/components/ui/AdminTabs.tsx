@@ -8,8 +8,8 @@ import {useAuth} from '@/features/auth/AuthContext';
 import TabsBar from './TabsBar';
 
 type AdminTabsProps = {
-    activeTab: 'list' | 'update' | 'presenters';
-    onSelect: (tab: 'list' | 'update' | 'presenters') => void;
+    activeTab: 'list' | 'update' | 'presenters' | 'rsvp';
+    onSelect: (tab: 'list' | 'update' | 'presenters' | 'rsvp') => void;
     isAdmin?: boolean;
 };
 
@@ -35,6 +35,7 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
     const handleForm = () => onSelect('update');
     const handleList = () => onSelect('list');
     const handlePresenters = () => onSelect('presenters');
+    const handleRsvp = () => onSelect('rsvp');
 
     const isLoggedIn = Boolean(registration);
     const homeLabel = isLoggedIn ? 'Logout' : 'Home';
@@ -74,6 +75,13 @@ const AdminTabs: React.FC<AdminTabsProps> = ({ activeTab, onSelect, isAdmin = tr
             onClick: handlePresenters,
             active: activeTab === 'presenters',
             ariaControls: 'tab-panel-presenters',
+        });
+        items.push({
+            id: 'tab-rsvp',
+            label: 'RSVP',
+            onClick: handleRsvp,
+            active: activeTab === 'rsvp',
+            ariaControls: 'tab-panel-rsvp',
         });
     }
 
