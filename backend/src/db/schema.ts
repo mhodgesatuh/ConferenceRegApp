@@ -31,7 +31,7 @@ export const registrations = mysqlTable('registrations', {
 
     // Name information
     firstName: varchar('first_name', {length: 128}),
-    lastName: varchar('last_name', {length: 128}).notNull(),
+    lastName: varchar('last_name', {length: 128}),
     namePrefix: varchar('name_prefix', {length: 128}),
     nameSuffix: varchar('name_suffix', {length: 128}),
 
@@ -44,8 +44,8 @@ export const registrations = mysqlTable('registrations', {
     day1Attendee: boolean('day1_attendee').default(false),
     day2Attendee: boolean('day2_attendee').default(false),
     lunchMenu: varchar('lunch_menu', {length: 128}),
-    question1: varchar('question1', {length: 128}).notNull(),
-    question2: varchar('question2', {length: 128}).notNull(),
+    question1: varchar('question1', {length: 128}),
+    question2: varchar('question2', {length: 128}),
     isCancelled: boolean('is_cancelled').default(false),
     cancellationReason: varchar('cancellation_reason', {length: 512}),
 

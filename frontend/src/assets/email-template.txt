@@ -1,4 +1,4 @@
-Dear {#name},
+Dear {#NAME},
 
 You have been invited to our Somewhere Good Conference. Please RSVP at the
 following:
