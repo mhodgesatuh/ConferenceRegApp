@@ -66,6 +66,7 @@ export const registrations = mysqlTable('registrations', {
     isPresenter: boolean('is_presenter').default(false),
     isSponsor: boolean('is_sponsor').default(false),
     hasProxy: boolean('has_proxy').default(false),
+    hasRsvp: boolean('has_rsvp').default(false),
 
 }, (table) => ({
     emailIdx: uniqueIndex('idx_registrations_email').on(table.email),
@@ -76,6 +77,7 @@ export const registrations = mysqlTable('registrations', {
     isPresenterIdx: index('idx_is_presenter').on(table.isPresenter),
     isSponsorIdx: index('idx_is_sponsor').on(table.isSponsor),
     hasProxyIdx: index('idx_has_proxy').on(table.hasProxy),
+    hasRsvpIdx: index('idx_has_rsvp').on(table.hasRsvp),
 }));
 
 export const credentials = mysqlTable('credentials', {
