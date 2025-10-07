@@ -130,19 +130,24 @@ const AdministrationPage: React.FC = () => {
     );
 
     // Static form metadata → stable memo (no deps needed)
-    const booleanFieldNames = useMemo(
-        () =>
-            (registrationFormData as FormField[])
-                .filter((f) => f.type === "checkbox" && f.name && f.list !== false)
-                .map((f) => f.name),
-        [] // registrationFormData is a static import
-    );
+    const booleanFieldNames = useMemo(() => {
+        const checkboxNames = (registrationFormData as FormField[])
+            .filter((f) => f.type === "checkbox" && f.name && f.list !== false)
+            .map((f) => f.name);
+        const extras = ["hasRsvp", "hasNoRsvp"];
+        const seen = new Set<string>();
+        return [...extras, ...checkboxNames].filter((name) => {
+            if (!name || seen.has(name)) return false;
+            seen.add(name);
+            return true;
+        });
+    }, []);
 
-    const boolFilterFn: FilterFn<Registration> = (row, id, _value) => {
+    const boolFilterFn = useCallback<FilterFn<Registration>>((row, id, _value) => {
         const v = row.getValue(id);
         // treat "checked-only" as true; undefined means "no filter"
         return v === true || v === 1 || v === "true" || v === "1" || v === true;
-    };
+    }, []);
 
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
         return dynamicColsBase.map((col) => {
@@ -154,7 +159,29 @@ const AdministrationPage: React.FC = () => {
                 filterFn: boolFilterFn,
             } as ColumnDef<Registration>;
         });
-    }, [dynamicColsBase, booleanFieldNames]);
+    }, [dynamicColsBase, booleanFieldNames, boolFilterFn]);
+
+    const rsvpColumns = useMemo<ColumnDef<Registration>[]>(
+        () => [
+            {
+                accessorKey: "hasRsvp",
+                header: "Has RSVP",
+                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                enableColumnFilter: true,
+                filterFn: boolFilterFn,
+                meta: { clickedByDefault: false },
+            },
+            {
+                accessorKey: "hasNoRsvp",
+                header: "No RSVP",
+                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                enableColumnFilter: true,
+                filterFn: boolFilterFn,
+                meta: { clickedByDefault: false },
+            },
+        ],
+        [boolFilterFn]
+    );
 
     const handleNewAttendee = useCallback(() => {
         setCreatingNew(true);
@@ -192,9 +219,12 @@ const AdministrationPage: React.FC = () => {
         [setActiveTab, setSelected, setCreatingNew]
     );
 
-    const columns = useMemo<ColumnDef<Registration>[]>(() => [editIconCol, ...dynamicCols], [dynamicCols, editIconCol]);
+    const columns = useMemo<ColumnDef<Registration>[]>(
+        () => [editIconCol, ...dynamicCols, ...rsvpColumns],
+        [dynamicCols, editIconCol, rsvpColumns]
+    );
 
-    const filterKeys = useMemo(() => buildFilterKeys(dynamicCols), [dynamicCols]);
+    const filterKeys = useMemo(() => buildFilterKeys(dynamicCols, ["hasRsvp", "hasNoRsvp"]), [dynamicCols]);
 
     const DebouncedSearch: React.FC<{
         value: string;
@@ -270,6 +300,12 @@ const AdministrationPage: React.FC = () => {
                                                     <span className="font-medium">Filters:</span>
                                                     {booleanFieldNames.map((name) => {
                                                         const enabled = state.table.getColumn(name)?.getFilterValue() === true;
+                                                        const label =
+                                                            name === "hasRsvp"
+                                                                ? "Has RSVP"
+                                                                : name === "hasNoRsvp"
+                                                                    ? "No RSVP"
+                                                                    : camelToTitleCase(name);
                                                         return (
                                                             <Button
                                                                 key={name}
@@ -282,7 +318,7 @@ const AdministrationPage: React.FC = () => {
                                                                     if (col) col.setFilterValue(enabled ? undefined : true);
                                                                 }}
                                                             >
-                                                                {camelToTitleCase(name)}
+                                                                {label}
                                                             </Button>
                                                         );
                                                     })}

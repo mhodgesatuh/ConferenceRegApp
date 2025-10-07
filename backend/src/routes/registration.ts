@@ -143,6 +143,16 @@ function organizerOnly(req: Request, res: Response, next: NextFunction) {
     next();
 }
 
+function decorateRegistration<T extends Record<string, any> | undefined | null>(raw: T): T {
+    if (!raw || typeof raw !== "object") return raw;
+    const hasRsvp = raw.hasRsvp === true || raw.hasRsvp === 1 || raw.hasRsvp === "1";
+    return {
+        ...raw,
+        hasRsvp,
+        hasNoRsvp: !hasRsvp,
+    } as T;
+}
+
 
 /* POST / (public create; CSRF-exempt) */
 router.post("/", createLimiter, async (req: Request, res: Response): Promise<void> => {
@@ -373,6 +383,8 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                 return;
             }
 
+            clean.hasRsvp = toTinyInt(true);
+
             // Perform the update
             const { rowsAffected } = await updateRegistration(id, clean);
 
@@ -391,8 +403,10 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
                 rowsAffected: rowsAffected ?? 0,
             });
 
+            const registrationPayload = decorateRegistration(record.registrations);
+
             res.json({
-                registration: record.registrations,
+                registration: registrationPayload,
             });
         } catch (err) {
             if (isDuplicateKey(err)) {
@@ -412,7 +426,8 @@ router.put("/:id", requireAuth, csrfProtection, ownerOnly,
 router.get("/", requireAuth, organizerOnly, async (_req: Request, res: Response): Promise<void> => {
     try {
         const rows = await getAllRegistrations();
-        res.json({ registrations: rows });
+        const registrations = rows.map((row) => decorateRegistration(row));
+        res.json({ registrations });
     } catch (err) {
         logDbError(log, err, { message: FAILED_TO_FETCH_REGISTRATION });
         sendError(res, 500, FAILED_TO_FETCH_REGISTRATION);
@@ -454,8 +469,9 @@ router.post("/login", loginLimiter, csrfLogin,
             });
             createSession(res, record.registrations.id, !!record.registrations.isOrganizer);
             const csrf = req.csrfToken();
+            const registrationPayload = decorateRegistration(record.registrations);
             res.json({
-                registration: record.registrations, // do not return loginPin,
+                registration: registrationPayload, // do not return loginPin,
                 csrf,                               // token value
                 csrfHeader: CSRF_HEADER,            // header name to send it in
             });
@@ -518,8 +534,9 @@ router.get<{ id: string }>("/:id", requireAuth, ownerOnly,
                 email: record.registrations.email,
                 registrationId: id,
             });
+            const registrationPayload = decorateRegistration(record.registrations);
             res.json({
-                registration: record.registrations,
+                registration: registrationPayload,
             });
         } catch (err) {
             logDbError(log, err, {
