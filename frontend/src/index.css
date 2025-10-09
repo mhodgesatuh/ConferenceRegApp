@@ -151,7 +151,14 @@ hr {
     .admin-filter-pill { @apply whitespace-nowrap rounded-full px-3 py-1 text-sm; }
     .admin-filter-pill--inactive { @apply border-neutral-300 text-neutral-700 hover:bg-amber-50; }
     .admin-filter-pill--active {
-        @apply bg-[#4b2e17] text-white border-[#4b2e17] hover:bg-[#3a2311] hover:text-white;
+        background-color: #4b2e17 !important;
+        border-color: #4b2e17 !important;
+        color: #ffffff !important;
+    }
+
+    .admin-filter-pill--active:hover {
+        background-color: #3a2311 !important;
+        color: #ffffff !important;
     }
 
     /* Toolbar layout */
