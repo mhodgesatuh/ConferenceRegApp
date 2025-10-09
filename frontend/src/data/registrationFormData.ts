@@ -306,4 +306,12 @@ export const registrationFormData: FormField[] = [
         scope: 'admin',
         clickedByDefault: true,
     },
+    {
+        name: 'hasRSVP',
+        label: 'Has RSVP',
+        type: 'checkbox',
+        required: false,
+        scope: 'admin',
+        clickedByDefault: true,
+    },
 ];
