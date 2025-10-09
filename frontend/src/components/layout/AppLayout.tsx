@@ -18,7 +18,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <PageHeader />
 
-            <main className="flex-1 w-full">
+            <main className="w-full">
                 {isAdmin ? (
                     children
                 ) : (
