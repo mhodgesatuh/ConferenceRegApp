@@ -22,6 +22,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
     const [submitting, setSubmitting] = useState(false);
     const [emailMyPin, setEmailMyPin] = useState(false);
     const [status, setStatus] = useState<{ text: string; isError?: boolean } | null>(null);
+    const emailIsValid = isValidEmail(email);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +62,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                 return;
             }
 
-            if (!isValidEmail(email)) {
+            if (!emailIsValid) {
                 const warning = 'Please enter your email address to receive your PIN.';
                 setEmailError(warning);
                 setStatus({ text: warning, isError: true });
@@ -88,20 +89,22 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                 setPin('');
             }
         },
-        [email, submitting]
+        [email, emailIsValid, submitting]
     );
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setEmail(value);
-        setEmailError(value && !isValidEmail(value) ? 'Invalid email address' : '');
+        const isValid = isValidEmail(value);
+        setEmailError(value && !isValid ? 'Invalid email address' : '');
         if (status?.isError) {
             setStatus(null);
         }
     };
 
-    const canSubmit = isValidEmail(email) && pin.trim() !== '' && !submitting && !emailMyPin;
+    const canSubmit = emailIsValid && pin.trim() !== '' && !submitting && !emailMyPin;
     const submitLabel = submitting ? (emailMyPin ? 'Sending…' : 'Signing in…') : 'Sign in';
+    const emailPinDisabled = submitting || !emailIsValid;
 
     return (
         <div className="space-y-6">
@@ -127,35 +130,19 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                     {emailError && <Message id="email-error" text={emailError} isError />}
                 </div>
 
-                {!emailMyPin && (
-                    <div className="flex flex-col gap-1">
-                        <Label htmlFor="pin">
-                            PIN<sup className="text-red-500">*</sup>
-                        </Label>
-                        <Input
-                            id="pin"
-                            type="password"
-                            value={pin}
-                            onChange={(e) => setPin(e.target.value)}
-                            required
-                            autoComplete="one-time-code"
-                            inputMode="numeric"
-                        />
-                    </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                    <Checkbox
-                        id="email-my-pin"
-                        checked={emailMyPin}
-                        onCheckedChange={(checked) => {
-                            void handleEmailMyPinChange(Boolean(checked));
-                        }}
-                        disabled={submitting}
-                    />
-                    <Label htmlFor="email-my-pin" className="text-sm">
-                        Email my pin
+                <div className="flex flex-col gap-1">
+                    <Label htmlFor="pin">
+                        PIN<sup className="text-red-500">*</sup>
                     </Label>
+                    <Input
+                        id="pin"
+                        type="password"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value)}
+                        required
+                        autoComplete="one-time-code"
+                        inputMode="numeric"
+                    />
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -165,6 +152,23 @@ const HomePage: React.FC<HomePageProps> = ({ onSuccess }) => {
                     <p className="text-xs text-muted-foreground sm:text-sm">
                         Need help? Contact your conference organizer for assistance.
                     </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        id="email-my-pin"
+                        checked={emailMyPin}
+                        onCheckedChange={(checked) => {
+                            void handleEmailMyPinChange(Boolean(checked));
+                        }}
+                        disabled={emailPinDisabled}
+                    />
+                    <Label
+                        htmlFor="email-my-pin"
+                        className={`text-sm${!emailIsValid ? ' text-muted-foreground' : ''}`}
+                    >
+                        Email my pin
+                    </Label>
                 </div>
             </form>
 

@@ -133,7 +133,8 @@ const AdministrationPage: React.FC = () => {
     const booleanFieldNames = useMemo(() => {
         const checkboxNames = (registrationFormData as FormField[])
             .filter((f) => f.type === "checkbox" && f.name && f.list !== false)
-            .map((f) => f.name);
+            .map((f) => f.name)
+            .filter((name) => name !== "isAttendee");
         const extras = ["hasRsvp", "hasNoRsvp"];
         const seen = new Set<string>();
         return [...extras, ...checkboxNames].filter((name) => {
@@ -299,23 +300,36 @@ const AdministrationPage: React.FC = () => {
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-medium">Filters:</span>
                                                     {booleanFieldNames.map((name) => {
-                                                        const enabled = state.table.getColumn(name)?.getFilterValue() === true;
+                                                        const column = state.table.getColumn(name);
+                                                        const enabled = column?.getFilterValue() === true;
                                                         const label =
                                                             name === "hasRsvp"
                                                                 ? "Has RSVP"
                                                                 : name === "hasNoRsvp"
                                                                     ? "No RSVP"
                                                                     : camelToTitleCase(name);
+                                                        const isExclusiveFilter = name === "hasRsvp" || name === "hasNoRsvp";
+                                                        const counterpart = name === "hasRsvp" ? "hasNoRsvp" : "hasRsvp";
                                                         return (
                                                             <Button
                                                                 key={name}
                                                                 type="button"
-                                                                variant={enabled ? "default" : "outline"}
+                                                                variant="outline"
                                                                 size="sm"
-                                                                className="admin-filter-pill"
+                                                                className={cn(
+                                                                    "admin-filter-pill",
+                                                                    enabled
+                                                                        ? "admin-filter-pill--active"
+                                                                        : "admin-filter-pill--inactive"
+                                                                )}
                                                                 onClick={() => {
-                                                                    const col = state.table.getColumn(name);
-                                                                    if (col) col.setFilterValue(enabled ? undefined : true);
+                                                                    if (!column) return;
+                                                                    const nextEnabled = !enabled;
+                                                                    column.setFilterValue(nextEnabled ? true : undefined);
+                                                                    if (nextEnabled && isExclusiveFilter) {
+                                                                        const otherColumn = state.table.getColumn(counterpart);
+                                                                        otherColumn?.setFilterValue(undefined);
+                                                                    }
                                                                 }}
                                                             >
                                                                 {label}
