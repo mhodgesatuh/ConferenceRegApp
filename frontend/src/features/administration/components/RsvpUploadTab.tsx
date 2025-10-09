@@ -228,11 +228,11 @@ const RsvpUploadTab: React.FC = () => {
 
             <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                    Send reminder emails to invitees who have not responded to their RSVP yet.
+                    Send reminder emails to invitees who have not responded to their RSVP.
                 </p>
                 <div>
                     <Button type="button" onClick={handleSendReminders} disabled={reminding}>
-                        {reminding ? "Sending…" : "Send RSVP Reminder"}
+                        {reminding ? "Sending…" : "Send RSVP Reminders"}
                     </Button>
                 </div>
                 {reminderError && <Message text={reminderError} isError id="rsvp-reminder-error" />}
