@@ -204,7 +204,32 @@ const RsvpUploadTab: React.FC = () => {
                 </div>
             )}
 
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+                <div className="space-y-2">
+                    <Label htmlFor="rsvp-upload-file">CSV file</Label>
+                    <Input
+                        id="rsvp-upload-file"
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Files larger than 2&nbsp;MB are rejected. Rows missing an email or name will cause the entire upload to
+                        fail.
+                    </p>
+                </div>
+                <div>
+                    <Button type="submit" disabled={!file || uploading}>
+                        {uploading ? "Uploading…" : "Upload CSV"}
+                    </Button>
+                </div>
+            </form>
+
             <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                    Send reminder emails to invitees who have not responded to their RSVP yet.
+                </p>
                 <div>
                     <Button type="button" onClick={handleSendReminders} disabled={reminding}>
                         {reminding ? "Sending…" : "Send RSVP Reminder"}
@@ -237,28 +262,6 @@ const RsvpUploadTab: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                <div className="space-y-2">
-                    <Label htmlFor="rsvp-upload-file">CSV file</Label>
-                    <Input
-                        id="rsvp-upload-file"
-                        type="file"
-                        accept=".csv,text/csv"
-                        onChange={handleFileChange}
-                        disabled={uploading}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        Files larger than 2&nbsp;MB are rejected. Rows missing an email or name will cause the entire upload to
-                        fail.
-                    </p>
-                </div>
-                <div>
-                    <Button type="submit" disabled={!file || uploading}>
-                        {uploading ? "Uploading…" : "Upload CSV"}
-                    </Button>
-                </div>
-            </form>
         </div>
     );
 };
