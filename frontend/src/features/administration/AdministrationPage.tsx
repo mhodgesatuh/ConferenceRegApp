@@ -32,6 +32,12 @@ interface LocationState {
     registration?: any;
 }
 
+type FilterToggleConfig = {
+    name: string;
+    label: string;
+    exclusiveWith?: string;
+};
+
 // Set the initial number of rows displayed per page in the DataTable component.
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -129,20 +135,20 @@ const AdministrationPage: React.FC = () => {
         []
     );
 
-    // Static form metadata → stable memo (no deps needed)
-    const booleanFieldNames = useMemo(() => {
-        const checkboxNames = (registrationFormData as FormField[])
-            .filter((f) => f.type === "checkbox" && f.name && f.list !== false)
-            .map((f) => f.name)
-            .filter((name) => name !== "isAttendee");
-        const extras = ["hasRsvp", "hasNoRsvp"];
+    const filterableFieldNames = useMemo(() => {
         const seen = new Set<string>();
-        return [...extras, ...checkboxNames].filter((name) => {
-            if (!name || seen.has(name)) return false;
-            seen.add(name);
-            return true;
-        });
+        return (registrationFormData as FormField[])
+            .filter((field) => field.hasFilterButton)
+            .map((field) => field.name)
+            .filter((name): name is string => {
+                if (!name) return false;
+                if (seen.has(name)) return false;
+                seen.add(name);
+                return true;
+            });
     }, []);
+
+    const filterableFieldSet = useMemo(() => new Set(filterableFieldNames), [filterableFieldNames]);
 
     const boolFilterFn = useCallback<FilterFn<Registration>>((row, id, _value) => {
         const v = row.getValue(id);
@@ -153,14 +159,45 @@ const AdministrationPage: React.FC = () => {
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
         return dynamicColsBase.map((col) => {
             const key = getAccessorKey(col);
-            if (!key || !booleanFieldNames.includes(key)) return col;
+            if (!key || !filterableFieldSet.has(key)) return col;
             return {
                 ...col,
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
             } as ColumnDef<Registration>;
         });
-    }, [dynamicColsBase, booleanFieldNames, boolFilterFn]);
+    }, [dynamicColsBase, filterableFieldSet, boolFilterFn]);
+
+    const filterToggleConfigs = useMemo<FilterToggleConfig[]>(() => {
+        const configs: FilterToggleConfig[] = [];
+        const seenLabels = new Set<string>();
+
+        (registrationFormData as FormField[])
+            .filter((field) => field.hasFilterButton)
+            .forEach((field) => {
+                const name = field.name;
+                if (!name) return;
+
+                if (name === "hasRSVP") {
+                    if (!seenLabels.has("Has RSVP")) {
+                        configs.push({ name: "hasRsvp", label: "Has RSVP", exclusiveWith: "hasNoRsvp" });
+                        seenLabels.add("Has RSVP");
+                    }
+                    if (!seenLabels.has("No RSVP")) {
+                        configs.push({ name: "hasNoRsvp", label: "No RSVP", exclusiveWith: "hasRsvp" });
+                        seenLabels.add("No RSVP");
+                    }
+                    return;
+                }
+
+                const label = camelToTitleCase(name);
+                if (seenLabels.has(label)) return;
+                configs.push({ name, label });
+                seenLabels.add(label);
+            });
+
+        return configs;
+    }, []);
 
     const rsvpColumns = useMemo<ColumnDef<Registration>[]>(
         () => [
@@ -300,17 +337,10 @@ const AdministrationPage: React.FC = () => {
                                             <div className="admin-toolbar-row admin-toolbar-row--between">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-medium">Filters:</span>
-                                                    {booleanFieldNames.map((name) => {
+                                                    {filterToggleConfigs.map(({ name, label, exclusiveWith }) => {
                                                         const column = state.table.getColumn(name);
-                                                        const enabled = column?.getFilterValue() === true;
-                                                        const label =
-                                                            name === "hasRsvp"
-                                                                ? "Has RSVP"
-                                                                : name === "hasNoRsvp"
-                                                                    ? "No RSVP"
-                                                                    : camelToTitleCase(name);
-                                                        const isExclusiveFilter = name === "hasRsvp" || name === "hasNoRsvp";
-                                                        const counterpart = name === "hasRsvp" ? "hasNoRsvp" : "hasRsvp";
+                                                        if (!column) return null;
+                                                        const enabled = column.getFilterValue() === true;
                                                         return (
                                                             <Button
                                                                 key={name}
@@ -324,11 +354,10 @@ const AdministrationPage: React.FC = () => {
                                                                         : "admin-filter-pill--inactive"
                                                                 )}
                                                                 onClick={() => {
-                                                                    if (!column) return;
                                                                     const nextEnabled = !enabled;
                                                                     column.setFilterValue(nextEnabled ? true : undefined);
-                                                                    if (nextEnabled && isExclusiveFilter) {
-                                                                        const otherColumn = state.table.getColumn(counterpart);
+                                                                    if (nextEnabled && exclusiveWith) {
+                                                                        const otherColumn = state.table.getColumn(exclusiveWith);
                                                                         otherColumn?.setFilterValue(undefined);
                                                                     }
                                                                 }}
