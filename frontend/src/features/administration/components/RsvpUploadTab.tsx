@@ -37,7 +37,7 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
     "": "Attendee only",
     O: "Attendee & organizer",
     P: "Attendee & presenter",
-    OP: "Attendee, presenter & organizer",
+    OP: "Attendee, organizer, and presenter",
 };
 
 const RsvpUploadTab: React.FC = () => {
