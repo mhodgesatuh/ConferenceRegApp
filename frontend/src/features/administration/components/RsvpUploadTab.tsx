@@ -35,9 +35,9 @@ const EmailSummaryDetails: React.FC<{ summary: EmailSummary }> = ({ summary }) =
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
     "": "Attendee only",
-    A: "Attendee & organizer",
+    O: "Attendee & organizer",
     P: "Attendee & presenter",
-    AP: "Attendee, presenter & organizer",
+    OP: "Attendee, presenter & organizer",
 };
 
 const RsvpUploadTab: React.FC = () => {
@@ -153,7 +153,7 @@ const RsvpUploadTab: React.FC = () => {
                     <strong> roles</strong>.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                    Accepted role values are blank, A, P, or AP. The first row will be ignored when it looks like a header.
+                    Accepted role values are blank, O, P, or OP. The first row will be ignored when it looks like a header.
                 </p>
                 <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
                     <div className="font-medium text-foreground">Role designations</div>

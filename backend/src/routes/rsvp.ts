@@ -136,9 +136,9 @@ function looksLikeHeader(row: CsvRow): boolean {
 function normalizeRole(raw: string): { isOrganizer: boolean; isPresenter: boolean } | null {
   const value = raw.trim().toUpperCase();
   if (!value) return { isOrganizer: false, isPresenter: false };
-  if (value === "A") return { isOrganizer: true, isPresenter: false };
+  if (value === "O") return { isOrganizer: true, isPresenter: false };
   if (value === "P") return { isOrganizer: false, isPresenter: true };
-  if (value === "AP" || value === "PA") return { isOrganizer: true, isPresenter: true };
+  if (value === "OP" || value === "PO") return { isOrganizer: true, isPresenter: true };
   return null;
 }
 
