@@ -203,7 +203,7 @@ function buildPhotoSrc(path: unknown): string | null {
     return `/media/${normalized}`;
 }
 
-type PresenterFilterKey = "complete" | "missingBio" | "missingSession";
+type PresenterFilterKey = "complete" | "missingBio" | "hasTwoSessions";
 
 const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, error }) => {
     const sortedPresenters = useMemo(() => {
@@ -219,42 +219,45 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
 
     const [activeFilter, setActiveFilter] = useState<PresenterFilterKey>("complete");
 
-    const missingCounts = useMemo(() => {
+    const filterCounts = useMemo(() => {
         return sortedPresenters.reduce(
             (acc, presenter) => {
                 const hasBio = Boolean(presenter.presenterBio?.trim());
-                const hasSessionTitle = Boolean(presenter.session1Title?.trim());
-                const hasSessionDescription = Boolean(presenter.session1Description?.trim());
+                const hasSecondSessionTitle = Boolean(presenter.session2Title?.trim());
+                const hasSecondSessionDescription = Boolean(presenter.session2Description?.trim());
+                const hasTwoSessions = hasSecondSessionTitle || hasSecondSessionDescription;
 
                 if (!hasBio) acc.missingBio += 1;
-                if (!hasSessionTitle || !hasSessionDescription) acc.missingSession += 1;
+                if (hasTwoSessions) acc.hasTwoSessions += 1;
 
                 return acc;
             },
-            { missingBio: 0, missingSession: 0 }
+            { missingBio: 0, hasTwoSessions: 0 }
         );
     }, [sortedPresenters]);
 
     useEffect(() => {
-        if (activeFilter === "missingBio" && missingCounts.missingBio === 0) {
+        if (activeFilter === "missingBio" && filterCounts.missingBio === 0) {
             setActiveFilter("complete");
-        } else if (activeFilter === "missingSession" && missingCounts.missingSession === 0) {
+        } else if (activeFilter === "hasTwoSessions" && filterCounts.hasTwoSessions === 0) {
             setActiveFilter("complete");
         }
-    }, [activeFilter, missingCounts]);
+    }, [activeFilter, filterCounts]);
 
     const filteredPresenters = useMemo(() => {
         return sortedPresenters.filter((presenter) => {
             const hasBio = Boolean(presenter.presenterBio?.trim());
             const hasSessionTitle = Boolean(presenter.session1Title?.trim());
-            const hasSessionDescription = Boolean(presenter.session1Description?.trim());
+            const hasSecondSessionTitle = Boolean(presenter.session2Title?.trim());
+            const hasSecondSessionDescription = Boolean(presenter.session2Description?.trim());
+            const hasTwoSessions = hasSecondSessionTitle || hasSecondSessionDescription;
 
             if (activeFilter === "missingBio") {
                 return !hasBio;
             }
 
-            if (activeFilter === "missingSession") {
-                return !hasSessionTitle || !hasSessionDescription;
+            if (activeFilter === "hasTwoSessions") {
+                return hasTwoSessions;
             }
 
             return hasBio && hasSessionTitle;
@@ -268,7 +271,7 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
 
     const filterConfigs: Array<{ key: PresenterFilterKey; label: string }> = [
         { key: "missingBio", label: "Missing Bio" },
-        { key: "missingSession", label: "Missing Session Info" },
+        { key: "hasTwoSessions", label: "Has Two Sessions" },
     ];
 
     return (
@@ -287,8 +290,8 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                             const isActive = activeFilter === key;
                             const count =
                                 key === "missingBio"
-                                    ? missingCounts.missingBio
-                                    : missingCounts.missingSession;
+                                    ? filterCounts.missingBio
+                                    : filterCounts.hasTwoSessions;
                             const displayLabel = count > 0 ? `${label} (${count})` : label;
                             return (
                                 <Button
@@ -298,7 +301,10 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                                     size="sm"
                                     className={cn(
                                         "admin-filter-pill",
-                                        isActive ? "admin-filter-pill--active" : "admin-filter-pill--inactive"
+                                        isActive && count > 0
+                                            ? "admin-filter-pill--active"
+                                            : "admin-filter-pill--inactive",
+                                        count === 0 && "admin-filter-pill--disabled"
                                     )}
                                     disabled={count === 0}
                                     onClick={() => {
