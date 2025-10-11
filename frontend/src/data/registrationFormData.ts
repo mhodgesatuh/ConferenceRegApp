@@ -316,7 +316,7 @@ export const registrationFormData: FormField[] = [
         hasFilterButton: true,
     },
     {
-        name: 'hasRSVP',
+        name: 'hasRsvp',
         label: 'Has RSVP',
         type: 'checkbox',
         required: false,

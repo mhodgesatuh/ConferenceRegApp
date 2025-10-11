@@ -178,7 +178,7 @@ const AdministrationPage: React.FC = () => {
                 const name = field.name;
                 if (!name) return;
 
-                if (name === "hasRSVP") {
+                if (name === "hasRsvp") {
                     if (!seenLabels.has("Has RSVP")) {
                         configs.push({ name: "hasRsvp", label: "Has RSVP", exclusiveWith: "hasNoRsvp" });
                         seenLabels.add("Has RSVP");
@@ -204,7 +204,10 @@ const AdministrationPage: React.FC = () => {
             {
                 accessorKey: "hasRsvp",
                 header: "Has RSVP",
-                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                cell: ({ getValue }) => {
+                    const value = getValue<boolean | string | number>();
+                    return value == null ? "" : String(value);
+                },
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
                 meta: { clickedByDefault: false },
@@ -212,7 +215,10 @@ const AdministrationPage: React.FC = () => {
             {
                 accessorKey: "hasNoRsvp",
                 header: "No RSVP",
-                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                cell: ({ getValue }) => {
+                    const value = getValue<boolean | string | number>();
+                    return value == null ? "" : String(value);
+                },
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
                 meta: { clickedByDefault: false },
