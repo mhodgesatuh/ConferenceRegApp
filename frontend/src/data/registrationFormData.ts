@@ -9,15 +9,16 @@
 //    type          'section'
 //    scope         The scope determines when it will get displayed
 //
-// Defining a form section:
+// Defining a field section:
 //    name          The field name, see backend/src/db/schema.ts
 //    label         Input prompt text
 //    type          Input type
 //    required      Optional, set to true if needed
 //    scope         The scope determines when it will get displayed
 //    priv          Flag a field as being a privileged role
-//    list
 //    clickedByDefault - Clicked by default on the Columns drop-down menu
+//    validationTable  - Input type is a table-driven drop-down list.
+//    hasFilterButton  - Associate with a registration table filter button
 //
 
 export interface FormField {
@@ -28,7 +29,6 @@ export interface FormField {
     scope: 'admin' | 'registration';
     priv?: 'update';
     readOnly?: boolean;
-    list?: boolean;
     clickedByDefault?: boolean;
     validationTable?: string;
     hasFilterButton?: boolean
@@ -64,7 +64,6 @@ export const registrationFormData: FormField[] = [
         type: 'phone',
         required: false,
         scope: 'registration',
-        clickedByDefault: true,
     },
     {
         name: 'firstName',
