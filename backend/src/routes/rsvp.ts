@@ -7,7 +7,7 @@ import { generatePin, isValidEmail } from "./registration.utils";
 import { getRegistrationByEmail } from "./registration.service";
 import { db } from "@/db/client";
 import { credentials, registrations } from "@/db/schema";
-import { eq, isNull, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
 import { sendEmail } from "@/utils/email";
 import { fillRsvpTemplate, loadRsvpTemplate } from "@/utils/emailTemplates";
@@ -398,7 +398,7 @@ router.post("/remind", requireAuth, organizerOnly, async (req: Request, res: Res
       })
       .from(registrations)
       .innerJoin(credentials, eq(credentials.registrationId, registrations.id))
-      .where(or(isNull(registrations.lastName), eq(registrations.lastName, "")));
+      .where(eq(registrations.hasRsvp, false));
   } catch (err) {
     log.error("Failed to load pending RSVP reminders", { err });
     sendError(res, 500, "Failed to load pending RSVPs");
