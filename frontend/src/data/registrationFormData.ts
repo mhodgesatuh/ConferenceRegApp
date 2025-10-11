@@ -31,6 +31,7 @@ export interface FormField {
     list?: boolean;
     clickedByDefault?: boolean;
     validationTable?: string;
+    hasFilterButton?: boolean
 }
 
 // Export a typed constant for each form element type.
@@ -108,6 +109,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'day2Attendee',
@@ -116,6 +118,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'lunchMenu',
@@ -208,6 +211,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'cancellationReason',
@@ -230,6 +234,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'registration',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'proxyName',
@@ -280,6 +285,7 @@ export const registrationFormData: FormField[] = [
         scope: 'admin',
         priv: 'update',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'isOrganizer',
@@ -289,6 +295,7 @@ export const registrationFormData: FormField[] = [
         scope: 'admin',
         priv: 'update',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'isPresenter',
@@ -297,6 +304,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'admin',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'isSponsor',
@@ -305,6 +313,7 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'admin',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
     {
         name: 'hasRSVP',
@@ -313,5 +322,6 @@ export const registrationFormData: FormField[] = [
         required: false,
         scope: 'admin',
         clickedByDefault: true,
+        hasFilterButton: true,
     },
 ];
