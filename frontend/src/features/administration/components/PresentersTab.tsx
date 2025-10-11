@@ -7,6 +7,7 @@ import {cn} from "@/lib/utils";
 import presenterPlaceholder from "@/assets/presenter-placeholder.svg";
 import type {Registration} from "../types";
 import {formatFullName} from "../utils/formatName";
+import {Button} from "@/components/ui/button";
 
 type PresentersTabProps = {
     presenters: Registration[];
@@ -202,6 +203,8 @@ function buildPhotoSrc(path: unknown): string | null {
     return `/media/${normalized}`;
 }
 
+type PresenterFilterKey = "complete" | "missingBio" | "missingSession";
+
 const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, error }) => {
     const sortedPresenters = useMemo(() => {
         return [...presenters].sort((a, b) => {
@@ -214,23 +217,35 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
         });
     }, [presenters]);
 
+    const [activeFilter, setActiveFilter] = useState<PresenterFilterKey>("complete");
+
+    const filteredPresenters = useMemo(() => {
+        return sortedPresenters.filter((presenter) => {
+            const hasBio = Boolean(presenter.presenterBio?.trim());
+            const hasSessionTitle = Boolean(presenter.session1Title?.trim());
+            const hasSessionDescription = Boolean(presenter.session1Description?.trim());
+
+            if (activeFilter === "missingBio") {
+                return !hasBio;
+            }
+
+            if (activeFilter === "missingSession") {
+                return !hasSessionTitle || !hasSessionDescription;
+            }
+
+            return hasBio && hasSessionTitle;
+        });
+    }, [activeFilter, sortedPresenters]);
+
     const showLoading = isLoading;
     const showError = Boolean(error);
     const hasStatus = showLoading || showError;
+    const noPresentersAvailable = !isLoading && !error && sortedPresenters.length === 0;
 
-    if (!isLoading && !error && sortedPresenters.length === 0) {
-        return (
-            <div className="space-y-4">
-                {hasStatus && (
-                    <div className="space-y-2">
-                        {showLoading && <div className="text-sm text-muted-foreground">Loading presenters…</div>}
-                        {showError && <div className="text-sm text-red-600">Error: {error}</div>}
-                    </div>
-                )}
-                <div className="text-sm text-muted-foreground">No presenters found.</div>
-            </div>
-        );
-    }
+    const filterConfigs: Array<{ key: PresenterFilterKey; label: string }> = [
+        { key: "missingBio", label: "Missing Bio" },
+        { key: "missingSession", label: "Missing Session Info" },
+    ];
 
     return (
         <div className="space-y-6">
@@ -240,56 +255,107 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                     {showError && <div className="text-sm text-red-600">Error: {error}</div>}
                 </div>
             )}
-            <div className="space-y-8">
-                {sortedPresenters.map((presenter) => {
-                    const fallbackName = presenter.email || `Presenter #${presenter.id}`;
-                    const name = formatFullName({
-                        namePrefix: presenter.namePrefix,
-                        firstName: presenter.firstName,
-                        lastName: presenter.lastName,
-                        nameSuffix: presenter.nameSuffix,
-                        fallback: fallbackName,
-                    });
-                    const photoSrc = buildPhotoSrc(presenter.presenterPicUrl) ?? presenterPlaceholder;
-                    const session2Title = (presenter.session2Title ?? "").trim();
-                    const session2Description = (presenter.session2Description ?? "").trim();
-                    const hasSecondSession = Boolean(session2Title || session2Description);
-
-                    return (
-                        <div key={presenter.id} className="space-y-4">
-                            <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-                                <div className="space-y-4">
-                                    <CopyableField label="Name" text={name} emphasize/>
-                                    <CopyableLine label="Email" text={presenter.email}/>
-                                    <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline emphasize/>
-                                    <CopyableField label="Session Title" text={presenter.session1Title} emphasize/>
-                                    <CopyableField label="Session Description" text={presenter.session1Description}
-                                                   multiline emphasize/>
-                                    {hasSecondSession && (
-                                        <>
-                                            <CopyableField label="Session 2 Title" text={session2Title} emphasize/>
-                                            <CopyableField label="Session 2 Description" text={session2Description}
-                                                           multiline emphasize/>
-                                        </>
+            <div className="admin-toolbar">
+                <div className="admin-toolbar-row admin-toolbar-row--between">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">Filters:</span>
+                        {filterConfigs.map(({ key, label }) => {
+                            const isActive = activeFilter === key;
+                            return (
+                                <Button
+                                    key={key}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={cn(
+                                        "admin-filter-pill",
+                                        isActive ? "admin-filter-pill--active" : "admin-filter-pill--inactive"
                                     )}
-                                </div>
-                                <div className="flex justify-end md:justify-start">
-                                    <img
-                                        src={photoSrc}
-                                        alt={name ? `${name} presenter photo` : "Presenter photo"}
-                                        className="h-[250px] w-[250px] rounded object-cover md:h-[500px] md:w-[500px]"
-                                        width={500}
-                                        height={500}
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                </div>
-                            </div>
-                            <hr className="border-border"/>
-                        </div>
-                    );
-                })}
+                                    onClick={() => setActiveFilter((prev) => (prev === key ? "complete" : key))}
+                                >
+                                    {label}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                    <div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="admin-toolbar-btn admin-toolbar-btn--dark"
+                            onClick={() => setActiveFilter("complete")}
+                        >
+                            Clear Filters
+                        </Button>
+                    </div>
+                </div>
             </div>
+
+            {noPresentersAvailable ? (
+                <div className="text-sm text-muted-foreground">No presenters found.</div>
+            ) : filteredPresenters.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No presenters match the current filter.</div>
+            ) : (
+                <div className="space-y-8">
+                    {filteredPresenters.map((presenter) => {
+                        const fallbackName = presenter.email || `Presenter #${presenter.id}`;
+                        const name = formatFullName({
+                            namePrefix: presenter.namePrefix,
+                            firstName: presenter.firstName,
+                            lastName: presenter.lastName,
+                            nameSuffix: presenter.nameSuffix,
+                            fallback: fallbackName,
+                        });
+                        const photoSrc = buildPhotoSrc(presenter.presenterPicUrl) ?? presenterPlaceholder;
+                        const session2Title = (presenter.session2Title ?? "").trim();
+                        const session2Description = (presenter.session2Description ?? "").trim();
+                        const hasSecondSession = Boolean(session2Title || session2Description);
+
+                        return (
+                            <div key={presenter.id} className="space-y-4">
+                                <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                                    <div className="space-y-4">
+                                        <CopyableField label="Name" text={name} emphasize/>
+                                        <CopyableLine label="Email" text={presenter.email}/>
+                                        <CopyableField label="Presenter Bio" text={presenter.presenterBio} multiline emphasize/>
+                                        <CopyableField label="Session Title" text={presenter.session1Title} emphasize/>
+                                        <CopyableField
+                                            label="Session Description"
+                                            text={presenter.session1Description}
+                                            multiline
+                                            emphasize
+                                        />
+                                        {hasSecondSession && (
+                                            <>
+                                                <CopyableField label="Session 2 Title" text={session2Title} emphasize/>
+                                                <CopyableField
+                                                    label="Session 2 Description"
+                                                    text={session2Description}
+                                                    multiline
+                                                    emphasize
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-end md:justify-start">
+                                        <img
+                                            src={photoSrc}
+                                            alt={name ? `${name} presenter photo` : "Presenter photo"}
+                                            className="h-[250px] w-[250px] rounded object-cover md:h-[500px] md:w-[500px]"
+                                            width={500}
+                                            height={500}
+                                            loading="lazy"
+                                            decoding="async"
+                                        />
+                                    </div>
+                                </div>
+                                <hr className="border-border"/>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
