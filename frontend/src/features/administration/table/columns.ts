@@ -41,9 +41,19 @@ export function buildListColumnsFromForm<T extends RegistrationIndexable>(
         })
         .map((f) => {
             const name = f.name as string;
-            const headerLabel = typeof f.label === "string" && f.label.trim() !== ""
-                ? f.label
-                : camelToTitleCase(name);
+            let headerLabel: string | undefined;
+
+            if (typeof f.label === "string") {
+                const trimmedLabel = f.label.trim();
+                if (trimmedLabel !== "") {
+                    const withoutParenText = trimmedLabel.replace(/\s*\([^()]*\)/g, "").trim();
+                    headerLabel = withoutParenText !== "" ? withoutParenText : undefined;
+                }
+            }
+
+            if (!headerLabel) {
+                headerLabel = camelToTitleCase(name);
+            }
 
             return {
                 accessorKey: name,
