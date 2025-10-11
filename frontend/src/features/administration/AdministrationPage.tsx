@@ -241,6 +241,7 @@ const AdministrationPage: React.FC = () => {
         return (
             <Input
                 placeholder="Search…"
+                id="registrationsSearch"
                 value={local}
                 onChange={(e) => setLocal(e.target.value)}
                 className="w-[260px]"

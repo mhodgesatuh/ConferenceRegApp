@@ -5,8 +5,8 @@ const PageFooter: React.FC = () => {
 
     return (
         <footer className="w-full border-t bg-muted/40">
-            <div className="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-muted-foreground sm:px-8 sm:text-sm">
-                © {year} Conference Organizers. All rights reserved.
+            <div className="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-muted-foreground sm:px-8 sm:text-sm text-center">
+                © {year} Somewhere Good Conference Organizers. All rights reserved.
             </div>
         </footer>
     );
