@@ -157,15 +157,17 @@ const AdministrationPage: React.FC = () => {
     }, []);
 
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
-        return dynamicColsBase.map((col) => {
-            const key = getAccessorKey(col);
-            if (!key || !filterableFieldSet.has(key)) return col;
-            return {
-                ...col,
-                enableColumnFilter: true,
-                filterFn: boolFilterFn,
-            } as ColumnDef<Registration>;
-        });
+        return dynamicColsBase
+            .filter((col) => getAccessorKey(col) !== "hasRsvp")
+            .map((col) => {
+                const key = getAccessorKey(col);
+                if (!key || !filterableFieldSet.has(key)) return col;
+                return {
+                    ...col,
+                    enableColumnFilter: true,
+                    filterFn: boolFilterFn,
+                } as ColumnDef<Registration>;
+            });
     }, [dynamicColsBase, filterableFieldSet, boolFilterFn]);
 
     const filterToggleConfigs = useMemo<FilterToggleConfig[]>(() => {
@@ -178,7 +180,7 @@ const AdministrationPage: React.FC = () => {
                 const name = field.name;
                 if (!name) return;
 
-                if (name === "hasRSVP") {
+                if (name === "hasRsvp") {
                     if (!seenLabels.has("Has RSVP")) {
                         configs.push({ name: "hasRsvp", label: "Has RSVP", exclusiveWith: "hasNoRsvp" });
                         seenLabels.add("Has RSVP");
@@ -204,15 +206,21 @@ const AdministrationPage: React.FC = () => {
             {
                 accessorKey: "hasRsvp",
                 header: "Has RSVP",
-                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                cell: ({ getValue }) => {
+                    const value = getValue<boolean | string | number>();
+                    return value == null ? "" : String(value);
+                },
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
-                meta: { clickedByDefault: false },
+                meta: { clickedByDefault: true },
             },
             {
                 accessorKey: "hasNoRsvp",
                 header: "No RSVP",
-                cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"),
+                cell: ({ getValue }) => {
+                    const value = getValue<boolean | string | number>();
+                    return value == null ? "" : String(value);
+                },
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
                 meta: { clickedByDefault: false },
