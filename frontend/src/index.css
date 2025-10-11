@@ -150,6 +150,9 @@ hr {
     /* Filter pills */
     .admin-filter-pill { @apply whitespace-nowrap rounded-full px-3 py-1 text-sm; }
     .admin-filter-pill--inactive { @apply border-neutral-300 text-neutral-700 hover:bg-amber-50; }
+    .admin-filter-pill--disabled {
+        @apply border-neutral-200 bg-neutral-100 text-neutral-400 hover:bg-neutral-100;
+    }
     .admin-filter-pill--active {
         background-color: #4b2e17 !important;
         border-color: #4b2e17 !important;
