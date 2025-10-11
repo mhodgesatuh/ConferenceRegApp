@@ -157,15 +157,17 @@ const AdministrationPage: React.FC = () => {
     }, []);
 
     const dynamicCols = useMemo<ColumnDef<Registration>[]>(() => {
-        return dynamicColsBase.map((col) => {
-            const key = getAccessorKey(col);
-            if (!key || !filterableFieldSet.has(key)) return col;
-            return {
-                ...col,
-                enableColumnFilter: true,
-                filterFn: boolFilterFn,
-            } as ColumnDef<Registration>;
-        });
+        return dynamicColsBase
+            .filter((col) => getAccessorKey(col) !== "hasRsvp")
+            .map((col) => {
+                const key = getAccessorKey(col);
+                if (!key || !filterableFieldSet.has(key)) return col;
+                return {
+                    ...col,
+                    enableColumnFilter: true,
+                    filterFn: boolFilterFn,
+                } as ColumnDef<Registration>;
+            });
     }, [dynamicColsBase, filterableFieldSet, boolFilterFn]);
 
     const filterToggleConfigs = useMemo<FilterToggleConfig[]>(() => {
@@ -210,7 +212,7 @@ const AdministrationPage: React.FC = () => {
                 },
                 enableColumnFilter: true,
                 filterFn: boolFilterFn,
-                meta: { clickedByDefault: false },
+                meta: { clickedByDefault: true },
             },
             {
                 accessorKey: "hasNoRsvp",
