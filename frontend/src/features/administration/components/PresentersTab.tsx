@@ -219,6 +219,30 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
 
     const [activeFilter, setActiveFilter] = useState<PresenterFilterKey>("complete");
 
+    const missingCounts = useMemo(() => {
+        return sortedPresenters.reduce(
+            (acc, presenter) => {
+                const hasBio = Boolean(presenter.presenterBio?.trim());
+                const hasSessionTitle = Boolean(presenter.session1Title?.trim());
+                const hasSessionDescription = Boolean(presenter.session1Description?.trim());
+
+                if (!hasBio) acc.missingBio += 1;
+                if (!hasSessionTitle || !hasSessionDescription) acc.missingSession += 1;
+
+                return acc;
+            },
+            { missingBio: 0, missingSession: 0 }
+        );
+    }, [sortedPresenters]);
+
+    useEffect(() => {
+        if (activeFilter === "missingBio" && missingCounts.missingBio === 0) {
+            setActiveFilter("complete");
+        } else if (activeFilter === "missingSession" && missingCounts.missingSession === 0) {
+            setActiveFilter("complete");
+        }
+    }, [activeFilter, missingCounts]);
+
     const filteredPresenters = useMemo(() => {
         return sortedPresenters.filter((presenter) => {
             const hasBio = Boolean(presenter.presenterBio?.trim());
@@ -261,6 +285,11 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                         <span className="font-medium">Filters:</span>
                         {filterConfigs.map(({ key, label }) => {
                             const isActive = activeFilter === key;
+                            const count =
+                                key === "missingBio"
+                                    ? missingCounts.missingBio
+                                    : missingCounts.missingSession;
+                            const displayLabel = count > 0 ? `${label} (${count})` : label;
                             return (
                                 <Button
                                     key={key}
@@ -271,9 +300,13 @@ const PresentersTab: React.FC<PresentersTabProps> = ({ presenters, isLoading, er
                                         "admin-filter-pill",
                                         isActive ? "admin-filter-pill--active" : "admin-filter-pill--inactive"
                                     )}
-                                    onClick={() => setActiveFilter((prev) => (prev === key ? "complete" : key))}
+                                    disabled={count === 0}
+                                    onClick={() => {
+                                        if (count === 0) return;
+                                        setActiveFilter((prev) => (prev === key ? "complete" : key));
+                                    }}
                                 >
-                                    {label}
+                                    {displayLabel}
                                 </Button>
                             );
                         })}
